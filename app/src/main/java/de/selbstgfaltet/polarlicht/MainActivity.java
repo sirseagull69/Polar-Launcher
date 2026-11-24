@@ -1,5 +1,8 @@
 package de.selbstgfaltet.polarlicht;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
@@ -14,6 +17,7 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.Display;
 import android.view.Gravity;
@@ -114,6 +118,37 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         root.addView(infoView, new FrameLayout.LayoutParams(MATCH, MATCH));
 
         setContentView(root);
+        if (firstStartSinceBoot()) {
+            playIntro(root);
+        }
+    }
+
+    /** Wahr beim ersten Öffnen nach dem Einschalten des Geräts. */
+    private boolean firstStartSinceBoot() {
+        int boots = Settings.Global.getInt(getContentResolver(), Settings.Global.BOOT_COUNT, -1);
+        android.content.SharedPreferences prefs = getSharedPreferences("polarlicht", MODE_PRIVATE);
+        if (boots < 0 || prefs.getInt("introBoot", -2) == boots) {
+            return false;
+        }
+        prefs.edit().putInt("introBoot", boots).apply();
+        return true;
+    }
+
+    private void playIntro(final FrameLayout root) {
+        final Ui.Intro intro = new Ui.Intro(this);
+        intro.setClickable(true);
+        root.addView(intro, new FrameLayout.LayoutParams(MATCH, MATCH));
+        ValueAnimator run = ValueAnimator.ofFloat(0f, 1f);
+        run.setDuration(1900);
+        run.addUpdateListener(a -> intro.setProgress((Float) a.getAnimatedValue()));
+        run.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                intro.animate().alpha(0f).setStartDelay(350).setDuration(400)
+                        .withEndAction(() -> root.removeView(intro)).start();
+            }
+        });
+        run.start();
     }
 
     private int px(float design) {

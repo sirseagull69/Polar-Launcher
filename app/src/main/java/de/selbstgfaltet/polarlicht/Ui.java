@@ -80,6 +80,53 @@ final class Ui {
         return t;
     }
 
+    /** Start-Animation: die fünf Farbfelder gehen nacheinander an, dann erscheint der Name. */
+    static final class Intro extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint word = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private float progress = 0f;
+
+        Intro(Context c) {
+            super(c);
+            setBackgroundColor(BG);
+            word.setTypeface(font(c));
+            word.setFontVariationSettings("'wght' 700");
+            word.setColor(TEXT);
+            word.setTextAlign(Paint.Align.CENTER);
+            word.setLetterSpacing(-0.04f);
+        }
+
+        /** 0 = dunkel, 1 = alles sichtbar. */
+        void setProgress(float p) {
+            progress = p;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            float w = getWidth();
+            float h = getHeight();
+            float unit = h / 374f;
+            float stripW = 260 * unit;
+            float stripH = 8 * unit;
+            float gap = 5 * unit;
+            float seg = (stripW - gap * 4) / 5f;
+            float left = (w - stripW) / 2f;
+            float top = h / 2f + 14 * unit;
+            for (int i = 0; i < 5; i++) {
+                float on = Math.max(0f, Math.min(1f, progress * 8f - i));
+                paint.setColor(COLORS[i]);
+                paint.setAlpha(Math.round(40 + 215 * on));
+                float x = left + i * (seg + gap);
+                canvas.drawRect(x, top, x + seg, top + stripH, paint);
+            }
+            float text = Math.max(0f, Math.min(1f, (progress - 0.55f) / 0.3f));
+            word.setTextSize(56 * unit);
+            word.setAlpha(Math.round(255 * text));
+            canvas.drawText("Polarlicht", w / 2f, h / 2f - 6 * unit - (1f - text) * 8 * unit, word);
+        }
+    }
+
     /** Der Farbstreifen: ein Feld pro Eintrag, das ausgewählte leuchtet. */
     static final class Strip extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);

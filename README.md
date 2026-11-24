@@ -1,6 +1,6 @@
 # Polarlicht
 
-Eigener Launcher für den AYN Thor. Version 0.1.0.
+Eigener Launcher für den AYN Thor. Version 0.1.1.
 
 ## Was er kann
 
@@ -9,6 +9,11 @@ Eigener Launcher für den AYN Thor. Version 0.1.0.
 - Liste aller Apps, Favoriten festlegen. Der Startbildschirm zeigt die Favoriten, zuletzt gestartete zuerst.
 - Hintergrundbild pro App: Bild in den Ordner `Bilder` legen, Dateiname = Paketname der App, z. B. `com.beispiel.spiel.jpg`. Der Pfad des Ordners steht in der Bildschirm-Info.
 - Apps wahlweise oben oder unten starten (Kachel "Start: ...").
+- Start-Animation: beim ersten Öffnen nach dem Einschalten gehen die fünf Farbfelder nacheinander an.
+
+## Als Startbildschirm festlegen
+
+Nach der Installation die Home-Taste drücken und Polarlicht mit "Immer" wählen, oder in den Android-Einstellungen unter Apps > Standard-Apps > Start-App. Danach erscheint Polarlicht nach jedem Einschalten.
 
 ## Bedienung
 
