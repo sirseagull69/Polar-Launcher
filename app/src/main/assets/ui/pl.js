@@ -106,7 +106,7 @@
         if (p !== null && p !== undefined) setSlider(sl, +p);
       }
     });
-    if (!TOP && cur[0] === '2') {
+    if (!TOP && cur[0] === '2' && !root.dataset.mix) {
       qa('button', root).forEach(function (b) {
         var L = labelOf(b), on = L === 'WLAN' ? st.wifi : L === 'Bluetooth' ? st.bt : L === 'Flugmodus' ? st.airplane : null;
         if (on === null) return;
@@ -163,6 +163,7 @@
   function tick() {
     if (!root) return;
     try { st = JSON.parse(J.state()); } catch (e) { return; }
+    qa('[data-live="time"]').forEach(function (e) { e.textContent = st.time; }); qa('[data-live="bat"]').forEach(function (e) { e.textContent = st.battery + ' %'; });
     var V = values(); live.forEach(function (x) { if (x.n.parentNode) x.n.nodeValue = fillText(x.tpl, V, {}).replace(/\u0001/g, '–'); });
   }
   setInterval(tick, 20000);
@@ -187,6 +188,8 @@
 
   /* ---------- Fokus ---------- */
   function ring(el, on) {
+    if (on && root.dataset.mix) { el.style.outline = '3px solid ' + LIME; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
+    if (!on && root.dataset.mix) { el.style.outline = 'none'; el.classList.remove('mx-foc'); return; }
     if (on) {
       el.style.outline = '2px solid #EEF1F6'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 1.6s ease-in-out infinite';
       if (el.dataset.base) el.style.background = '#1A2132';
@@ -447,6 +450,7 @@
   function act(el) {
     if (!el) return;
     if (el._act) { el._act(); return; }
+    if (el.dataset.act) { doAct(el.dataset.act); return; }
     var L = labelOf(el), t = lookup('l', L);
     var isKey = !TOP && el.tagName === 'BUTTON' && t === undefined;
     if (isKey && (L.length === 1 || L === 'Leerzeichen')) { snd('taste'); J.type(L === 'Leerzeichen' ? ' ' : L); return; }
@@ -470,13 +474,18 @@
     if (n.lock) return;
     if (k === 'up' || k === 'down' || k === 'left' || k === 'right') {
       if (k === 'left' || k === 'right') {
-        if (root._switch) { root._switch(k === 'right' ? 1 : -1); return; }
+        if (root._switch && (!root._switchOn || root._switchOn())) { root._switch(k === 'right' ? 1 : -1); return; }
         var sl = foc && findSlider(foc);
         if (sl) { sliderSet(foc, sl, (+sl.dataset.v || parseFloat(sl.children[1].style.width) || 0) + (k === 'right' ? 5 : -5), true); snd('fokus'); J.sync(''); return; }
       }
       move(k); return;
     }
     var t = lookup('k', k);
+    if (root.dataset.mix && (k === 'L1' || k === 'R1')) {
+      var T = ['home', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 2)) % 3];
+      snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
+    }
+    if (k === 'A' && root.dataset.mix) { act(foc); return; }
     if (k === 'A') { if (t !== undefined && t !== null) run(t); else act(foc); return; }
     if (k === 'B') { run(t === undefined ? 'back' : t); return; }
     if (t === undefined && k === 'SELECT') t = '7.2';
@@ -510,19 +519,141 @@
     if (k === 'B') toggleIndex();
   }
 
+  /* ---------- Neuer Look: Mix aus Kino und Bento (Start, Bibliothek, Bedienfeld) ---------- */
+  var LIME = '#C6FF3D', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:rgba(18,18,26,.74);border:1px solid rgba(255,255,255,.09)';
+  var MXI = {
+    play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"></path>',
+    grid: '<rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect>',
+    set: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle>',
+    wifi: '<path d="M4 10a12 12 0 0 1 16 0M7 13.5a7.5 7.5 0 0 1 10 0"></path><circle cx="12" cy="17.5" r="1"></circle>',
+    bt: '<path d="M7 8l10 8-5 4V4l5 4-10 8"></path>', vol: '<path d="M5 10v4h3l4 4V6l-4 4zM16 9a4 4 0 0 1 0 6"></path>',
+    sun: '<circle cx="12" cy="12" r="3.5"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path>',
+    bat: '<rect x="3" y="8" width="16" height="8" rx="2"></rect><path d="M21 11v2"></path>', plane: '<path d="M3 11l18-7-7 18-3-8z"></path>',
+    star: '<path d="M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"></path>', search: '<circle cx="11" cy="11" r="6"></circle><path d="M16 16l4 4"></path>',
+    down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"></path>'
+  };
+  function mi(n, s, w) { return '<svg aria-hidden="true" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.9) + '" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none">' + MXI[n] + '</svg>'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function hue(a) { var h = 0, s = a ? a.label : 'Polarlicht'; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
+  function mxBg(a) {
+    var h = hue(a);
+    return '<div class="mx-bg"><i style="left:-200px;top:-280px;background:radial-gradient(circle,hsla(' + h + ',62%,36%,.95) 0,transparent 68%)"></i>'
+      + '<i class="b" style="right:-240px;bottom:-340px;background:radial-gradient(circle,hsla(' + (h + 48) % 360 + ',58%,30%,.9) 0,transparent 68%)"></i>'
+      + '<i class="c" style="left:38%;top:12%;background:radial-gradient(circle,hsla(' + (h + 320) % 360 + ',75%,58%,.26) 0,transparent 70%)"></i>'
+      + (a && a.img ? '<img class="mx-art" src="' + img(a, 'image') + '">' : '') + '<div class="mx-scrim"></div></div>';
+  }
+  function mxNav(tab) {
+    function p(t, act, on) { return '<button type="button" class="mx-pill' + (on ? ' on' : '') + '" data-act="' + act + '">' + t + '</button>'; }
+    var upd = st.upd && st.upd.available ? '<button type="button" class="mx-pill on" data-act="go:6.2" style="margin-left:auto">' + mi('down', 18, 2.2) + 'Update da</button>' : '';
+    return '<div class="mx-nav"><span class="mx-pill mx-clock" data-live="time">' + esc(st.time || '') + '</span>' + p('Start', 'home', tab === 0) + p('Bibliothek', 'swap:3.7', tab === 1) + p('Favoriten', 'swap:3.4', tab === 2) + p('System', 'go:5.1', false) + upd
+      + '<span class="mx-pill" style="' + (upd ? '' : 'margin-left:auto;') + 'gap:10px;font-size:14px">' + (st.wifi ? mi('wifi', 18) : '') + mi('bat', 20) + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>';
+  }
+  function mxKeys(list) {
+    return '<div class="mx-keys">' + list.map(function (k) { return '<span><b>' + k[0] + '</b>' + k[1] + '</span>'; }).join('') + '</div>';
+  }
+  function mxHome() {
+    var bar = Math.max(0, Math.min(100, st.battery || 0)), used = parseInt(st.used, 10) || 0, total = parseInt(st.total, 10) || 1;
+    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs"></div>' + mxNav(0)
+      + '<div class="mx-hero"><div class="mx-ico"><img id="mx-icon" alt=""></div><span class="mx-tag" id="mx-label"></span><div class="mx-title" id="mx-title"></div><div class="mx-meta"><span id="mx-meta"></span><span class="mx-dots" id="mx-dots"></span></div>'
+      + '<div style="display:flex;gap:10px;margin-top:2px"><button type="button" id="mx-play" class="mx-play" data-act="launch" data-first="1">' + mi('play', 20) + 'Starten</button><button type="button" class="mx-ghost" data-act="details">Details</button></div></div>'
+      + '<div class="mx-side"><div class="mx-tile" style="grid-column:1/3;' + GLASS + '"><div class="mx-h">Zuletzt geöffnet<button type="button" class="mx-link" data-act="swap:3.7">Alle ' + apps.length + ' →</button></div><div id="mx-recent" style="display:flex;gap:10px"></div></div>'
+      + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Akku</div><div class="mx-n">' + bar + ' %</div><div class="mx-s" style="margin-top:2px">' + esc(st.temp || '') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + bar + '%;background:' + (bar <= 15 ? '#FF5D5D' : LIME) + '"></i></div></div>'
+      + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Speicher</div><div class="mx-n">' + esc(st.free || '–') + '</div><div class="mx-s" style="margin-top:2px">frei von ' + esc(st.total || '–') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + Math.round(used / total * 100) + '%;background:#fff"></i></div></div></div>'
+      + mxKeys([['A', 'Auswählen'], ['X', 'Details'], ['Y', 'Bibliothek'], ['← →', 'App wechseln'], ['L1 R1', 'Reiter']]) + '</div>';
+  }
+  function mxHomeBind() {
+    var list = apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || a.label.localeCompare(b.label); }).slice(0, 8), bgs = document.getElementById('mx-bgs');
+    hidx = Math.max(0, Math.min(hidx, list.length - 1));
+    function paint(first) {
+      var a = list[hidx]; if (!a) return; select(a);
+      var old = bgs.lastElementChild, box = document.createElement('div'); box.innerHTML = mxBg(a); var bg = box.firstElementChild;
+      bgs.appendChild(bg); if (!first) { bg.style.opacity = '0'; bg.getBoundingClientRect(); bg.style.opacity = '1'; }
+      if (old) setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 900);
+      document.getElementById('mx-icon').src = img(a, 'icon');
+      document.getElementById('mx-label').textContent = (a.fav ? 'FAVORIT' : 'APP') + (a.last ? ' · ZULETZT GEÖFFNET' : '');
+      var t = document.getElementById('mx-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 20 ? '34px' : a.label.length > 12 ? '44px' : '56px';
+      document.getElementById('mx-meta').textContent = a.last ? 'Zuletzt am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht geöffnet';
+      document.getElementById('mx-dots').innerHTML = list.map(function (x, i) { return '<i' + (i === hidx ? ' class="on"' : '') + '></i>'; }).join('');
+      var hero = root.querySelector('.mx-hero'); if (!first) { hero.style.animation = 'none'; hero.getBoundingClientRect(); hero.style.animation = 'mx-in .5s cubic-bezier(.2,.8,.2,1) both'; }
+    }
+    paint(true);
+    document.getElementById('mx-recent').innerHTML = list.filter(function (x, i) { return i !== hidx; }).slice(0, 3).map(function (b) {
+      return '<button type="button" class="mx-mini" data-act="launch:' + esc(b.key) + '" data-key="' + esc(b.key) + '"><span style="background:radial-gradient(circle at 30% 20%,hsl(' + hue(b) + ',55%,38%),hsl(' + (hue(b) + 40) % 360 + ',50%,18%))"><img src="' + img(b, 'icon') + '" alt=""></span><em>' + esc(b.label) + '</em></button>';
+    }).join('');
+    root._switch = function (d) { if (list.length < 2) return; hidx = (hidx + d + list.length) % list.length; paint(false); snd('fokus'); };
+    root._switchOn = function () { return !foc || foc.id === 'mx-play'; };
+  }
+  function mxLib() {
+    var favs = cur === '3.4', list = apps.slice();
+    if (favs) list = list.filter(function (a) { return a.fav; });
+    else if (pref('sort', 'last') === 'last') list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
+    var cards = list.map(function (a, i) {
+      var h = hue(a);
+      return '<button type="button" class="mx-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 28 + 'ms;background:radial-gradient(circle at 28% 18%,hsl(' + h + ',55%,36%),hsl(' + (h + 40) % 360 + ',50%,16%))">'
+        + (a.img ? '<img class="mx-cover" src="' + img(a, 'image') + '" alt="">' : '<img class="mx-cico" src="' + img(a, 'icon') + '" alt="">') + (a.fav ? '<span class="mx-fav">' + mi('star', 14, 2.2) + '</span>' : '') + '<em>' + esc(a.label) + '</em></button>';
+    }).join('');
+    if (!list.length) cards = '<div style="grid-column:1/-1;padding:40px 0;font-size:17px;color:rgba(255,255,255,.6)">' + (favs ? 'Noch keine Favoriten. Start auf einer App setzt einen.' : 'Keine Apps gefunden.') + '</div>';
+    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(favs ? 2 : 1)
+      + '<div class="mx-lhead"><div class="mx-count">' + list.length + (favs ? ' Favoriten' : ' Apps') + '</div>' + (favs ? '' : '<button type="button" class="mx-chip" data-act="sort">' + (pref('sort', 'last') === 'last' ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + '<button type="button" class="mx-chip" data-act="go:3.3">' + mi('search', 16, 2.2) + 'Suche</button></div>'
+      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit'], ['L1 R1', 'Reiter'], ['B', 'Start']]) + '</div>';
+  }
+  function mxPanel() {
+    function vs(k, n, pct, col) { return '<div class="mx-vs" data-vs="' + k + '"><i style="height:' + pct + '%;background:' + col + '"></i><b>' + pct + '</b><span>' + mi(n, 26, 2.2) + '</span></div>'; }
+    function t(n, a, b, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:' + INK : '') + '">' + mi(n, 28, 2) + '<span><b>' + a + '</b><small>' + b + '</small></span></button>'; }
+    function r(n, a, act, on) { return '<button type="button" class="mx-pr' + (on ? ' on' : '') + '" data-act="' + act + '">' + mi(n, 20) + a + '</button>'; }
+    return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + hue(sel) + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
+      + '<div style="position:relative;display:flex;gap:12px;flex:1 1 0;min-height:0">' + vs('b', 'sun', st.brightness || 0, '#fff') + vs('v', 'vol', st.volume || 0, LIME)
+      + '<div style="flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;gap:12px">' + t('grid', 'Bibliothek', apps.length + ' Apps', 'go:3.7') + t('wifi', 'WLAN', st.wifi ? 'An' : 'Aus', 'and:wifi', st.wifi ? LIME : '') + t('star', 'Favoriten', apps.filter(function (a) { return a.fav; }).length + ' Apps', 'go:3.4') + t('set', 'System', 'Einstellungen', 'go:5.1') + '</div></div>'
+      + '<div style="position:relative;display:flex;gap:10px">' + r('bt', 'Bluetooth', 'and:bt', st.bt) + r('plane', 'Flugmodus', 'and:airplane', st.airplane) + r('search', 'Suche', 'go:3.3') + '</div></div>';
+  }
+  function mxPanelBind() {
+    qa('.mx-vs', root).forEach(function (el) {
+      var k = el.dataset.vs;
+      var drag = function (e) {
+        var p = e.touches ? e.touches[0] : e, r = el.getBoundingClientRect(), pct = Math.round(Math.max(0, Math.min(1, (r.bottom - p.clientY) / r.height)) * 100);
+        el.firstElementChild.style.height = pct + '%'; el.children[1].textContent = pct;
+        if (k === 'b') J.setBrightness(pct); else J.setVolume(pct);
+        e.preventDefault();
+      };
+      el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false }); el.addEventListener('mousedown', drag);
+    });
+  }
+  function mixFor(key) {
+    var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.4' || key === '3.7';
+    if (TOP) return home ? [mxHome, mxHomeBind] : lib ? [mxLib, null] : null;
+    return home || lib || key === '2.3' ? [mxPanel, mxPanelBind] : null;
+  }
+  function doAct(a) {
+    var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
+    if (k === 'launch') launch(v ? appByKey(v) : sel);
+    else if (k === 'details') details();
+    else if (k === 'home') { snd('ok'); J.go('home'); }
+    else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
+    else if (k === 'go') run(v);
+    else if (k === 'and') run('@' + v);
+    else if (k === 'sort') { J.setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
+  }
+
   /* ---------- Anzeigen ---------- */
   function show(key) {
-    var html = J.html(key + '-' + side);
-    if (!html) return;
+    var mix = mixFor(key), html = mix ? '' : J.html(key + '-' + side);
+    if (!mix && !html) return;
     timers.forEach(clearTimeout); timers = []; idx = null;
     cur = key;
     try { st = JSON.parse(J.state()); apps = JSON.parse(J.apps()); } catch (e) { st = {}; apps = []; }
     sel = appByKey(pref('sel', '')) || homeList()[0] || null;
-    stage.innerHTML = html; root = stage.firstElementChild; foc = null; tag();
+    if (mix) html = mix[0]();
+    stage.innerHTML = html; root = stage.firstElementChild; foc = null;
+    if (mix) root.dataset.mix = '1';
+    tag();
+    if (mix) {
+      if (mix[1]) mix[1]();
+      qa('[data-key]', root).forEach(function (el) { el._app = appByKey(el.dataset.key); });
+    }
     if (pref('sw:Bewegungen reduzieren', '0') === '1') root.classList.add('pl-still');
     var n = NAV[key] || {};
-    if (TOP && key[0] === '2') bindHome();
-    if (TOP && key[0] === '3') bindGrid();
+    if (!mix && TOP && key[0] === '2') bindHome();
+    if (!mix && TOP && key[0] === '3') bindGrid();
     if (n.bind) n.bind();
     if (key === '5.13') qa('div', root).filter(isRow).forEach(function (r) { if (labelOf(r) === 'Android') qa('div', r).forEach(function (d) { if (d.textContent === '[Version]') d.textContent = st.android || '–'; }); });
     if (TOP && key === '3.5') {
