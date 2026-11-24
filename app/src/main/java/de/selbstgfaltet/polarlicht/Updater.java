@@ -39,6 +39,7 @@ final class Updater {
     private int remoteBuild = 0;
     private String apkUrl = "";
     private String message = "";
+    private volatile boolean failed = false;
 
     Updater(Context c, Listener l) {
         context = c.getApplicationContext();
@@ -59,6 +60,14 @@ final class Updater {
 
     boolean available() {
         return remoteBuild > localBuild() && !apkUrl.isEmpty();
+    }
+
+    boolean failed() {
+        return failed;
+    }
+
+    String message() {
+        return message;
     }
 
     boolean busy() {
@@ -88,6 +97,7 @@ final class Updater {
         }
         lastCheck = now;
         busy = true;
+        failed = false;
         if (force) {
             tell("Suche nach Updates …");
         }
@@ -111,6 +121,7 @@ final class Updater {
                 tell("");
             } catch (Exception e) {
                 busy = false;
+                failed = force;
                 tell(force ? "Update-Suche ging nicht (kein Netz?)" : "");
             }
         }).start();
@@ -122,6 +133,7 @@ final class Updater {
             return;
         }
         busy = true;
+        failed = false;
         tell("Lade Build " + remoteBuild + " …");
         new Thread(() -> {
             File file = new File(context.getCacheDir(), "polarlicht-update.apk");
@@ -153,6 +165,7 @@ final class Updater {
                 tell("Android fragt gleich, ob installiert werden soll.");
             } catch (Exception e) {
                 busy = false;
+                failed = true;
                 tell("Update ging nicht: " + e.getClass().getSimpleName());
             } finally {
                 //noinspection ResultOfMethodCallIgnored
@@ -166,6 +179,7 @@ final class Updater {
     }
 
     void fail(String text) {
+        failed = true;
         tell(text);
     }
 

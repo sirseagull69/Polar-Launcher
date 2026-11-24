@@ -1,0 +1,14 @@
+@font-face{font-family:'Space Grotesk';src:url(../SpaceGrotesk.ttf);font-weight:300 700}
+@font-face{font-family:'JetBrains Mono';src:url(../JetBrainsMono.ttf);font-weight:100 800}
+html,body{margin:0;width:100%;height:100%;background:#0A0D14;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#stage{position:absolute;left:0;top:0;transform-origin:0 0;overflow:hidden}
+button{font-family:inherit;transition:transform .1s}
+img{display:block}
+/* Am Gerät spielen Dialog, Hinweis, Menü und Boot einmal und bleiben dann stehen. */
+@keyframes pl-pop{0%{opacity:0;transform:scale(.9)}60%{opacity:1;transform:scale(1.02)}100%{opacity:1;transform:none}}
+@keyframes pl-toast{0%{opacity:0;transform:translateY(-40px)}100%{opacity:1;transform:none}}
+@keyframes pl-side{0%{transform:translateX(-100%)}100%{transform:none}}
+@keyframes pl-bf{0%{opacity:.22}8%,100%{opacity:1}}
+@keyframes pl-word{0%,48%{opacity:0;transform:translateY(8px)}58%,100%{opacity:1;transform:none}}
+.pl-still *{animation-duration:.01s!important;animation-iteration-count:1!important}
+#pl-note{display:none;position:absolute;left:50%;bottom:5%;transform:translateX(-50%);background:#121724;border:1.5px solid #3A4358;border-radius:999px;padding:.6em 1.2em;color:#EEF1F6;font:500 2.2vh 'Space Grotesk',sans-serif;max-width:86%;text-align:center;z-index:99}

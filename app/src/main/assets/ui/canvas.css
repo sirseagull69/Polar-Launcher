@@ -1,0 +1,18 @@
+
+body{margin:0;background:#0A0D14}
+a{color:#5AA9FF}a:hover{color:#EEF1F6}
+@keyframes pl-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pl-pop{0%{opacity:0;transform:scale(.9)}5%{opacity:1;transform:scale(1.02)}8%,93%{opacity:1;transform:none}97%,100%{opacity:0;transform:scale(.96)}}
+@keyframes pl-toast{0%{opacity:0;transform:translateY(-40px)}6%,88%{opacity:1;transform:none}94%,100%{opacity:0;transform:translateY(-40px)}}
+@keyframes pl-side{0%{transform:translateX(-100%)}5%,92%{transform:none}97%,100%{transform:translateX(-100%)}}
+@keyframes pl-run{0%,45%,100%{opacity:.22}20%{opacity:1}}
+@keyframes pl-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes pl-ring{0%,100%{outline-offset:3px}50%{outline-offset:6px}}
+@keyframes pl-sun{0%,100%{transform:translate(0,0)}50%{transform:translate(-22px,12px)}}
+@keyframes pl-drift{0%,100%{transform:translateX(0)}50%{transform:translateX(-26px)}}
+@keyframes pl-aur{0%,100%{opacity:.04;transform:skewX(-14deg) translateX(0)}50%{opacity:.13;transform:skewX(-14deg) translateX(46px)}}
+@keyframes pl-bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-4px) rotate(-5deg)}}
+@keyframes pl-blink{0%{opacity:1}50%,100%{opacity:0}}
+@keyframes pl-bf{0%{opacity:.22}6%,80%{opacity:1}90%,100%{opacity:.22}}
+@keyframes pl-word{0%,48%{opacity:0;transform:translateY(8px)}58%,86%{opacity:1;transform:none}94%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
