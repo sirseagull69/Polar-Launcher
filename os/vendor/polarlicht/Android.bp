@@ -1,0 +1,12 @@
+// ENTWURF, noch nie gebaut. Baut Polarlicht als fest eingebaute System-App ins Android.
+// polarlicht.apk kommt aus dem Release des Launchers und wird vor dem Bau in diesen Ordner gelegt.
+android_app_import {
+    name: "Polarlicht",
+    apk: "polarlicht.apk",
+    certificate: "platform",
+    privileged: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
