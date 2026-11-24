@@ -1,0 +1,117 @@
+package de.selbstgfaltet.polarlicht;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.TextView;
+
+/** Farben, Schrift und kleine Bausteine für den Polarlicht-Look. */
+final class Ui {
+    static final int BG = 0xFF0A0D14;
+    static final int SURFACE = 0xFF121724;
+    static final int LINE = 0xFF1F2533;
+    static final int TEXT = 0xFFEEF1F6;
+    static final int MUTED = 0xFFA3ABBA;
+    static final int[] COLORS = {0xFFFF5D5D, 0xFFFFB347, 0xFFFFE36E, 0xFF5FD38D, 0xFF5AA9FF};
+
+    private static Typeface font;
+
+    private Ui() {}
+
+    static int color(int index) {
+        return COLORS[((index % COLORS.length) + COLORS.length) % COLORS.length];
+    }
+
+    static Typeface font(Context c) {
+        if (font == null) {
+            try {
+                font = Typeface.createFromAsset(c.getAssets(), "SpaceGrotesk.ttf");
+            } catch (RuntimeException e) {
+                font = Typeface.SANS_SERIF;
+            }
+        }
+        return font;
+    }
+
+    /** Text in Space Grotesk. size ist in Bildschirm-Pixeln, weight 300 bis 700. */
+    static TextView text(Context c, String s, float sizePx, int color, int weight) {
+        TextView t = new TextView(c);
+        t.setText(s);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sizePx);
+        t.setTextColor(color);
+        t.setTypeface(font(c));
+        t.setFontVariationSettings("'wght' " + weight);
+        t.setIncludeFontPadding(false);
+        return t;
+    }
+
+    static TextView mono(Context c, String s, float sizePx, int color) {
+        TextView t = new TextView(c);
+        t.setText(s);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_PX, sizePx);
+        t.setTextColor(color);
+        t.setTypeface(Typeface.MONOSPACE);
+        t.setIncludeFontPadding(false);
+        return t;
+    }
+
+    static GradientDrawable round(int fill, float radiusPx, int strokeColor, int strokePx) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(fill);
+        d.setCornerRadius(radiusPx);
+        if (strokePx > 0) {
+            d.setStroke(strokePx, strokeColor);
+        }
+        return d;
+    }
+
+    static TextView pill(Context c, String s, float sizePx, float padX, float height) {
+        TextView t = text(c, s, sizePx, BG, 700);
+        t.setGravity(Gravity.CENTER);
+        t.setBackground(round(TEXT, height / 2f, 0, 0));
+        t.setPadding((int) padX, 0, (int) padX, 0);
+        t.setMinHeight((int) height);
+        t.setMinimumHeight((int) height);
+        return t;
+    }
+
+    /** Der Farbstreifen: ein Feld pro Eintrag, das ausgewählte leuchtet. */
+    static final class Strip extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private int count = 5;
+        private int selected = 0;
+        private int firstIndex = 0;
+
+        Strip(Context c) {
+            super(c);
+        }
+
+        /** total = Anzahl aller Einträge, sel = ausgewählter Eintrag. Es werden höchstens 12 Felder gezeigt. */
+        void set(int total, int sel) {
+            int window = 12;
+            firstIndex = total <= window ? 0 : (sel / window) * window;
+            count = Math.max(1, Math.min(window, total - firstIndex));
+            selected = sel - firstIndex;
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            float w = getWidth();
+            float h = getHeight();
+            float gap = h * 0.7f;
+            float seg = (w - gap * (count - 1)) / count;
+            for (int i = 0; i < count; i++) {
+                paint.setColor(color(firstIndex + i));
+                paint.setAlpha(i == selected ? 255 : 72);
+                float x = i * (seg + gap);
+                canvas.drawRect(x, 0, x + seg, h, paint);
+            }
+        }
+    }
+}
