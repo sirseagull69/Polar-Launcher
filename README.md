@@ -31,8 +31,8 @@ Alles geht auch per Tippen. Lange auf eine App tippen setzt den Favoriten.
 
 ## Bauen
 
-Jeder Push auf `main` baut die APK über GitHub Actions (Reiter "Actions", Artefakt `polarlicht-apk`).
-Ein Tag wie `v0.1.0` legt zusätzlich ein Release mit der APK an.
+Jeder Push auf `main` baut die APK über GitHub Actions und legt ein Release an.
+Die neueste APK liegt immer unter `releases/latest/download/polarlicht.apk`.
 
 Lokal, mit Android Studio oder installiertem Android-SDK und Gradle 8.9:
 

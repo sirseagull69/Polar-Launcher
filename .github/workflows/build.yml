@@ -35,8 +35,12 @@ jobs:
           name: polarlicht-apk
           path: polarlicht.apk
 
-      - name: Release anlegen (nur bei Versions-Tag)
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Release mit der APK anlegen
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: build-${{ github.run_number }}
+          name: Polarlicht Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          body: Automatisch gebaute Testversion. Noch nicht auf einem Gerät geprüft.
           files: polarlicht.apk
