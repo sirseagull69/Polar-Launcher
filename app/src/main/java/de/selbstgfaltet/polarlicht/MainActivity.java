@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInstaller;
+import android.content.ComponentName;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -49,6 +51,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -78,6 +83,10 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     private String lastKey = "";
     private long lastKeyAt = 0L;
     private String stickDir = "";
+    private final Roms roms = new Roms();
+    private volatile List<Roms.Game> games = new ArrayList<>();
+    private volatile boolean scanning = false;
+    private long lastScan = 0L;
     private boolean l2Down = false;
     private boolean r2Down = false;
 
@@ -103,6 +112,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         top = makeWeb(this, "oben");
         setContentView(top);
         updater.check(false);
+        scanGames();
     }
 
     /** Wahr beim ersten Öffnen nach dem Einschalten des Geräts. */
@@ -154,6 +164,19 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     /** App-Symbol oder Hintergrundbild für die Oberfläche. */
     private WebResourceResponse picture(String path, String key) {
         try {
+            Roms.Game g = game(key);
+            if (g != null) {
+                String p = "/image".equals(path) ? (g.art != null ? g.art : g.cover) : (g.cover != null ? g.cover : g.art);
+                if (p == null) {
+                    File own = imageFile(new File(g.path).getName());
+                    p = own == null ? null : own.getPath();
+                }
+                if (p != null) {
+                    String n = p.toLowerCase(Locale.ROOT);
+                    String type = n.endsWith(".png") ? "image/png" : n.endsWith(".webp") ? "image/webp" : "image/jpeg";
+                    return new WebResourceResponse(type, null, new FileInputStream(p));
+                }
+            }
             Apps.Entry e = find(key);
             if (e != null && "/image".equals(path)) {
                 File f = imageFile(e.pkg);
@@ -217,6 +240,9 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         Intent b = battery();
         if (b != null && level(b) <= 15 && b.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) == 0) {
             return "2.7";
+        }
+        if (!games.isEmpty()) {
+            return "2.2";
         }
         int n = apps.home().size();
         return n == 1 ? "2.4" : n > 5 ? "2.5" : "2.2";
@@ -335,6 +361,20 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                         out.put(o);
                     }
                 }
+                Set<String> favs = prefs.getStringSet("gfavs", new HashSet<String>());
+                for (Roms.Game g : games) {
+                    JSONObject o = new JSONObject();
+                    o.put("label", g.label);
+                    o.put("key", g.key());
+                    o.put("fav", favs.contains(g.key()));
+                    o.put("last", prefs.getLong("last:" + g.key(), 0L));
+                    o.put("img", g.art != null || g.cover != null);
+                    o.put("cov", g.cover != null || g.art != null);
+                    o.put("game", true);
+                    o.put("sys", g.sysFull);
+                    o.put("sysid", g.sys);
+                    out.put(o);
+                }
             } catch (Exception ignored) {
                 // leere Liste
             }
@@ -379,6 +419,11 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         @JavascriptInterface
         public void launch(final String key) {
             ui.post(() -> {
+                Roms.Game g = game(key);
+                if (g != null) {
+                    launchGame(g);
+                    return;
+                }
                 Apps.Entry e = find(key);
                 if (e != null) {
                     MainActivity.this.launch(e);
@@ -388,6 +433,14 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
 
         @JavascriptInterface
         public void fav(final String key) {
+            if (game(key) != null) {
+                Set<String> favs = new HashSet<>(prefs.getStringSet("gfavs", new HashSet<String>()));
+                if (!favs.remove(key)) {
+                    favs.add(key);
+                }
+                prefs.edit().putStringSet("gfavs", favs).apply();
+                return;
+            }
             Apps.Entry e = find(key);
             if (e != null) {
                 apps.toggleFavorite(e);
@@ -448,6 +501,14 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         }
 
         @JavascriptInterface
+        public void rescan() {
+            ui.post(() -> {
+                lastScan = 0L;
+                scanGames();
+            });
+        }
+
+        @JavascriptInterface
         public void log(String message) {
             Log.w(TAG, String.valueOf(message));
         }
@@ -501,7 +562,175 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         u.put("error", updater.failed());
         u.put("msg", updater.message());
         o.put("upd", u);
+        o.put("files", allFiles());
+        o.put("games", games.size());
+        o.put("scanning", scanning);
         return o;
+    }
+
+    /* ---------- Spiele ---------- */
+
+    private boolean allFiles() {
+        return Build.VERSION.SDK_INT < 30 || Environment.isExternalStorageManager();
+    }
+
+    private Roms.Game game(String key) {
+        if (key == null || !key.startsWith("g:")) {
+            return null;
+        }
+        for (Roms.Game g : games) {
+            if (g.key().equals(key)) {
+                return g;
+            }
+        }
+        return null;
+    }
+
+    /** Alle Speicher des Geräts: interner Speicher und SD-Karten. */
+    private List<File> volumes() {
+        List<File> out = new ArrayList<>();
+        File[] dirs = getExternalFilesDirs(null);
+        if (dirs != null) {
+            for (File d : dirs) {
+                if (d == null) {
+                    continue;
+                }
+                int cut = d.getPath().indexOf("/Android/");
+                if (cut > 0) {
+                    out.add(new File(d.getPath().substring(0, cut)));
+                }
+            }
+        }
+        return out;
+    }
+
+    private String readAsset(String name) throws Exception {
+        try (InputStream in = getAssets().open(name)) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buffer = new byte[65536];
+            int n;
+            while ((n = in.read(buffer)) > 0) {
+                out.write(buffer, 0, n);
+            }
+            return out.toString("UTF-8");
+        }
+    }
+
+    private void scanGames() {
+        long now = System.currentTimeMillis();
+        if (scanning || !allFiles() || now - lastScan < 60000L) {
+            return;
+        }
+        scanning = true;
+        lastScan = now;
+        final String chosen = prefs.getString("ui:romdir", "");
+        new Thread(() -> {
+            List<Roms.Game> found = new ArrayList<>();
+            try {
+                if (roms.systems.isEmpty()) {
+                    roms.load(readAsset("es_find_rules.xml"), readAsset("es_systems.xml"));
+                }
+                List<File> vols = volumes();
+                List<File> roots = Roms.findRoots(vols, chosen);
+                List<File> media = new ArrayList<>();
+                for (File v : vols) {
+                    media.add(new File(v, "ES-DE/downloaded_media"));
+                }
+                for (File r : roots) {
+                    RomProvider.ROOTS.add(r.getCanonicalPath());
+                    media.add(new File(r.getParentFile(), "ES-DE/downloaded_media"));
+                }
+                found = roms.scan(roots, media);
+            } catch (Exception e) {
+                Log.w(TAG, "Spielesuche: " + e);
+            }
+            final List<Roms.Game> result = found;
+            ui.post(() -> {
+                boolean changed = result.size() != games.size();
+                games = result;
+                scanning = false;
+                if (changed) {
+                    if (current.startsWith("2.")) {
+                        current = homeKey();
+                        showBoth();
+                    } else {
+                        both("window.plSync&&plSync('reload')");
+                    }
+                }
+            });
+        }).start();
+    }
+
+    private void launchGame(Roms.Game g) {
+        Set<String> installed = new HashSet<>();
+        for (PackageInfo p : getPackageManager().getInstalledPackages(0)) {
+            installed.add(p.packageName);
+        }
+        String volume = g.path.startsWith("/storage/emulated/") ? "primary" : g.path.split("/").length > 2 ? g.path.split("/")[2] : "primary";
+        List<Roms.Launch> options = roms.options(g, installed, volume);
+        if (options.isEmpty()) {
+            Toast.makeText(this, "Für " + g.sysFull + " ist kein passender Emulator installiert.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String wanted = prefs.getString("ui:emu:" + g.sys, "");
+        Roms.Launch pick = options.get(0);
+        for (Roms.Launch l : options) {
+            if (l.label.equals(wanted)) {
+                pick = l;
+            }
+        }
+        try {
+            String pkg = pick.component.substring(0, pick.component.indexOf('/'));
+            String cls = pick.component.substring(pick.component.indexOf('/') + 1);
+            Intent intent = new Intent(pick.action == null ? Intent.ACTION_MAIN : pick.action);
+            intent.setComponent(new ComponentName(pkg, cls.startsWith(".") ? pkg + cls : cls));
+            int flags = Intent.FLAG_ACTIVITY_NEW_TASK;
+            if (pick.clearTask) {
+                flags |= Intent.FLAG_ACTIVITY_CLEAR_TASK;
+            }
+            if (pick.clearTop) {
+                flags |= Intent.FLAG_ACTIVITY_CLEAR_TOP;
+            }
+            if (pick.category != null) {
+                intent.addCategory(pick.category);
+            }
+            if (pick.data != null) {
+                Uri data = pick.dataIsProvider ? RomProvider.uriFor(pick.data) : Uri.parse(pick.data);
+                if (pick.dataIsProvider) {
+                    flags |= Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                }
+                if (pick.mime != null) {
+                    intent.setDataAndType(data, pick.mime);
+                } else {
+                    intent.setData(data);
+                }
+            }
+            intent.setFlags(flags);
+            for (String k : pick.extras.keySet()) {
+                intent.putExtra(k, pick.extras.get(k));
+            }
+            for (String k : pick.bools.keySet()) {
+                intent.putExtra(k, pick.bools.get(k).booleanValue());
+            }
+            for (String k : pick.ints.keySet()) {
+                intent.putExtra(k, pick.ints.get(k).intValue());
+            }
+            for (String k : pick.arrays.keySet()) {
+                intent.putExtra(k, pick.arrays.get(k));
+            }
+            int display = apps.launchDisplay();
+            if (display >= 0 && displayManager.getDisplay(display) != null) {
+                ActivityOptions o = ActivityOptions.makeBasic();
+                o.setLaunchDisplayId(display);
+                startActivity(intent, o.toBundle());
+            } else {
+                startActivity(intent);
+            }
+            prefs.edit().putLong("last:" + g.key(), System.currentTimeMillis()).apply();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Start " + pick.component + ": " + e);
+            Toast.makeText(this, pick.label + " ließ sich nicht starten.", Toast.LENGTH_LONG).show();
+        }
     }
 
     private static String gb(long bytes) {
@@ -557,6 +786,13 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
 
     /** Für alles, was Polarlicht als normale App nicht selbst schalten darf: die passende Android-Seite. */
     private void openAndroid(String what) {
+        if (what.equals("files")) {
+            if (Build.VERSION.SDK_INT >= 30) {
+                lastScan = 0L;
+                startSafely(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getPackageName())));
+            }
+            return;
+        }
         if (what.startsWith("app:")) {
             Apps.Entry e = find(what.substring(4));
             if (e != null) {
@@ -720,6 +956,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         }
         displayManager.registerDisplayListener(this, ui);
         showPanel();
+        scanGames();
         if (current.startsWith("2.")) {
             current = homeKey();
         }

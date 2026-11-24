@@ -390,7 +390,7 @@
     '1.16': { l: { 'Entsperren': 'home' }, k: { A: 'home' } }, '1.17': { l: { 'Weiterspielen': 'back' }, k: { A: 'back', B: 'home' } },
     '2.3': { k: { A: '1.13', Y: '3.7', X: null } }, '2.6': { k: { SELECT: '6.2' }, enter: 'hinweis' }, '2.7': { enter: 'warn' },
     '3.1': { k: { B: 'home' } }, '3.2': { k: { B: swap('3.1') } }, '3.4': { k: { B: 'home' } }, '3.7': { k: { B: 'home' } },
-    '3.3': { k: { Y: null, START: 'back' } },
+    '3.3': { k: { Y: null, START: 'back', L1: null, R1: null }, enter0: function () { } },
     '3.5': { l: { 'Starten': function () { launch(sel); }, 'Emulator wählen': '3.6', 'Favorit': function () { fav(sel); }, 'Bild ändern': '3.10', 'Speicherstände': '4.2', 'Ausblenden': OS },
              k: { X: function () { fav(sel); }, Y: null, L1: null, R1: null, START: null } },
     '3.6': { k: { START: 'back', X: null, Y: null, L1: null, R1: null } },
@@ -444,6 +444,7 @@
     if (t) t.nodeValue = label;
     delete c.dataset.had; c.style.outline = 'none';
     src.parentNode.insertBefore(c, before ? src : src.nextSibling);
+    if (!TOP) { src.parentNode.style.overflowY = 'auto'; src.parentNode.style.minHeight = '0'; src.parentNode.style.flex = '1 1 0'; }
   }
   function lookup(kind, name) {
     var n = NAV[cur] || {}, g = PG[cur.split('.')[0]] || {};
@@ -497,8 +498,8 @@
     }
     var t = lookup('k', k);
     if ((k === 'L2' || k === 'R2') && root._switch) { root._switch(k === 'R2' ? 1 : -1); return; }
-    if (root.dataset.mix && (k === 'L1' || k === 'R1')) {
-      var T = ['home', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 2)) % 3];
+    if (root.dataset.mix && cur !== '3.3' && cur !== 'acc' && (k === 'L1' || k === 'R1')) {
+      var T = ['home', '3.1', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 3 : cur === '3.7' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 3)) % 4];
       snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
     }
     if (k === 'A' && root.dataset.mix) { act(foc); return; }
@@ -561,7 +562,7 @@
   function mxNav(tab) {
     function p(t, act, on) { return '<button type="button" class="mx-pill' + (on ? ' on' : '') + '" data-act="' + act + '">' + t + '</button>'; }
     var upd = st.upd && st.upd.available ? '<button type="button" class="mx-pill on" data-act="go:6.2" style="margin-left:auto">' + mi('down', 18, 2.2) + 'Update da</button>' : '';
-    return '<div class="mx-nav"><span class="mx-pill mx-clock" data-live="time">' + esc(st.time || '') + '</span>' + p('Start', 'home', tab === 0) + p('Bibliothek', 'swap:3.7', tab === 1) + p('Favoriten', 'swap:3.4', tab === 2) + p('System', 'go:5.1', false) + upd
+    return '<div class="mx-nav"><span class="mx-pill mx-clock" data-live="time">' + esc(st.time || '') + '</span>' + p('Start', 'home', tab === 0) + p('Spiele', 'swap:3.1', tab === 1) + p('Apps', 'swap:3.7', tab === 3) + p('Favoriten', 'swap:3.4', tab === 2) + p('System', 'go:5.1', false) + upd
       + '<span class="mx-pill" style="' + (upd ? '' : 'margin-left:auto;') + 'gap:10px;font-size:14px">' + (st.wifi ? mi('wifi', 18) : '') + mi('bat', 20) + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>';
   }
   function mxKeys(list) {
@@ -572,21 +573,21 @@
     return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs"></div>' + mxNav(0)
       + '<div class="mx-hero"><div class="mx-ico"><img id="mx-icon" alt=""></div><span class="mx-tag" id="mx-label"></span><div class="mx-title" id="mx-title"></div><div class="mx-meta"><span id="mx-meta"></span><span class="mx-dots" id="mx-dots"></span></div>'
       + '<div style="display:flex;gap:10px;margin-top:2px"><button type="button" id="mx-play" class="mx-play" data-act="launch" data-first="1">' + mi('play', 20) + 'Starten</button><button type="button" class="mx-ghost" data-act="details">Details</button></div></div>'
-      + '<div class="mx-side"><div class="mx-tile" style="grid-column:1/3;' + GLASS + '"><div class="mx-h">Zuletzt geöffnet<button type="button" class="mx-link" data-act="swap:3.7">Alle ' + apps.length + ' →</button></div><div id="mx-recent" style="display:flex;gap:10px"></div></div>'
+      + '<div class="mx-side"><div class="mx-tile" style="grid-column:1/3;' + GLASS + '"><div class="mx-h">Zuletzt geöffnet<button type="button" class="mx-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + apps.length + ' →</button></div><div id="mx-recent" style="display:flex;gap:10px"></div></div>'
       + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Akku</div><div class="mx-n">' + bar + ' %</div><div class="mx-s" style="margin-top:2px">' + esc(st.temp || '') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + bar + '%;background:' + (bar <= 15 ? '#FF5D5D' : LIME) + '"></i></div></div>'
       + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Speicher</div><div class="mx-n">' + esc(st.free || '–') + '</div><div class="mx-s" style="margin-top:2px">frei von ' + esc(st.total || '–') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + Math.round(used / total * 100) + '%;background:#fff"></i></div></div></div>'
       + mxKeys([['A', 'Auswählen'], ['X', 'Details'], ['Y', 'Bibliothek'], ['L2 R2', 'App wechseln'], ['L1 R1', 'Reiter']]) + '</div>';
   }
   function mxHomeBind() {
-    var list = apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || a.label.localeCompare(b.label); }).slice(0, 8), bgs = document.getElementById('mx-bgs');
+    var list = apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || (b.game ? 1 : 0) - (a.game ? 1 : 0) || a.label.localeCompare(b.label); }).slice(0, 8), bgs = document.getElementById('mx-bgs');
     hidx = Math.max(0, Math.min(hidx, list.length - 1));
     function paint(first) {
       var a = list[hidx]; if (!a) return; select(a);
       var old = bgs.lastElementChild, box = document.createElement('div'); box.innerHTML = mxBg(a); var bg = box.firstElementChild;
       bgs.appendChild(bg); if (!first) { bg.style.opacity = '0'; bg.getBoundingClientRect(); bg.style.opacity = '1'; }
       if (old) setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 900);
-      document.getElementById('mx-icon').src = img(a, 'icon');
-      document.getElementById('mx-label').textContent = (a.fav ? 'FAVORIT' : 'APP') + (a.last ? ' · ZULETZT GEÖFFNET' : '');
+      var ico = document.getElementById('mx-icon'); ico.parentNode.style.display = a.game && !a.cov ? 'none' : ''; ico.parentNode.className = a.game ? 'mx-ico cover' : 'mx-ico'; if (!a.game || a.cov) ico.src = img(a, 'icon');
+      document.getElementById('mx-label').textContent = (a.game ? a.sys.toUpperCase() : a.fav ? 'FAVORIT' : 'APP') + (a.last ? ' · ZULETZT ' + (a.game ? 'GESPIELT' : 'GEÖFFNET') : '');
       var t = document.getElementById('mx-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 20 ? '34px' : a.label.length > 12 ? '44px' : '56px';
       document.getElementById('mx-meta').textContent = a.last ? 'Zuletzt am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht geöffnet';
       document.getElementById('mx-dots').innerHTML = list.map(function (x, i) { return '<i' + (i === hidx ? ' class="on"' : '') + '></i>'; }).join('');
@@ -594,24 +595,48 @@
     }
     paint(true);
     document.getElementById('mx-recent').innerHTML = list.filter(function (x, i) { return i !== hidx; }).slice(0, 3).map(function (b) {
-      return '<button type="button" class="mx-mini" data-act="launch:' + esc(b.key) + '" data-key="' + esc(b.key) + '"><span style="background:radial-gradient(circle at 30% 20%,hsl(' + hue(b) + ',55%,38%),hsl(' + (hue(b) + 40) % 360 + ',50%,18%))"><img src="' + img(b, 'icon') + '" alt=""></span><em>' + esc(b.label) + '</em></button>';
+      return '<button type="button" class="mx-mini" data-act="launch:' + esc(b.key) + '" data-key="' + esc(b.key) + '"><span style="background:radial-gradient(circle at 30% 20%,hsl(' + hue(b) + ',55%,38%),hsl(' + (hue(b) + 40) % 360 + ',50%,18%))">' + (b.game && !b.cov ? '<b>' + esc(b.sysid.toUpperCase()) + '</b>' : '<img' + (b.game ? ' class="full"' : '') + ' src="' + img(b, 'icon') + '" alt="">') + '</span><em>' + esc(b.label) + '</em></button>';
     }).join('');
     root._switch = function (d) { if (list.length < 2) return; hidx = (hidx + d + list.length) % list.length; paint(false); snd('fokus'); };
     root._switchOn = function () { return false; };
   }
   function mxLib() {
-    var favs = cur === '3.4', list = apps.slice();
-    if (favs) list = list.filter(function (a) { return a.fav; });
-    else if (pref('sort', 'last') === 'last') list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
+    var favs = cur === '3.4', find = cur === '3.3', gamesTab = cur === '3.1' || cur === '3.2', list = apps.slice(), chips = '';
+    if (find) { var ql = query.toLowerCase(); list = list.filter(function (a) { return !ql || a.label.toLowerCase().indexOf(ql) >= 0; }); }
+    else if (favs) list = list.filter(function (a) { return a.fav; });
+    else if (gamesTab) {
+      list = list.filter(function (a) { return a.game; });
+      var ids = [], f = pref('sysf', '');
+      list.forEach(function (a) { if (ids.indexOf(a.sysid) < 0) ids.push(a.sysid); });
+      if (ids.indexOf(f) < 0) f = '';
+      if (ids.length > 1) chips = [''].concat(ids).map(function (id) { return '<button type="button" class="mx-chip' + (id === f ? ' on' : '') + '" data-act="sys:' + id + '">' + (id ? esc(id.toUpperCase()) : 'Alle') + '</button>'; }).join('');
+      rootSys = [''].concat(ids);
+      if (f) list = list.filter(function (a) { return a.sysid === f; });
+    } else list = list.filter(function (a) { return !a.game; });
+    if (!find && !favs && pref('sort', 'last') === 'last') list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
     var cards = list.map(function (a, i) {
       var h = hue(a);
       return '<button type="button" class="mx-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 28 + 'ms;background:radial-gradient(circle at 28% 18%,hsl(' + h + ',55%,36%),hsl(' + (h + 40) % 360 + ',50%,16%))">'
-        + (a.img ? '<img class="mx-cover" src="' + img(a, 'image') + '" alt="">' : '<img class="mx-cico" src="' + img(a, 'icon') + '" alt="">') + (a.fav ? '<span class="mx-fav">' + mi('star', 14, 2.2) + '</span>' : '') + '<em>' + esc(a.label) + '</em></button>';
+        + (a.game ? (a.cov ? '<img class="mx-cover" src="' + img(a, 'icon') + '" alt=""><span class="mx-shade"></span>' : '<b class="mx-big">' + esc(a.sysid.toUpperCase()) + '</b>') + '<span class="mx-sysb">' + esc(a.sysid.toUpperCase()) + '</span>'
+          : (a.img ? '<img class="mx-cover" src="' + img(a, 'image') + '" alt="">' : '<img class="mx-cico" src="' + img(a, 'icon') + '" alt="">'))
+        + (a.fav ? '<span class="mx-fav">' + mi('star', 14, 2.2) + '</span>' : '') + '<em>' + esc(a.label) + '</em></button>';
     }).join('');
-    if (!list.length) cards = '<div style="grid-column:1/-1;padding:40px 0;font-size:17px;color:rgba(255,255,255,.6)">' + (favs ? 'Noch keine Favoriten. Start auf einer App setzt einen.' : 'Keine Apps gefunden.') + '</div>';
-    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(favs ? 2 : 1)
-      + '<div class="mx-lhead"><div class="mx-count">' + list.length + (favs ? ' Favoriten' : ' Apps') + '</div>' + (favs ? '' : '<button type="button" class="mx-chip" data-act="sort">' + (pref('sort', 'last') === 'last' ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + '<button type="button" class="mx-chip" data-act="go:3.3">' + mi('search', 16, 2.2) + 'Suche</button></div>'
-      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit'], ['L1 R1', 'Reiter'], ['B', 'Start']]) + '</div>';
+    if (!list.length) {
+      if (gamesTab && !st.files) cards = '<div class="mx-empty"><b>Noch keine Spiele</b>Polarlicht braucht einmal die Erlaubnis, deine Spieleordner zu lesen.<button type="button" class="mx-play" data-act="and:files" data-first="1">Zugriff erlauben</button></div>';
+      else if (gamesTab) cards = '<div class="mx-empty"><b>' + (st.scanning ? 'Suche läuft …' : 'Keine Spiele gefunden') + '</b>Leg deine Spiele in einen Ordner „ROMs“ mit einem Unterordner je System, zum Beispiel ROMs/nds, ROMs/gba oder ROMs/switch. Cover aus ES-DE werden automatisch übernommen.<button type="button" class="mx-play" data-act="rescan" data-first="1">Neu suchen</button></div>';
+      else cards = '<div class="mx-empty"><b>' + (favs ? 'Noch keine Favoriten' : 'Nichts gefunden') + '</b>' + (favs ? 'Start auf einem Spiel oder einer App setzt einen Favoriten.' : '') + '</div>';
+    }
+    if (find) return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(-1)
+      + '<div class="mx-lhead"><div class="mx-find">' + mi('search', 20, 2.2) + '<span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i></i></div><div class="mx-s" style="margin-left:12px">' + list.length + ' Treffer</div></div><div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['B', 'Suche schließen']]) + '</div>';
+    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(favs ? 2 : gamesTab ? 1 : 3)
+      + '<div class="mx-lhead"><div class="mx-count">' + list.length + (favs ? ' Favoriten' : gamesTab ? ' Spiele' : ' Apps') + '</div>' + chips + (favs ? '' : '<button type="button" class="mx-chip" data-act="sort">' + (pref('sort', 'last') === 'last' ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + '<button type="button" class="mx-chip" data-act="go:3.3">' + mi('search', 16, 2.2) + 'Suche</button></div>'
+      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit'], ['L1 R1', 'Reiter']].concat(chips ? [['L2 R2', 'System']] : [])) + '</div>';
+  }
+  var rootSys = [''];
+  function mxLibBind() {
+    if (cur !== '3.1' && cur !== '3.2') return;
+    root._switch = function (d) { if (rootSys.length < 2) return; var i = Math.max(0, rootSys.indexOf(pref('sysf', ''))); J.setPref('sysf', rootSys[(i + d + rootSys.length) % rootSys.length]); snd('ok'); show(cur); };
+    root._switchOn = function () { return false; };
   }
   function mxPanel() {
     function vs(k, n, pct, col) { return '<div class="mx-vs" data-vs="' + k + '"><i style="height:' + pct + '%;background:' + col + '"></i><b>' + pct + '</b><span>' + mi(n, 26, 2.2) + '</span></div>'; }
@@ -619,7 +644,7 @@
     function r(n, a, act, on) { return '<button type="button" class="mx-pr' + (on ? ' on' : '') + '" data-act="' + act + '">' + mi(n, 20) + a + '</button>'; }
     return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + hue(sel) + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
       + '<div style="position:relative;display:flex;gap:12px;flex:1 1 0;min-height:0">' + vs('b', 'sun', st.brightness || 0, '#fff') + vs('v', 'vol', st.volume || 0, LIME)
-      + '<div style="flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;gap:12px">' + t('grid', 'Bibliothek', apps.length + ' Apps', 'go:3.7') + t('wifi', 'WLAN', st.wifi ? 'An' : 'Aus', 'and:wifi', st.wifi ? LIME : '') + t('star', 'Favoriten', apps.filter(function (a) { return a.fav; }).length + ' Apps', 'go:3.4') + t('set', 'System', 'Einstellungen', 'go:5.1') + '</div></div>'
+      + '<div style="flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;gap:12px">' + t('grid', 'Bibliothek', st.games ? st.games + ' Spiele' : (apps.length + ' Apps'), st.games ? 'go:3.1' : 'go:3.7') + t('wifi', 'WLAN', st.wifi ? 'An' : 'Aus', 'and:wifi', st.wifi ? LIME : '') + t('star', 'Favoriten', apps.filter(function (a) { return a.fav; }).length + ' Apps', 'go:3.4') + t('set', 'System', 'Einstellungen', 'go:5.1') + '</div></div>'
       + '<div style="position:relative;display:flex;gap:10px">' + r('bt', 'Bluetooth', 'and:bt', st.bt) + r('plane', 'Flugmodus', 'and:airplane', st.airplane) + r('search', 'Suche', 'go:3.3') + '</div></div>';
   }
   function mxPanelBind() {
@@ -664,8 +689,8 @@
   }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
-    var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.4' || key === '3.7';
-    if (TOP) return home ? [mxHome, mxHomeBind] : lib ? [mxLib, null] : null;
+    var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
+    if (TOP) return home ? [mxHome, mxHomeBind] : lib ? [mxLib, mxLibBind] : null;
     return home || lib || key === '2.3' ? [mxPanel, mxPanelBind] : null;
   }
   function doAct(a) {
@@ -676,6 +701,8 @@
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
     else if (k === 'acc') { snd('ok'); setAcc(v); }
+    else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }
+    else if (k === 'rescan') { snd('ok'); J.rescan(); note('Suche läuft …'); }
     else if (k === 'and') run('@' + v);
     else if (k === 'sort') { J.setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
   }
@@ -708,14 +735,22 @@
       if (art && sel && sel.img) { var pic = document.createElement('img'); pic.src = img(sel, 'image'); pic.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover'; root.replaceChild(pic, art); }
       else swapArt();
     }
-    fill(); wall(); collect(); applyStates(); fit();
+    fill();
+    if (key === '7.2') {
+      if (!(st.upd && st.upd.available)) qa('div', root).filter(isRow).forEach(function (r) { if (labelOf(r) === 'Polarlicht') r.parentNode.removeChild(r); });
+      var left = qa('div', root).filter(isRow);
+      if (TOP && !left.length) { var none = document.createElement('div'); none.style.cssText = 'position:absolute;right:44px;top:120px;width:500px;font:600 17px Outfit,sans-serif;color:rgba(255,255,255,.6)'; none.textContent = 'Keine Benachrichtigungen.'; root.appendChild(none); }
+    }
+    qa('[aria-label="Farbstreifen"] > div', root).forEach(function (d) { d.style.background = 'var(--acc)'; });
+    var oldNote = document.getElementById('pl-note'); if (oldNote) oldNote.style.display = 'none';
+    wall(); collect(); applyStates(); fit();
     if (!TOP) { bindTouch(); return; }
     items.forEach(function (el) { el.addEventListener('click', function () { setFocus(el, true); act(el); }); });
     if (n.enter) snd(n.enter);
     if (n.enter0) n.enter0();
     if (n.note) later(600, function () { note(typeof n.note === 'function' ? n.note() : n.note); });
     if (n.auto) later(n.auto[0], function () { var t = n.auto[1]; if (typeof t === 'function') t(); else if (t === 'back') J.back(); else J.swap(t); });
-    if (key === '7.2' && !(st.upd && st.upd.available)) qa('div', root).filter(isRow).forEach(function (r) { if (labelOf(r) === 'Polarlicht') r.parentNode.removeChild(r); });
+
   }
   function bindTouch() {
     items.forEach(function (el) {
@@ -767,6 +802,7 @@
   function stub() {
     var P = {}, stack = [], now = null;
     var A = ['Dateien', 'Kamera', 'Dolphin', 'RetroArch', 'Steam Link', 'YouTube', 'Einstellungen', 'Browser', 'Galerie', 'Musik', 'Uhr', 'Rechner'].map(function (l, i) { return { label: l, key: 'p' + i + '/c', fav: i === 2 || i === 3, last: i < 4 ? 1795000000000 - i * 86400000 : 0, img: false }; });
+    [['Pokémon SoulSilver', 'nds', 'Nintendo DS', 1], ['Emerald Rogue', 'gba', 'Nintendo Game Boy Advance', 0], ['Wind Waker', 'gc', 'Nintendo GameCube', 0], ['Tears of the Kingdom', 'switch', 'Nintendo Switch', 1]].forEach(function (g, i) { if (/nogames/.test(location.search)) return; A.push({ label: g[0], key: 'g:/roms/' + g[1] + '/' + i, fav: i === 0, last: g[3] ? 1795400000000 + i : 0, img: false, cov: false, game: true, sys: g[2], sysid: g[1] }); });
     function to(k) { if (k === 'home') { stack = []; k = '2.2'; } now = k; window.plShow(k); if (window.parent !== window) window.parent.postMessage({ pl: k }, '*'); }
     window.addEventListener('message', function (e) { if (e.data && e.data.pl && e.data.pl !== now) { now = e.data.pl; window.plShow(now); } });
     window.addEventListener('keydown', function (e) {
@@ -776,8 +812,8 @@
     setTimeout(function () { to((/s=([\d.a-c]+)/.exec(location.search) || [0, '2.2'])[1]); }, 0);
     return {
       html: function (n) { var x = new XMLHttpRequest(); x.open('GET', 's/' + n + '.html', false); x.send(); return x.status === 200 || x.status === 0 ? x.responseText : ''; },
-      state: function () { var d = new Date(); return JSON.stringify({ time: d.toTimeString().slice(0, 5), date: d.toLocaleDateString('de-DE'), weekday: 'Dienstag', battery: 87, version: '0.4.0 · Build 6', tz: 'Europe/Berlin', model: 'AYN Thor', region: 'DE', used: '41 GB', total: '256 GB', free: '215 GB', temp: '31 °C', wifi: true, bt: false, airplane: false, brightness: 65, volume: 40, upd: {} }); },
-      apps: function () { return JSON.stringify(A); }, pref: function (k) { return P[k]; }, setPref: function (k, v) { P[k] = v; },
+      state: function () { var d = new Date(); return JSON.stringify({ time: d.toTimeString().slice(0, 5), date: d.toLocaleDateString('de-DE'), weekday: 'Dienstag', battery: 87, version: '0.4.0 · Build 6', tz: 'Europe/Berlin', model: 'AYN Thor', region: 'DE', used: '41 GB', total: '256 GB', free: '215 GB', temp: '31 °C', wifi: true, bt: false, airplane: false, brightness: 65, volume: 40, upd: {}, files: true, games: A.filter(function (a) { return a.game; }).length }); },
+      apps: function () { return JSON.stringify(A); }, rescan: function () {}, pref: function (k) { return P[k]; }, setPref: function (k, v) { P[k] = v; },
       go: function (k) { if (now && k !== 'home') stack.push(now); to(k); }, swap: function (k) { to(k); }, back: function () { to(stack.pop() || 'home'); },
       launch: function (k) { note('Starte ' + k); }, fav: function (k) { A.forEach(function (a) { if (a.key === k) a.fav = !a.fav; }); },
       android: function (w) { note('Android: ' + w); }, setBrightness: function () {}, setVolume: function () {}, updateCheck: function () {}, updateInstall: function () {},
