@@ -21,6 +21,8 @@ final class PanelPresentation extends Presentation {
     interface Host {
         void toggleAllApps();
 
+        void toggleSettings();
+
         void toggleInfo();
 
         void cycleLaunchDisplay();
@@ -66,7 +68,7 @@ final class PanelPresentation extends Presentation {
         root.addView(grid, gridParams);
 
         tile(grid, c, f, "Alle Apps").setOnClickListener(v -> host.toggleAllApps());
-        tile(grid, c, f, "Einstellungen").setOnClickListener(v -> host.openSettings(Settings.ACTION_SETTINGS));
+        tile(grid, c, f, "Einstellungen").setOnClickListener(v -> host.toggleSettings());
         tile(grid, c, f, "WLAN").setOnClickListener(v -> host.openSettings(Settings.ACTION_WIFI_SETTINGS));
         launchTile = tile(grid, c, f, "");
         launchTile.setOnClickListener(v -> {

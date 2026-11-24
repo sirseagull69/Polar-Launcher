@@ -10,8 +10,9 @@ android {
         applicationId "de.selbstgfaltet.polarlicht"
         minSdk 26
         targetSdk 34
-        versionCode 2
-        versionName "0.1.1"
+        // Die Build-Nummer von GitHub ist die Versionsnummer, an der die App Updates erkennt.
+        versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer)
+        versionName "0.2.0"
     }
 
     // Fester Schlüssel, damit sich neue Versionen über alte installieren lassen.

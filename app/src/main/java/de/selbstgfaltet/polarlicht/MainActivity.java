@@ -8,12 +8,16 @@ import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInstaller;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.graphics.drawable.GradientDrawable;
 import android.hardware.display.DisplayManager;
+import android.media.AudioManager;
+import android.net.Uri;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -44,7 +48,7 @@ import java.util.List;
 import java.util.Locale;
 
 /** Startbildschirm im Polarlicht-Look. Läuft auf dem Hauptbildschirm, das Bedienfeld auf dem zweiten. */
-public class MainActivity extends Activity implements PanelPresentation.Host, DisplayManager.DisplayListener {
+public class MainActivity extends Activity implements PanelPresentation.Host, DisplayManager.DisplayListener, Updater.Listener {
     private static final int MATCH = ViewGroup.LayoutParams.MATCH_PARENT;
     private static final int WRAP = ViewGroup.LayoutParams.WRAP_CONTENT;
 
@@ -78,6 +82,30 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     private ListView allList;
     private AllAdapter allAdapter;
     private String shownImage = "";
+    private LinearLayout setLayer;
+    private ListView setList;
+    private SetAdapter setAdapter;
+    private final List<Item> items = new ArrayList<>();
+    private Updater updater;
+
+    /** Eine Zeile der eigenen Einstellungen. */
+    private abstract static class Item {
+        final String label;
+        final boolean adjustable;
+
+        Item(String label, boolean adjustable) {
+            this.label = label;
+            this.adjustable = adjustable;
+        }
+
+        abstract String value();
+
+        void click() {
+        }
+
+        void adjust(int step) {
+        }
+    }
 
     private DisplayManager displayManager;
     private PanelPresentation panel;
@@ -86,6 +114,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         apps = new Apps(this);
+        updater = new Updater(this, this);
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -109,6 +138,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
 
         buildHome(root, size.x);
         buildAll(root);
+        buildSettings(root);
 
         infoView = Ui.mono(this, "", px(11), Ui.TEXT);
         infoView.setBackgroundColor(0xEE0A0D14);
@@ -251,6 +281,197 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         root.addView(allLayer, new FrameLayout.LayoutParams(MATCH, MATCH));
     }
 
+    private void buildSettings(FrameLayout root) {
+        items.add(new Item("Helligkeit", true) {
+            @Override
+            String value() {
+                int v = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 128);
+                return Math.round(v * 100f / 255f) + " %";
+            }
+
+            @Override
+            void adjust(int step) {
+                if (!Settings.System.canWrite(MainActivity.this)) {
+                    Toast.makeText(MainActivity.this, "Bitte einmal erlauben, dass Polarlicht die Helligkeit ändern darf.", Toast.LENGTH_LONG).show();
+                    try {
+                        startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + getPackageName())));
+                    } catch (RuntimeException ex) {
+                        openSettings(Settings.ACTION_DISPLAY_SETTINGS);
+                    }
+                    return;
+                }
+                int v = Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 128);
+                v = Math.max(8, Math.min(255, v + step * 25));
+                Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
+                Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, v);
+            }
+        });
+        items.add(new Item("Lautstärke", true) {
+            @Override
+            String value() {
+                AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                int max = Math.max(1, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+                return Math.round(am.getStreamVolume(AudioManager.STREAM_MUSIC) * 100f / max) + " %";
+            }
+
+            @Override
+            void adjust(int step) {
+                AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                am.adjustStreamVolume(AudioManager.STREAM_MUSIC, step > 0 ? AudioManager.ADJUST_RAISE : AudioManager.ADJUST_LOWER, 0);
+            }
+        });
+        items.add(new Item("WLAN", false) {
+            @Override
+            String value() {
+                return "öffnen";
+            }
+
+            @Override
+            void click() {
+                openSettings(Build.VERSION.SDK_INT >= 29 ? "android.settings.panel.action.WIFI" : Settings.ACTION_WIFI_SETTINGS);
+            }
+        });
+        items.add(new Item("Bluetooth", false) {
+            @Override
+            String value() {
+                return "öffnen";
+            }
+
+            @Override
+            void click() {
+                openSettings(Settings.ACTION_BLUETOOTH_SETTINGS);
+            }
+        });
+        items.add(new Item("Apps starten auf", false) {
+            @Override
+            String value() {
+                return launchLabel();
+            }
+
+            @Override
+            void click() {
+                cycleLaunchDisplay();
+            }
+        });
+        items.add(new Item("Als Startbildschirm festlegen", false) {
+            @Override
+            String value() {
+                return "öffnen";
+            }
+
+            @Override
+            void click() {
+                openSettings(Settings.ACTION_HOME_SETTINGS);
+            }
+        });
+        items.add(new Item("Update", false) {
+            @Override
+            String value() {
+                return updater.status();
+            }
+
+            @Override
+            void click() {
+                updater.clearMessage();
+                if (updater.available()) {
+                    updater.install(MainActivity.this);
+                } else {
+                    updater.check(true);
+                }
+            }
+        });
+        items.add(new Item("Bildschirm-Info", false) {
+            @Override
+            String value() {
+                return "anzeigen";
+            }
+
+            @Override
+            void click() {
+                toggleInfo();
+            }
+        });
+        items.add(new Item("Android-Einstellungen", false) {
+            @Override
+            String value() {
+                return "alles Weitere";
+            }
+
+            @Override
+            void click() {
+                openSettings(Settings.ACTION_SETTINGS);
+            }
+        });
+
+        setLayer = new LinearLayout(this);
+        setLayer.setOrientation(LinearLayout.VERTICAL);
+        setLayer.setBackgroundColor(Ui.BG);
+        setLayer.setPadding(px(30), px(20), px(30), 0);
+        setLayer.setVisibility(View.GONE);
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.BOTTOM);
+        head.addView(Ui.text(this, "Einstellungen", px(26), Ui.TEXT, 700), new LinearLayout.LayoutParams(0, WRAP, 1f));
+        head.addView(Ui.mono(this, "A wählen · links/rechts ändern · B zurück", px(11), Ui.MUTED), new LinearLayout.LayoutParams(WRAP, WRAP));
+        setLayer.addView(head, new LinearLayout.LayoutParams(MATCH, WRAP));
+
+        setList = new ListView(this);
+        setList.setDivider(null);
+        setList.setSelector(Ui.round(Ui.SURFACE, px(10), 0, 0));
+        setList.setVerticalScrollBarEnabled(false);
+        setAdapter = new SetAdapter();
+        setList.setAdapter(setAdapter);
+        setList.setOnItemClickListener((parent, view, position, id) -> {
+            Item item = items.get(position);
+            if (item.adjustable) {
+                item.adjust(1);
+            } else {
+                item.click();
+            }
+            setAdapter.notifyDataSetChanged();
+            if (panel != null) {
+                panel.refresh();
+            }
+        });
+        LinearLayout.LayoutParams listParams = new LinearLayout.LayoutParams(MATCH, 0, 1f);
+        listParams.topMargin = px(10);
+        setLayer.addView(setList, listParams);
+        root.addView(setLayer, new FrameLayout.LayoutParams(MATCH, MATCH));
+    }
+
+    private boolean settingsOpen() {
+        return setLayer.getVisibility() == View.VISIBLE;
+    }
+
+    private void showSettings(boolean show) {
+        if (show) {
+            allLayer.setVisibility(View.GONE);
+            homeLayer.setVisibility(View.GONE);
+            setLayer.setVisibility(View.VISIBLE);
+            setAdapter.notifyDataSetChanged();
+            setList.requestFocus();
+            setList.setSelection(0);
+        } else {
+            setLayer.setVisibility(View.GONE);
+            homeLayer.setVisibility(View.VISIBLE);
+            render();
+        }
+    }
+
+    @Override
+    public void toggleSettings() {
+        showSettings(!settingsOpen());
+    }
+
+    @Override
+    public void onUpdateState() {
+        updateStatus();
+        if (setAdapter != null) {
+            setAdapter.notifyDataSetChanged();
+        }
+    }
+
     // ---------- Lebenszyklus ----------
 
     @Override
@@ -271,6 +492,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         tick.run();
         displayManager.registerDisplayListener(this, handler);
         showPanel();
+        updater.check(false);
     }
 
     @Override
@@ -289,7 +511,26 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        if (allLayer.getVisibility() == View.VISIBLE) {
+        if (Updater.ACTION_INSTALL_STATUS.equals(intent.getAction())) {
+            int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+            if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                Intent confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+                if (confirm != null) {
+                    try {
+                        startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                    } catch (RuntimeException ex) {
+                        updater.fail("Android hat die Installation nicht geöffnet.");
+                    }
+                }
+            } else if (status != PackageInstaller.STATUS_SUCCESS) {
+                String why = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                updater.fail("Update nicht installiert" + (why == null ? "" : ": " + why));
+            }
+            return;
+        }
+        if (settingsOpen()) {
+            showSettings(false);
+        } else if (allLayer.getVisibility() == View.VISIBLE) {
             showAll(false);
         } else {
             sel = 0;
@@ -302,6 +543,8 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     public void onBackPressed() {
         if (infoView.getVisibility() == View.VISIBLE) {
             infoView.setVisibility(View.GONE);
+        } else if (settingsOpen()) {
+            showSettings(false);
         } else if (allLayer.getVisibility() == View.VISIBLE) {
             showAll(false);
         }
@@ -406,13 +649,14 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
 
     private void updateStatus() {
         clockView.setText(new SimpleDateFormat("HH:mm · EEE d.M.", Locale.GERMANY).format(new Date()));
-        batteryView.setText(battery() + " %");
+        batteryView.setText((updater.available() ? "Update da · " : "") + battery() + " %");
         if (panel != null) {
             panel.refresh();
         }
     }
 
     private void showAll(boolean show) {
+        setLayer.setVisibility(View.GONE);
         allLayer.setVisibility(show ? View.VISIBLE : View.GONE);
         homeLayer.setVisibility(show ? View.GONE : View.VISIBLE);
         if (show) {
@@ -471,7 +715,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     // ---------- Tasten und Stick ----------
 
     private void move(int step) {
-        if (home.isEmpty() || allLayer.getVisibility() == View.VISIBLE) {
+        if (home.isEmpty() || allLayer.getVisibility() == View.VISIBLE || settingsOpen()) {
             return;
         }
         sel = (sel + step + home.size()) % home.size();
@@ -481,6 +725,43 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         boolean all = allLayer.getVisibility() == View.VISIBLE;
+        if (settingsOpen()) {
+            int position = setList.getSelectedItemPosition();
+            Item item = position >= 0 && position < items.size() ? items.get(position) : null;
+            switch (keyCode) {
+                case KeyEvent.KEYCODE_DPAD_LEFT:
+                case KeyEvent.KEYCODE_DPAD_RIGHT:
+                    if (item != null && item.adjustable) {
+                        item.adjust(keyCode == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1);
+                        setAdapter.notifyDataSetChanged();
+                    }
+                    return true;
+                case KeyEvent.KEYCODE_BUTTON_A:
+                case KeyEvent.KEYCODE_ENTER:
+                case KeyEvent.KEYCODE_DPAD_CENTER:
+                    if (item != null) {
+                        if (item.adjustable) {
+                            item.adjust(1);
+                        } else {
+                            item.click();
+                        }
+                        setAdapter.notifyDataSetChanged();
+                        if (panel != null) {
+                            panel.refresh();
+                        }
+                    }
+                    return true;
+                case KeyEvent.KEYCODE_BUTTON_B:
+                case KeyEvent.KEYCODE_BUTTON_START:
+                    showSettings(false);
+                    return true;
+                case KeyEvent.KEYCODE_BUTTON_SELECT:
+                    toggleInfo();
+                    return true;
+                default:
+                    return super.onKeyDown(keyCode, event);
+            }
+        }
         switch (keyCode) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
                 if (!all) {
@@ -519,6 +800,9 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
                 return true;
             case KeyEvent.KEYCODE_BUTTON_SELECT:
                 toggleInfo();
+                return true;
+            case KeyEvent.KEYCODE_BUTTON_START:
+                showSettings(true);
                 return true;
             default:
                 break;
@@ -678,6 +962,40 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
             startActivity(new Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (RuntimeException ex) {
             Toast.makeText(this, "Das ließ sich nicht öffnen.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // ---------- Liste der eigenen Einstellungen ----------
+
+    private final class SetAdapter extends BaseAdapter {
+        @Override
+        public int getCount() {
+            return items.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return items.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convert, ViewGroup parent) {
+            Item item = items.get(position);
+            LinearLayout row = new LinearLayout(MainActivity.this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(px(12), 0, px(12), 0);
+            row.setMinimumHeight(px(44));
+            TextView name = Ui.text(MainActivity.this, item.label, px(19), Ui.TEXT, 500);
+            row.addView(name, new LinearLayout.LayoutParams(0, WRAP, 1f));
+            String value = item.adjustable ? "‹  " + item.value() + "  ›" : item.value();
+            row.addView(Ui.mono(MainActivity.this, value, px(12), Ui.MUTED), new LinearLayout.LayoutParams(WRAP, WRAP));
+            return row;
         }
     }
 
