@@ -23,7 +23,9 @@ img{display:block}
 @keyframes mx-ring{0%,100%{outline-offset:4px}50%{outline-offset:7px}}
 .mx{position:relative;overflow:hidden;background:#0b0b10;color:#fff;font-family:Outfit,system-ui,sans-serif}
 .mx button{border:0;color:inherit;font-family:inherit;cursor:pointer;transition:transform .18s ease,background .25s ease}
-.mx-foc{animation:mx-ring 2.6s ease-in-out infinite}
+.mx-foc{animation:mx-ring 2.6s ease-in-out infinite;transform:scale(1.05);box-shadow:0 14px 40px rgba(0,0,0,.55);z-index:3;position:relative}
+.mx-nav .mx-foc,.mx-hero .mx-foc,.mx-lhead .mx-foc,.mx-link.mx-foc{position:static}
+.mx-card.mx-foc,.mx-hue.mx-foc{position:absolute}.mx-grid .mx-card.mx-foc{position:relative}
 #mx-bgs,.mx-bg{position:absolute;inset:0}
 .mx-bg{background:#0b0b10;overflow:hidden;transition:opacity .8s ease}
 .mx-bg i{position:absolute;width:760px;height:760px;border-radius:50%;animation:mx-d1 44s ease-in-out infinite;will-change:transform}

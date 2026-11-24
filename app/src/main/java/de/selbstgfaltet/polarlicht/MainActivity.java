@@ -78,6 +78,8 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     private String lastKey = "";
     private long lastKeyAt = 0L;
     private String stickDir = "";
+    private boolean l2Down = false;
+    private boolean r2Down = false;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -255,7 +257,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
 
     private void key(String name) {
         long now = System.currentTimeMillis();
-        if (name.equals(lastKey) && now - lastKeyAt < 45) {
+        if (name.equals(lastKey) && now - lastKeyAt < 110) {
             return;
         }
         lastKey = name;
@@ -630,8 +632,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                     longFired = true;
                     key(k.equals("SELECT") ? "INDEX" : "STARTLONG");
                 }
-            } else if (e.getRepeatCount() == 0 || (Character.isLowerCase(k.charAt(0)) && e.getRepeatCount() % 2 == 0)) {
-                lastKey = "";
+            } else if (e.getRepeatCount() == 0 || (Character.isLowerCase(k.charAt(0)) && e.getRepeatCount() >= 6 && e.getRepeatCount() % 3 == 0)) {
                 key(k);
             }
         } else if (e.getAction() == KeyEvent.ACTION_UP && hold && !longFired) {
@@ -649,19 +650,43 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                 x = e.getAxisValue(MotionEvent.AXIS_X);
                 y = e.getAxisValue(MotionEvent.AXIS_Y);
             }
-            String dir = Math.abs(x) > Math.abs(y) ? (x > 0.6f ? "right" : x < -0.6f ? "left" : "") : (y > 0.6f ? "down" : y < -0.6f ? "up" : "");
+            String dir = "";
+            if (Math.abs(x) > 0.65f && Math.abs(x) > Math.abs(y) * 1.5f) {
+                dir = x > 0 ? "right" : "left";
+            } else if (Math.abs(y) > 0.65f && Math.abs(y) > Math.abs(x) * 1.5f) {
+                dir = y > 0 ? "down" : "up";
+            } else if (Math.abs(x) > 0.4f || Math.abs(y) > 0.4f) {
+                dir = stickDir; // zwischen den Richtungen: bei der alten bleiben, nicht springen
+            }
             if (!dir.equals(stickDir)) {
                 stickDir = dir;
                 ui.removeCallbacks(stickRepeat);
                 if (!dir.isEmpty()) {
-                    lastKey = "";
                     key(dir);
-                    ui.postDelayed(stickRepeat, 380);
+                    ui.postDelayed(stickRepeat, 450);
                 }
             }
+            trigger(e.getAxisValue(MotionEvent.AXIS_LTRIGGER) + e.getAxisValue(MotionEvent.AXIS_BRAKE), true);
+            trigger(e.getAxisValue(MotionEvent.AXIS_RTRIGGER) + e.getAxisValue(MotionEvent.AXIS_GAS), false);
             return true;
         }
         return super.onGenericMotionEvent(e);
+    }
+
+    /** Die Schultertasten hinten kommen bei manchen Geräten nur als Achse an. */
+    private void trigger(float value, boolean left) {
+        boolean down = value > 0.5f;
+        if (left && down != l2Down) {
+            l2Down = down;
+            if (down) {
+                key("L2");
+            }
+        } else if (!left && down != r2Down) {
+            r2Down = down;
+            if (down) {
+                key("R2");
+            }
+        }
     }
 
     private final Runnable stickRepeat = new Runnable() {
@@ -670,7 +695,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             if (!stickDir.isEmpty()) {
                 lastKey = "";
                 key(stickDir);
-                ui.postDelayed(this, 140);
+                ui.postDelayed(this, 190);
             }
         }
     };

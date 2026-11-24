@@ -189,11 +189,11 @@
 
   /* ---------- Fokus ---------- */
   function ring(el, on) {
-    if (on && root.dataset.mix) { el.style.outline = '3px solid ' + LIME; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
+    if (on && root.dataset.mix) { el.style.outline = '3px solid #fff'; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
     if (!on && root.dataset.mix) { el.style.outline = 'none'; el.classList.remove('mx-foc'); return; }
     if (on) {
-      el.style.outline = '3px solid var(--acc)'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 2.6s ease-in-out infinite';
-      if (el.dataset.base) el.style.background = '#22222e';
+      el.style.outline = '3px solid #fff'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 2.6s ease-in-out infinite';
+      if (el.dataset.base) el.style.background = '#30303f';
     } else {
       el.style.outline = 'none'; el.style.animation = 'none';
       if (el.dataset.base) el.style.background = el.dataset.base;
@@ -223,14 +223,19 @@
   }
   function move(dir) {
     if (!foc) { setFocus(items[0]); return; }
-    var a = foc.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2, best = null, bs = 1e9;
+    var a = foc.getBoundingClientRect(), horiz = dir === 'left' || dir === 'right', best = null, bs = 1e9;
     items.forEach(function (el) {
       if (el === foc) return;
-      var b = el.getBoundingClientRect(), dx = b.left + b.width / 2 - ax, dy = b.top + b.height / 2 - ay, p, s;
-      if (dir === 'left') { p = -dx; s = Math.abs(dy); } else if (dir === 'right') { p = dx; s = Math.abs(dy); }
-      else if (dir === 'up') { p = -dy; s = Math.abs(dx); } else { p = dy; s = Math.abs(dx); }
-      if (p < 4) return;
-      var score = p + s * 2.5; if (score < bs) { bs = score; best = el; }
+      var b = el.getBoundingClientRect(), p, s, o;
+      if (dir === 'left') p = a.left - b.right; else if (dir === 'right') p = b.left - a.right; else if (dir === 'up') p = a.top - b.bottom; else p = b.top - a.bottom;
+      /* muss wirklich in der Richtung liegen: höchstens ein Viertel Überlappung */
+      if (p < -Math.min(horiz ? a.width : a.height, horiz ? b.width : b.height) * 0.25) return;
+      if (horiz) { o = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top); s = o > 0 ? 0 : -o + 1; }
+      else { o = Math.min(a.right, b.right) - Math.max(a.left, b.left); s = o > 0 ? 0 : -o + 1; }
+      var cx = Math.abs((b.left + b.right) - (a.left + a.right)) / 2, cy = Math.abs((b.top + b.bottom) - (a.top + a.bottom)) / 2;
+      var score = Math.max(p, 0) + s * 4 + (horiz ? cy : cx) * 0.15;
+      if (s > 0 && s > Math.max(p, 0) * 2 + 60) return;
+      if (score < bs) { bs = score; best = el; }
     });
     if (best) setFocus(best);
   }
@@ -491,6 +496,7 @@
       move(k); return;
     }
     var t = lookup('k', k);
+    if ((k === 'L2' || k === 'R2') && root._switch) { root._switch(k === 'R2' ? 1 : -1); return; }
     if (root.dataset.mix && (k === 'L1' || k === 'R1')) {
       var T = ['home', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 2)) % 3];
       snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
@@ -569,7 +575,7 @@
       + '<div class="mx-side"><div class="mx-tile" style="grid-column:1/3;' + GLASS + '"><div class="mx-h">Zuletzt geöffnet<button type="button" class="mx-link" data-act="swap:3.7">Alle ' + apps.length + ' →</button></div><div id="mx-recent" style="display:flex;gap:10px"></div></div>'
       + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Akku</div><div class="mx-n">' + bar + ' %</div><div class="mx-s" style="margin-top:2px">' + esc(st.temp || '') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + bar + '%;background:' + (bar <= 15 ? '#FF5D5D' : LIME) + '"></i></div></div>'
       + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Speicher</div><div class="mx-n">' + esc(st.free || '–') + '</div><div class="mx-s" style="margin-top:2px">frei von ' + esc(st.total || '–') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + Math.round(used / total * 100) + '%;background:#fff"></i></div></div></div>'
-      + mxKeys([['A', 'Auswählen'], ['X', 'Details'], ['Y', 'Bibliothek'], ['← →', 'App wechseln'], ['L1 R1', 'Reiter']]) + '</div>';
+      + mxKeys([['A', 'Auswählen'], ['X', 'Details'], ['Y', 'Bibliothek'], ['L2 R2', 'App wechseln'], ['L1 R1', 'Reiter']]) + '</div>';
   }
   function mxHomeBind() {
     var list = apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || a.label.localeCompare(b.label); }).slice(0, 8), bgs = document.getElementById('mx-bgs');
@@ -591,7 +597,7 @@
       return '<button type="button" class="mx-mini" data-act="launch:' + esc(b.key) + '" data-key="' + esc(b.key) + '"><span style="background:radial-gradient(circle at 30% 20%,hsl(' + hue(b) + ',55%,38%),hsl(' + (hue(b) + 40) % 360 + ',50%,18%))"><img src="' + img(b, 'icon') + '" alt=""></span><em>' + esc(b.label) + '</em></button>';
     }).join('');
     root._switch = function (d) { if (list.length < 2) return; hidx = (hidx + d + list.length) % list.length; paint(false); snd('fokus'); };
-    root._switchOn = function () { return !foc || foc.id === 'mx-play'; };
+    root._switchOn = function () { return false; };
   }
   function mxLib() {
     var favs = cur === '3.4', list = apps.slice();
@@ -686,9 +692,9 @@
     html = mix ? mix[0]() : skin(html);
     stage.innerHTML = html; root = stage.firstElementChild; foc = null;
     if (mix) root.dataset.mix = '1';
+    if (mix && mix[1]) mix[1]();
     tag();
     if (mix) {
-      if (mix[1]) mix[1]();
       qa('[data-key]', root).forEach(function (el) { el._app = appByKey(el.dataset.key); });
     }
     if (pref('sw:Bewegungen reduzieren', '0') === '1') root.classList.add('pl-still');
