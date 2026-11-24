@@ -1,6 +1,6 @@
 # Polarlicht
 
-Eigener Launcher für den AYN Thor. Version 0.2.0.
+Eigener Launcher für den AYN Thor. Version 0.3.0.
 
 ## Was er kann
 

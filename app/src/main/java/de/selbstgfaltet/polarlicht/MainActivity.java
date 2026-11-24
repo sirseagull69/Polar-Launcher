@@ -65,13 +65,15 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     private List<Apps.Entry> home = new ArrayList<>();
     private int sel = 0;
     private float f = 1f;
+    /** Faktor vom Canvas (oben 960 x 540) auf das Gerät. */
+    private float g = 1f;
     private int stickDir = 0;
 
     private ImageView bgImage;
     private View scrim;
     private LinearLayout homeLayer;
     private LinearLayout allLayer;
-    private LinearLayout bottomRow;
+    private TextView updateCard;
     private TextView clockView;
     private TextView batteryView;
     private TextView labelView;
@@ -121,6 +123,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         Point size = new Point();
         getWindowManager().getDefaultDisplay().getRealSize(size);
         f = Math.min(size.y / 374f, size.x / 664f);
+        g = Math.min(size.y / 540f, size.x / 960f);
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Ui.BG);
@@ -132,7 +135,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
 
         scrim = new View(this);
         scrim.setBackground(new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[] {0xF50A0D14, 0xDB0A0D14, 0x260A0D14}));
+                new int[] {0xFF0A0D14, 0xFF0A0D14, 0x8C0A0D14, 0x1F0A0D14}));
         scrim.setVisibility(View.GONE);
         root.addView(scrim, new FrameLayout.LayoutParams(MATCH, MATCH));
 
@@ -185,66 +188,97 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         return Math.round(design * f);
     }
 
+    private int q(float canvas) {
+        return Math.round(canvas * g);
+    }
+
+    /** Startbildschirm nach Canvas 2.1 / 2.2. */
     private void buildHome(FrameLayout root, int screenWidth) {
         homeLayer = new LinearLayout(this);
         homeLayer.setOrientation(LinearLayout.VERTICAL);
+        homeLayer.setPadding(q(44), q(32), q(44), q(32));
 
         LinearLayout status = new LinearLayout(this);
         status.setOrientation(LinearLayout.HORIZONTAL);
-        status.setPadding(px(30), px(22), px(30), 0);
-        clockView = Ui.mono(this, "", px(12), Ui.TEXT);
-        batteryView = Ui.mono(this, "", px(12), Ui.TEXT);
+        clockView = Ui.mono(this, "", q(11), Ui.MUTED);
+        batteryView = Ui.mono(this, "", q(11), Ui.MUTED);
         status.addView(clockView, new LinearLayout.LayoutParams(0, WRAP, 1f));
         status.addView(batteryView, new LinearLayout.LayoutParams(WRAP, WRAP));
         homeLayer.addView(status, new LinearLayout.LayoutParams(MATCH, WRAP));
 
         homeLayer.addView(new Space(this), new LinearLayout.LayoutParams(MATCH, 0, 1f));
 
-        LinearLayout middle = new LinearLayout(this);
-        middle.setOrientation(LinearLayout.VERTICAL);
-        middle.setPadding(px(30), 0, px(30), 0);
+        labelView = Ui.mono(this, "", q(12), Ui.MUTED);
+        homeLayer.addView(labelView, new LinearLayout.LayoutParams(WRAP, WRAP));
 
-        labelView = Ui.text(this, "", px(14), Ui.MUTED, 500);
-        middle.addView(labelView, new LinearLayout.LayoutParams(WRAP, WRAP));
-
-        nameView = Ui.text(this, "", px(56), Ui.TEXT, 700);
-        nameView.setLetterSpacing(-0.04f);
-        nameView.setLineSpacing(0f, 0.98f);
+        nameView = Ui.text(this, "", q(88), Ui.TEXT, 700);
+        nameView.setLetterSpacing(-0.02f);
+        nameView.setLineSpacing(0f, 1.02f);
         nameView.setMaxLines(2);
         nameView.setEllipsize(TextUtils.TruncateAt.END);
-        nameView.setMaxWidth(Math.round(screenWidth * 0.64f));
+        nameView.setMaxWidth(q(640));
         nameView.setOnClickListener(v -> launchSelected());
         LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(WRAP, WRAP);
-        nameParams.topMargin = px(8);
-        middle.addView(nameView, nameParams);
+        nameParams.topMargin = q(12);
+        homeLayer.addView(nameView, nameParams);
+
+        metaView = Ui.text(this, "", q(17), Ui.MUTED, 500);
+        metaView.setMaxWidth(q(520));
+        LinearLayout.LayoutParams metaParams = new LinearLayout.LayoutParams(WRAP, WRAP);
+        metaParams.topMargin = q(12);
+        homeLayer.addView(metaView, metaParams);
 
         strip = new Ui.Strip(this);
-        LinearLayout.LayoutParams stripParams = new LinearLayout.LayoutParams(px(220), px(6));
-        stripParams.topMargin = px(12);
-        middle.addView(strip, stripParams);
+        LinearLayout.LayoutParams stripParams = new LinearLayout.LayoutParams(q(180), q(8));
+        stripParams.topMargin = q(16);
+        homeLayer.addView(strip, stripParams);
 
-        metaView = Ui.text(this, "", px(15), Ui.MUTED, 400);
-        LinearLayout.LayoutParams metaParams = new LinearLayout.LayoutParams(WRAP, WRAP);
-        metaParams.topMargin = px(10);
-        middle.addView(metaView, metaParams);
-
-        TextView start = Ui.pill(this, "A · Starten", px(16), px(20), px(46));
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        buttons.setGravity(Gravity.CENTER_VERTICAL);
+        TextView start = Ui.text(this, "Starten", q(15), Ui.BG, 700);
+        start.setGravity(Gravity.CENTER);
+        start.setBackground(new Ui.FocusPill(g));
+        start.setPadding(q(29), 0, q(29), 0);
         start.setOnClickListener(v -> launchSelected());
-        LinearLayout.LayoutParams startParams = new LinearLayout.LayoutParams(WRAP, px(46));
-        startParams.topMargin = px(12);
-        middle.addView(start, startParams);
+        buttons.addView(start, new LinearLayout.LayoutParams(WRAP, q(54)));
+        TextView library = Ui.text(this, "Bibliothek", q(15), Ui.TEXT, 700);
+        library.setGravity(Gravity.CENTER);
+        library.setBackground(Ui.round(0x00000000, q(22), Ui.LINE_STRONG, Math.max(1, q(1.5f))));
+        library.setPadding(q(24), 0, q(24), 0);
+        library.setOnClickListener(v -> showAll(true));
+        LinearLayout.LayoutParams libraryParams = new LinearLayout.LayoutParams(WRAP, q(44));
+        libraryParams.leftMargin = q(7);
+        buttons.addView(library, libraryParams);
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(WRAP, WRAP);
+        buttonParams.topMargin = q(19);
+        buttonParams.leftMargin = -q(5);
+        homeLayer.addView(buttons, buttonParams);
 
-        homeLayer.addView(middle, new LinearLayout.LayoutParams(MATCH, WRAP));
         homeLayer.addView(new Space(this), new LinearLayout.LayoutParams(MATCH, 0, 1f));
 
-        bottomRow = new LinearLayout(this);
-        bottomRow.setOrientation(LinearLayout.HORIZONTAL);
-        bottomRow.setGravity(Gravity.CENTER_VERTICAL);
-        bottomRow.setBackgroundColor(0xD10A0D14);
-        bottomRow.setPadding(px(30), 0, px(30), 0);
-        homeLayer.addView(bottomRow, new LinearLayout.LayoutParams(MATCH, px(48)));
+        LinearLayout hints = new LinearLayout(this);
+        hints.setOrientation(LinearLayout.HORIZONTAL);
+        hints.setGravity(Gravity.CENTER_VERTICAL);
+        hints.addView(Ui.hint(this, "A", "Starten", g));
+        hints.addView(Ui.hint(this, "Y", "Bibliothek", g));
+        hints.addView(Ui.hint(this, "Start", "Einstellungen", g));
+        hints.addView(Ui.hint(this, "\u2190 \u2192", "Wechseln", g));
+        homeLayer.addView(hints, new LinearLayout.LayoutParams(WRAP, WRAP));
 
         root.addView(homeLayer, new FrameLayout.LayoutParams(MATCH, MATCH));
+
+        // Einblendung "Update verfügbar" nach Canvas 2.6
+        updateCard = Ui.text(this, "", q(13), Ui.TEXT, 700);
+        updateCard.setBackground(Ui.round(Ui.SURFACE, q(14), Ui.LINE_STRONG, Math.max(1, q(1))));
+        updateCard.setPadding(q(16), q(12), q(16), q(12));
+        updateCard.setLineSpacing(q(3), 1f);
+        updateCard.setVisibility(View.GONE);
+        updateCard.setOnClickListener(v -> showSettings(true));
+        FrameLayout.LayoutParams cardParams = new FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP | Gravity.END);
+        cardParams.topMargin = q(64);
+        cardParams.rightMargin = q(44);
+        root.addView(updateCard, cardParams);
     }
 
     private void buildAll(FrameLayout root) {
@@ -482,7 +516,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
                 | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         apps.reload();
-        home = apps.home();
+        home = firstFive(apps.home());
         if (sel >= home.size()) {
             sel = 0;
         }
@@ -554,43 +588,24 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     // ---------- Anzeige ----------
 
     private void render() {
-        bottomRow.removeAllViews();
         if (home.isEmpty()) {
-            labelView.setText("Keine Apps gefunden");
+            labelView.setText("NOCH NICHTS HIER");
             nameView.setText("Polarlicht");
-            metaView.setText("Y öffnet die App-Liste.");
+            metaView.setText("Y öffnet die Bibliothek mit allen Apps.");
             strip.set(1, 0);
             showImage(null);
             return;
         }
         Apps.Entry e = home.get(sel);
-        labelView.setText(sel == 0 && e.last > 0 ? "Weiter spielen" : apps.hasFavorites() ? "Favoriten" : "Deine Apps");
+        labelView.setText(e.last > 0 ? "APP · ZULETZT GESTARTET" : e.fav ? "APP · FAVORIT" : "APP");
         nameView.setText(e.label);
         metaView.setText(lastText(e.last));
         strip.set(home.size(), sel);
         showImage(e);
+    }
 
-        int shown = Math.min(4, home.size() - 1);
-        for (int i = 1; i <= shown; i++) {
-            final int index = (sel + i) % home.size();
-            LinearLayout item = new LinearLayout(this);
-            item.setOrientation(LinearLayout.HORIZONTAL);
-            item.setGravity(Gravity.CENTER_VERTICAL);
-            View dot = new View(this);
-            dot.setBackground(Ui.round(Ui.color(index), px(4), 0, 0));
-            item.addView(dot, new LinearLayout.LayoutParams(px(8), px(8)));
-            TextView name = Ui.text(this, home.get(index).label, px(15), Ui.TEXT, 500);
-            name.setMaxLines(1);
-            name.setEllipsize(TextUtils.TruncateAt.END);
-            name.setMaxWidth(px(130));
-            name.setPadding(px(8), 0, px(24), 0);
-            item.addView(name, new LinearLayout.LayoutParams(WRAP, WRAP));
-            item.setOnClickListener(v -> {
-                sel = index;
-                render();
-            });
-            bottomRow.addView(item, new LinearLayout.LayoutParams(WRAP, MATCH));
-        }
+    private static List<Apps.Entry> firstFive(List<Apps.Entry> list) {
+        return list.size() > 5 ? new ArrayList<>(list.subList(0, 5)) : list;
     }
 
     private static String lastText(long last) {
@@ -648,8 +663,11 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
     }
 
     private void updateStatus() {
-        clockView.setText(new SimpleDateFormat("HH:mm · EEE d.M.", Locale.GERMANY).format(new Date()));
-        batteryView.setText((updater.available() ? "Update da · " : "") + battery() + " %");
+        clockView.setText(new SimpleDateFormat("HH:mm", Locale.GERMANY).format(new Date()));
+        batteryView.setText(battery() + " %");
+        boolean update = updater.available() && homeLayer.getVisibility() == View.VISIBLE;
+        updateCard.setText("Update verfügbar\nBuild " + updater.remoteBuild() + " · Start: Einstellungen");
+        updateCard.setVisibility(update ? View.VISIBLE : View.GONE);
         if (panel != null) {
             panel.refresh();
         }
@@ -663,7 +681,7 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
             allList.requestFocus();
             allList.setSelection(0);
         } else {
-            home = apps.home();
+            home = firstFive(apps.home());
             if (sel >= home.size()) {
                 sel = 0;
             }
@@ -954,6 +972,46 @@ public class MainActivity extends Activity implements PanelPresentation.Host, Di
         int level = status.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
         int scale = status.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
         return scale <= 0 ? 0 : Math.round(level * 100f / scale);
+    }
+
+    @Override
+    public float brightness() {
+        return Settings.System.getInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, 128) / 255f;
+    }
+
+    @Override
+    public boolean setBrightness(float value) {
+        if (!Settings.System.canWrite(this)) {
+            Toast.makeText(this, "Bitte einmal erlauben, dass Polarlicht die Helligkeit ändern darf.", Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, Uri.parse("package:" + getPackageName())));
+            } catch (RuntimeException ex) {
+                openSettings(Settings.ACTION_DISPLAY_SETTINGS);
+            }
+            return false;
+        }
+        int v = Math.max(8, Math.min(255, Math.round(value * 255f)));
+        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
+        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, v);
+        return true;
+    }
+
+    @Override
+    public float volume() {
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        return am.getStreamVolume(AudioManager.STREAM_MUSIC) / (float) Math.max(1, am.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+    }
+
+    @Override
+    public void setVolume(float value) {
+        AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        int max = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+        am.setStreamVolume(AudioManager.STREAM_MUSIC, Math.round(value * max), 0);
+    }
+
+    @Override
+    public boolean airplaneMode() {
+        return Settings.Global.getInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
     }
 
     @Override

@@ -53,6 +53,10 @@ final class Updater {
         }
     }
 
+    int remoteBuild() {
+        return remoteBuild;
+    }
+
     boolean available() {
         return remoteBuild > localBuild() && !apkUrl.isEmpty();
     }
