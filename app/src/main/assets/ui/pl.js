@@ -57,12 +57,12 @@
   function tag() {
     qa('div,button', root).forEach(function (el) {
       var s = sty(el), c = el.firstElementChild;
-      if (el.tagName === 'BUTTON' || (/border-radius:14px/.test(s) && /min-height:\d+px;padding:0 1\dpx/.test(s))) el.dataset.pl = 'row';
-      else if (/^border-radius:14px;/.test(s) && c && /height:92px/.test(sty(c))) el.dataset.pl = 'tile';
-      else if (/width:46px;height:26px/.test(s)) { el.dataset.pl = 'sw'; el.dataset.on = /5FD38D/i.test(s) ? '1' : '0'; }
+      if (el.tagName === 'BUTTON' || (/border-radius:22px/.test(s) && /min-height:\d+px;padding:0 1\dpx/.test(s))) el.dataset.pl = 'row';
+      else if (/^border-radius:22px;/.test(s) && c && /height:92px/.test(sty(c))) el.dataset.pl = 'tile';
+      else if (/width:46px;height:26px/.test(s)) { el.dataset.pl = 'sw'; el.dataset.on = /--acc/.test(s) ? '1' : '0'; }
       else if (/position:relative;height:(16|28)px/.test(s) && el.children.length === 3) el.dataset.pl = 'sl';
       if (/outline:2px solid/.test(s)) el.dataset.had = '1';
-      if (el.dataset.pl === 'row' && el.tagName !== 'BUTTON' && /background:#1(A2132|21724)/i.test(s)) el.dataset.base = '#121724';
+      if (el.dataset.pl === 'row' && el.tagName !== 'BUTTON' && /background:#(22222e|17171f)/i.test(s)) el.dataset.base = '#17171f';
     });
   }
   function isRow(el) { return el.dataset && el.dataset.pl === 'row'; }
@@ -76,9 +76,9 @@
   function findSwitch(el) { return el.querySelector('[data-pl="sw"]'); }
   function findSlider(el) { return el.querySelector('[data-pl="sl"]'); }
   function setSwitch(sw, on) {
-    sw.style.background = on ? '#5FD38D' : '#3A4358';
+    sw.style.background = on ? 'var(--acc)' : '#3a3a48';
     sw.firstElementChild.style.left = on ? '23px' : '3px';
-    sw.firstElementChild.style.background = on ? '#0A0D14' : '#A3ABBA';
+    sw.firstElementChild.style.background = on ? '#0b0b10' : '#A3ABBA';
     sw.dataset.on = on ? '1' : '0';
   }
   function setSlider(sl, pct) {
@@ -169,11 +169,12 @@
   setInterval(tick, 20000);
 
   /* ---------- Hintergrund (Canvas 0.7, wählbar in 5.3a) ---------- */
-  var WALLS = { 'Polarlicht': 'polarlicht', 'Sterne': 'sterne', 'Wellen': 'wellen', 'Streifen': 'streifen', 'Bild des gewählten Spiels': 'bild', 'Aus': 'aus' };
+  var WALLS = { 'Farbflächen': 'farben', 'Polarlicht': 'polarlicht', 'Sterne': 'sterne', 'Wellen': 'wellen', 'Streifen': 'streifen', 'Bild des gewählten Spiels': 'bild', 'Aus': 'aus' };
   function wall(name) {
     var el = document.getElementById('pl-wall'); if (!el) return;
-    name = name || pref('bg', 'polarlicht');
-    if (name === 'bild') { if (sel && sel.img) { el.innerHTML = '<img src="' + img(sel, 'image') + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55">'; return; } name = 'polarlicht'; }
+    name = name || pref('bg', 'farben');
+    if (name === 'farben') { if (el.dataset.w !== 'farben') { el.dataset.w = 'farben'; el.innerHTML = mxBg(sel); } return; }
+    if (name === 'bild') { if (sel && sel.img) { el.dataset.w = 'bild'; el.innerHTML = '<img src="' + img(sel, 'image') + '" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55">'; return; } name = 'farben'; el.dataset.w = ''; wall('farben'); return; }
     if (el.dataset.w === name) return;
     el.dataset.w = name; el.innerHTML = name === 'aus' ? '' : J.html('bg-' + name);
   }
@@ -191,8 +192,8 @@
     if (on && root.dataset.mix) { el.style.outline = '3px solid ' + LIME; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
     if (!on && root.dataset.mix) { el.style.outline = 'none'; el.classList.remove('mx-foc'); return; }
     if (on) {
-      el.style.outline = '2px solid #EEF1F6'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 1.6s ease-in-out infinite';
-      if (el.dataset.base) el.style.background = '#1A2132';
+      el.style.outline = '3px solid var(--acc)'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 2.6s ease-in-out infinite';
+      if (el.dataset.base) el.style.background = '#22222e';
     } else {
       el.style.outline = 'none'; el.style.animation = 'none';
       if (el.dataset.base) el.style.background = el.dataset.base;
@@ -401,8 +402,8 @@
                   'Emulatoren': '5.10', 'Datum und Sprache': '5.11', 'Bedienungshilfen': '5.12', 'Über das Gerät': '5.13' }, k: { B: 'home' } },
     '5.2a': { l: { 'WLAN': '@wifi', 'WLAN-Liste öffnen': '@wifi', 'Netzwerk hinzufügen': '@wifi', 'Erweitert': '@wifisettings' }, k: { R1: swap('5.2b'), X: '@wifi' } },
     '5.2b': { l: { 'Bluetooth': '@bt', 'Sichtbar als': '@bt', 'Neues Gerät koppeln': '@bt' }, k: { L1: swap('5.2a'), X: '@bt' } },
-    '5.3a': { bind: function () { qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { J.setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
-    '5.3': { l: { 'Hintergrund': '5.3a', 'Oben · Hintergrund': '5.3a', 'Oben · Farbe': '@display', 'Oben · Abschaltzeit': '@display', 'Unten · Farbe': '@display', 'Unten · Abschaltzeit': '@display' } },
+    '5.3a': { bind: function () { addRow('Polarlicht', 'Farbflächen', true); qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { J.setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
+    '5.3': { bind: function () { addRow('Hintergrund', 'Akzentfarbe', false); }, l: { 'Akzentfarbe': 'acc', 'Hintergrund': '5.3a', 'Oben · Hintergrund': '5.3a', 'Oben · Farbe': '@display', 'Oben · Abschaltzeit': '@display', 'Unten · Farbe': '@display', 'Unten · Abschaltzeit': '@display' } },
     '5.4': { l: { 'Ausgabe': '@sound' } },
     '5.5': { l: { 'Tastenbelegung': '5.5a', 'Stick-Beleuchtung': '5.5b', 'Stick-Kalibrierung': '5.5c', 'Controller-Test': '1.12' } },
     '5.5a': { l: { 'Auf Standard zurücksetzen': OS } }, '5.5c': { l: { 'Speichern': 'back', 'Zurücksetzen': OS }, k: { A: 'back' } },
@@ -431,6 +432,14 @@
     '8.2': { l: { 'Genauer': '!Ori ist noch nicht angeschlossen', 'Kürzer': '!Ori ist noch nicht angeschlossen', 'Danke': 'back' }, enter: 'ori' },
     '8.3': { l: { 'Mehr dazu': '8.2', 'Keine Tipps für dieses Spiel': 'back' }, enter: 'ori' }
   };
+  function addRow(like, label, before) {
+    var src = qa('div,button', root).filter(isRow).filter(function (r) { return labelOf(r) === like; })[0]; if (!src) return;
+    var c = src.cloneNode(true), t = firstText(c), w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = w.nextNode())) if (n !== t) n.nodeValue = '';
+    if (t) t.nodeValue = label;
+    delete c.dataset.had; c.style.outline = 'none';
+    src.parentNode.insertBefore(c, before ? src : src.nextSibling);
+  }
   function lookup(kind, name) {
     var n = NAV[cur] || {}, g = PG[cur.split('.')[0]] || {};
     if (n[kind] && name in n[kind]) return n[kind][name];
@@ -475,6 +484,7 @@
     if (k === 'up' || k === 'down' || k === 'left' || k === 'right') {
       if (k === 'left' || k === 'right') {
         if (root._switch && (!root._switchOn || root._switchOn())) { root._switch(k === 'right' ? 1 : -1); return; }
+        if (foc && foc._hue) { foc._hue(+foc.dataset.hue + (k === 'right' ? 10 : -10)); snd('fokus'); return; }
         var sl = foc && findSlider(foc);
         if (sl) { sliderSet(foc, sl, (+sl.dataset.v || parseFloat(sl.children[1].style.width) || 0) + (k === 'right' ? 5 : -5), true); snd('fokus'); J.sync(''); return; }
       }
@@ -520,7 +530,7 @@
   }
 
   /* ---------- Neuer Look: Mix aus Kino und Bento (Start, Bibliothek, Bedienfeld) ---------- */
-  var LIME = '#C6FF3D', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:rgba(18,18,26,.74);border:1px solid rgba(255,255,255,.09)';
+  var LIME = 'var(--acc)', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:rgba(18,18,26,.74);border:1px solid rgba(255,255,255,.09)';
   var MXI = {
     play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"></path>',
     grid: '<rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect>',
@@ -618,7 +628,36 @@
       el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false }); el.addEventListener('mousedown', drag);
     });
   }
+  var ACCS = ['#C6FF3D', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#FFFFFF'];
+  function applyAcc() { document.documentElement.style.setProperty('--acc', pref('acc', '#C6FF3D')); }
+  function setAcc(c) { J.setPref('acc', c); applyAcc(); J.sync(''); }
+  function mxAcc() {
+    var now = pref('acc', '#C6FF3D'), hueNow = +pref('acch', '80');
+    var sw = ACCS.map(function (c, i) { return '<button type="button" class="mx-sw" data-act="acc:' + c + '"' + (c === now || (i === 0 && ACCS.indexOf(now) < 0 && now.indexOf('hsl') < 0) ? ' data-first="1"' : '') + ' style="background:' + c + '" aria-label="Farbe ' + (i + 1) + '"></button>'; }).join('');
+    if (!TOP) return '<div class="mx" style="width:620px;height:540px;padding:22px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px"><div class="mx-bg"></div><div class="mx-count" style="position:relative">Akzentfarbe</div><div class="mx-swg" style="position:relative;grid-template-columns:repeat(5,1fr)">' + sw + '</div><div class="mx-hue" data-hue="' + hueNow + '" style="position:relative;height:64px"><i style="left:' + hueNow / 3.6 + '%"></i></div><button type="button" class="mx-pr" data-act="go:back" style="position:relative;flex:none">Fertig</button></div>';
+    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(sel) + '</div><div style="position:absolute;left:28px;top:34px;right:28px"><div class="mx-s" style="letter-spacing:.08em">SYSTEM · ANZEIGE</div><div class="mx-title" style="font-size:44px;margin-top:6px">Akzentfarbe</div><div class="mx-meta" style="margin-top:8px">Gilt für Knöpfe, Fokus, Schalter und Regler. Die Farbe wechselt sofort.</div></div>'
+      + '<div class="mx-swg" style="position:absolute;left:28px;top:190px;width:560px;grid-template-columns:repeat(5,1fr)">' + sw + '</div>'
+      + '<button type="button" class="mx-hue" data-hue="' + hueNow + '" style="position:absolute;left:28px;top:400px;width:560px;height:44px"><i style="left:' + hueNow / 3.6 + '%"></i></button>'
+      + '<div style="position:absolute;right:28px;top:190px;width:300px;border-radius:26px;padding:20px;' + GLASS + ';display:flex;flex-direction:column;gap:14px"><div class="mx-s">Vorschau</div><span class="mx-tag">WEITERSPIELEN</span><span class="mx-play" style="align-self:flex-start">' + mi('play', 20) + 'Starten</span><div class="mx-bar"><i style="width:62%;background:var(--acc)"></i></div></div>'
+      + mxKeys([['A', 'Farbe nehmen'], ['← →', 'Auf dem Farbband: eigene Farbe'], ['B', 'Zurück']]) + '</div>';
+  }
+  function mxAccBind() {
+    qa('.mx-hue', root).forEach(function (el) {
+      el._hue = function (h) { h = (Math.round(h) + 360) % 360; el.dataset.hue = h; el.firstElementChild.style.left = h / 3.6 + '%'; J.setPref('acch', String(h)); setAcc('hsl(' + h + ',95%,62%)'); };
+      var drag = function (e) { var p = e.touches ? e.touches[0] : e, r = el.getBoundingClientRect(); el._hue(Math.max(0, Math.min(359, (p.clientX - r.left) / r.width * 360))); e.preventDefault(); };
+      el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false });
+    });
+  }
+  /* Die Ansichten aus dem Canvas bekommen Farben, Schrift und Rundungen des neuen Looks. */
+  function skin(h) {
+    return h.replace(/background:#EEF1F6;color:#0A0D14;border:1\.5px solid #EEF1F6/g, 'background:var(--acc);color:#0b0b10;border:1.5px solid var(--acc)')
+      .replace(/font-size:(\d\d)px;font-weight:700;color:#EEF1F6;line-height:1\.25;letter-spacing:-\.02em/g, function (m, n) { return +n < 26 ? m : 'font-family:Unbounded,sans-serif;font-size:' + Math.round(n * 0.8) + 'px;font-weight:800;color:#fff;line-height:1.25;letter-spacing:-.04em'; })
+      .replace(/'Space Grotesk',system-ui,sans-serif/g, 'Outfit,system-ui,sans-serif').replace(/'JetBrains Mono',ui-monospace,monospace/g, 'Outfit,system-ui,sans-serif')
+      .replace(/#0A0D14/g, '#0b0b10').replace(/#121724/g, '#17171f').replace(/#1A2132/g, '#22222e').replace(/#1F2533/g, '#2a2a36').replace(/#3A4358/g, '#3a3a48')
+      .replace(/#5FD38D/g, 'var(--acc)').replace(/border-radius:14px/g, 'border-radius:22px');
+  }
   function mixFor(key) {
+    if (key === 'acc') return [mxAcc, mxAccBind];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.4' || key === '3.7';
     if (TOP) return home ? [mxHome, mxHomeBind] : lib ? [mxLib, null] : null;
     return home || lib || key === '2.3' ? [mxPanel, mxPanelBind] : null;
@@ -630,6 +669,7 @@
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
+    else if (k === 'acc') { snd('ok'); setAcc(v); }
     else if (k === 'and') run('@' + v);
     else if (k === 'sort') { J.setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
   }
@@ -642,7 +682,8 @@
     cur = key;
     try { st = JSON.parse(J.state()); apps = JSON.parse(J.apps()); } catch (e) { st = {}; apps = []; }
     sel = appByKey(pref('sel', '')) || homeList()[0] || null;
-    if (mix) html = mix[0]();
+    applyAcc();
+    html = mix ? mix[0]() : skin(html);
     stage.innerHTML = html; root = stage.firstElementChild; foc = null;
     if (mix) root.dataset.mix = '1';
     tag();
@@ -700,6 +741,7 @@
   window.plSync = function (what) {
     if (!root) return;
     if (what === 'reload') { var keep = foc && foc._app ? foc._app.key : null; show(cur); if (keep) items.forEach(function (el) { if (el._app && el._app.key === keep) setFocus(el, true); }); return; }
+    applyAcc();
     try { st = JSON.parse(J.state()); } catch (e) { return; }
     applyStates();
   };
