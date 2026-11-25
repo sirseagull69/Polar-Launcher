@@ -641,6 +641,7 @@
       for (var i = 0; i < tiles.length; i++) tiles[i].style.transform = 'translate3d(' + (PAD + i * STEP + (i > f ? BIG - 158 : 0)) + 'px,0,0) scale(' + (i === f ? 1 : S) + ')';
     }
     function text(a) {
+      if (!a || !document.getElementById('h-sys')) return; /* Ansicht inzwischen gewechselt */
       document.getElementById('h-sys').textContent = kickOf(a).toUpperCase();
       var t = document.getElementById('h-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 26 ? '30px' : a.label.length > 18 ? '38px' : '46px';
       document.getElementById('h-quote').textContent = quoteOf(a);
