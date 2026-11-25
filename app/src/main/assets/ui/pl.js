@@ -28,6 +28,7 @@
   var ac = null;
   function snd(name) {
     try {
+      if (name === 'fokus') { var tn = Date.now(); if (tn - (snd.t || 0) < 70) return; snd.t = tn; }
       if (QUIET[name] && pref('sw:Tastentöne', '1') === '0') return;
       var AC = window.AudioContext || window.webkitAudioContext; if (!AC || !S[name]) return;
       if (!ac) ac = new AC(); if (ac.state === 'suspended') ac.resume();
@@ -538,7 +539,7 @@
   }
 
   /* ---------- Neuer Look: Mix aus Kino und Bento (Start, Bibliothek, Bedienfeld) ---------- */
-  var LIME = 'var(--acc)', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)';
+  var LIME = 'var(--acc)', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:#1e2029;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)';
   var MXI = {
     play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"></path>',
     grid: '<rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect>',
@@ -571,9 +572,9 @@
     return '<div class="mx-keys">' + list.map(function (k) { return '<span><b>' + k[0] + '</b>' + k[1] + '</span>'; }).join('') + '</div>';
   }
   function tileIn(a) {
-    return a.game ? (a.cov ? '<img class="cv" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : (a.img ? '<img class="cv" src="' + img(a, 'image') + '" alt="">' : '<img class="ic" src="' + img(a, 'icon') + '" alt="">');
+    return a.game ? (a.cov ? '<img class="cv" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : '<img class="cv" decoding="async" src="' + img(a, a.img ? 'image' : 'tile') + '" alt="">';
   }
-  function tileBg(a) { var h = hue(a); return 'background:linear-gradient(145deg,hsl(' + h + ',58%,44%),hsl(' + (h + 40) % 360 + ',55%,22%))'; }
+  function tileBg(a) { var h = hue(a); return 'background:linear-gradient(145deg,hsl(' + h + ',30%,27%),hsl(' + (h + 30) % 360 + ',32%,14%))'; }
   function homeRow() {
     return apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || (b.game ? 1 : 0) - (a.game ? 1 : 0) || a.label.localeCompare(b.label); }).slice(0, 12);
   }
@@ -584,26 +585,39 @@
     function d(ic, t, act) { return '<button type="button" class="h-d" data-act="' + act + '" aria-label="' + t + '">' + mi(ic, 26) + '<i>' + t + '</i></button>'; }
     return '<div class="mx" style="width:960px;height:540px"><div class="h-bar"><span class="h-time" data-live="time">' + esc(st.time || '') + '</span><span class="h-r">' + (st.wifi ? mi('wifi', 18) : '') + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>'
       + '<div class="h-name"><small id="h-sys"></small><span id="h-title"></span></div>'
-      + '<div class="h-row" id="h-row">' + list.map(function (a) { return '<button type="button" class="h-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + ' style="' + tileBg(a) + '">' + tileIn(a) + '</button>'; }).join('')
-      + '<button type="button" class="h-t more" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">' + mi('grid', 34) + '<span>Alle ' + apps.length + '</span></button></div>'
+      + '<div class="h-row" id="h-row"><div class="h-track" id="h-track">' + list.map(function (a) { return '<button type="button" class="h-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + ' style="' + tileBg(a) + '">' + tileIn(a) + '</button>'; }).join('')
+      + '<button type="button" class="h-t more" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">' + mi('grid', 34) + '<span>Alle ' + apps.length + '</span></button></div></div>'
       + '<div class="h-dock">' + d('grid', st.games ? 'Alle Spiele' : 'Alle Apps', 'swap:' + (st.games ? '3.1' : '3.7')) + d('star', 'Favoriten', 'swap:3.4') + d('search', 'Suche', 'go:3.3') + (st.games ? d('pad', 'Apps', 'swap:3.7') : '') + d('set', 'System', 'go:5.1') + (st.upd && st.upd.available ? d('down', 'Update', 'go:6.2') : '') + '</div>'
       + mxKeys([['A', 'Starten'], ['X', 'Optionen']]) + '</div>';
   }
-  var selT = 0;
+  var selT = 0, hOff = 0;
   function mxHomeBind() {
-    var row = document.getElementById('h-row'), tiles = qa('.h-t', row);
-    tiles.forEach(function (el) {
+    var track = document.getElementById('h-track'), tiles = qa('.h-t', track);
+    var TW = 184, GAP = 16, PAD = 40, max = Math.max(0, PAD * 2 + tiles.length * (TW + GAP) - GAP - W);
+    /* Wie auf einer Konsole: die Reihe bewegt sich nur, wenn die Auswahl an den Rand kommt. Die nächste Kachel schaut immer schon herein. */
+    function place(i) {
+      var l = PAD + i * (TW + GAP), r = l + TW;
+      if (l - hOff < PAD + 40) hOff = l - PAD - 40; else if (r - hOff > W - PAD - 110) hOff = r - (W - PAD - 110);
+      hOff = Math.max(0, Math.min(max, hOff));
+      track.style.transform = 'translate3d(' + -hOff + 'px,0,0)';
+    }
+    track.style.transition = 'none';
+    requestAnimationFrame(function () { requestAnimationFrame(function () { track.style.transition = ''; }); });
+    tiles.forEach(function (el, i) {
       var a = appByKey(el.dataset.key || '');
       el._onfoc = function () {
         document.getElementById('h-sys').textContent = a ? subOf(a).toUpperCase() : 'BIBLIOTHEK';
         document.getElementById('h-title').textContent = a ? a.label : 'Alles anzeigen';
-        if (a && (!sel || sel.key !== a.key)) { select(a); clearTimeout(selT); selT = setTimeout(function () { J.sync(''); }, 160); }
-        var r = el.getBoundingClientRect(), R = row.getBoundingClientRect(), z = R.width / row.offsetWidth || 1;
-        row.scrollTo({ left: row.scrollLeft + ((r.left + r.width / 2) - (R.left + R.width / 2)) / z, behavior: root.classList.contains('pl-still') ? 'auto' : 'smooth' });
+        place(i);
+        if (a && (!sel || sel.key !== a.key)) {
+          sel = a; clearTimeout(selT);
+          /* Merken und unten nachziehen erst, wenn das Blättern kurz steht: so bremst es das Blättern nicht. */
+          selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 180);
+        }
       };
     });
     root._switch = function (d) { var i = tiles.indexOf(foc); if (i < 0) { setFocus(tiles[0]); return; } setFocus(tiles[Math.max(0, Math.min(tiles.length - 1, i + d))]); };
-    root._switchOn = function () { return false; };
+    root._switchOn = function () { return tiles.indexOf(foc) >= 0; };
   }
   function mxLib() {
     var favs = cur === '3.4', find = cur === '3.3', gamesTab = cur === '3.1' || cur === '3.2', list = apps.slice(), chips = '';
@@ -621,9 +635,9 @@
     if (!find && !favs && pref('sort', 'last') === 'last') list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
     var cards = list.map(function (a, i) {
       var h = hue(a);
-      return '<button type="button" class="mx-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 28 + 'ms;background:radial-gradient(circle at 28% 18%,hsl(' + h + ',55%,36%),hsl(' + (h + 40) % 360 + ',50%,16%))">'
+      return '<button type="button" class="mx-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 28 + 'ms;' + tileBg(a) + '">'
         + (a.game ? (a.cov ? '<img class="mx-cover" src="' + img(a, 'icon') + '" alt=""><span class="mx-shade"></span>' : '<b class="mx-big">' + esc(a.sysid.toUpperCase()) + '</b>') + '<span class="mx-sysb">' + esc(a.sysid.toUpperCase()) + '</span>'
-          : (a.img ? '<img class="mx-cover" src="' + img(a, 'image') + '" alt="">' : '<img class="mx-cico" src="' + img(a, 'icon') + '" alt="">'))
+          : '<img class="mx-cover" decoding="async" src="' + img(a, a.img ? 'image' : 'tile') + '" alt=""><span class="mx-shade"></span>')
         + (a.fav ? '<span class="mx-fav">' + mi('star', 14, 2.2) + '</span>' : '') + '<em>' + esc(a.label) + '</em></button>';
     }).join('');
     if (!list.length) {
@@ -671,10 +685,10 @@
       el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false }); el.addEventListener('mousedown', drag);
     });
   }
-  var ACC0 = '#16161a';
-  var ACCS = ['#16161a', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
+  var ACC0 = '#5CF2C0', OLD0 = '#16161a'; /* OLD0 war die Vorgabe im hellen Look und wäre auf Dunkel unsichtbar */
+  var ACCS = ['#F3F3F6', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
   function accDark(c) { var m = /^#([0-9a-f]{6})$/i.exec(c); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 140; }
-  function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
+  function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; if (c === OLD0) c = ACC0; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
   function setAcc(c) { J.setPref('acc', c); applyAcc(); J.sync(''); }
   function mxAcc() {
     var now = pref('acc', ACC0), hueNow = +pref('acch', '80');
@@ -721,8 +735,8 @@
       ? [['System', g.sysFull || a.sys], ['Emulator', emu || 'Keiner installiert'], ['Datei', g.file || '–'], ['Größe', mb(g.size)], ['Ordner', g.folder || '–']]
       : [['Art', 'App'], ['Favorit', a.fav ? 'Ja' : 'Nein'], ['Paket', a.key.split('/')[0]]];
     return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(a) + '</div>' + mxNav(-1)
-      + '<div class="mx-det"><div class="mx-dcov" style="background:radial-gradient(circle at 28% 18%,hsl(' + h + ',55%,36%),hsl(' + (h + 40) % 360 + ',50%,16%))">'
-      + (a.game ? (a.cov ? '<img class="full" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : (a.img ? '<img class="full" src="' + img(a, 'image') + '" alt="">' : '<img src="' + img(a, 'icon') + '" alt="">')) + '</div>'
+      + '<div class="mx-det"><div class="mx-dcov" style="' + tileBg(a) + '">'
+      + (a.game ? (a.cov ? '<img class="full" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : '<img class="full" src="' + img(a, a.img ? 'image' : 'tile') + '" alt="">') + '</div>'
       + '<div class="mx-dinfo"><span class="mx-tag">' + esc(a.game ? a.sysid.toUpperCase() : 'APP') + (a.fav ? ' · FAVORIT' : '') + '</span>'
       + '<div class="mx-title" style="font-size:' + (a.label.length > 24 ? 28 : a.label.length > 14 ? 36 : 46) + 'px">' + esc(a.label) + '</div>'
       + '<div class="mx-meta">' + (a.last ? 'Zuletzt ' + (a.game ? 'gespielt' : 'geöffnet') + ' am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht ' + (a.game ? 'gespielt' : 'geöffnet')) + '</div>'
@@ -780,7 +794,7 @@
     html = mix ? mix[0]() : skin(html);
     stage.innerHTML = html; root = stage.firstElementChild; foc = null;
     if (mix) root.dataset.mix = '1';
-    if (!mix && !/^1\.([1-6]|18)$/.test(key)) { root.classList.add('pl-inv'); if (pref('acc', ACC0) === ACC0) root.style.setProperty('--acc', '#e9e9e6'); }
+    if (!mix && !/^1\.([1-6]|18)$/.test(key)) root.classList.add('pl-inv');
     if (mix && mix[1]) mix[1]();
     tag();
     if (mix) {

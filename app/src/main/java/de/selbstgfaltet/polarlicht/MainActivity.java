@@ -12,6 +12,8 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.hardware.display.DisplayManager;
 import android.media.AudioManager;
@@ -23,6 +25,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.StatFs;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
@@ -83,6 +86,9 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     private String lastKey = "";
     private long lastKeyAt = 0L;
     private String stickDir = "";
+    private String holdDir = "";
+    private long holdSince = 0L;
+    private final HashMap<String, byte[]> tiles = new HashMap<>();
     private final Roms roms = new Roms();
     private volatile List<Roms.Game> games = new ArrayList<>();
     private volatile boolean scanning = false;
@@ -186,6 +192,9 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                     return new WebResourceResponse(type, null, new FileInputStream(f));
                 }
             }
+            if (e != null && "/tile".equals(path)) {
+                return new WebResourceResponse("image/png", null, new ByteArrayInputStream(tile(e)));
+            }
             if (e != null && "/icon".equals(path)) {
                 Drawable d = getPackageManager().getActivityIcon(e.component());
                 Bitmap b = Bitmap.createBitmap(144, 144, Bitmap.Config.ARGB_8888);
@@ -199,6 +208,74 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             Log.w(TAG, "Bild " + path + " " + key + ": " + ex);
         }
         return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
+    }
+
+    /**
+     * App-Symbol als volle, quadratische Kachel. Neue Symbole (zwei Ebenen) füllen die ganze Fläche,
+     * alte bekommen einen Grund in ihrer eigenen Farbe. Einmal gebaut, bleibt die Kachel im Speicher.
+     */
+    private byte[] tile(Apps.Entry e) throws Exception {
+        synchronized (tiles) {
+            byte[] cached = tiles.get(e.key());
+            if (cached != null) {
+                return cached;
+            }
+        }
+        final int size = 288;
+        Drawable d = getPackageManager().getActivityIcon(e.component());
+        Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        c.drawColor(0xFF1E2029);
+        if (d instanceof AdaptiveIconDrawable) {
+            // Die Ebenen sind anderthalbmal so groß wie der sichtbare Teil.
+            AdaptiveIconDrawable a = (AdaptiveIconDrawable) d;
+            int o = size / 4;
+            Drawable bg = a.getBackground();
+            Drawable fg = a.getForeground();
+            if (bg != null) {
+                bg.setBounds(-o, -o, size + o, size + o);
+                bg.draw(c);
+            }
+            if (fg != null) {
+                fg.setBounds(-o, -o, size + o, size + o);
+                fg.draw(c);
+            }
+        } else {
+            Bitmap small = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888);
+            d.setBounds(0, 0, 32, 32);
+            d.draw(new Canvas(small));
+            long r = 0, g = 0, bl = 0, n = 0;
+            for (int y = 0; y < 32; y++) {
+                for (int x = 0; x < 32; x++) {
+                    int p = small.getPixel(x, y);
+                    if (Color.alpha(p) > 128) {
+                        r += Color.red(p);
+                        g += Color.green(p);
+                        bl += Color.blue(p);
+                        n++;
+                    }
+                }
+            }
+            small.recycle();
+            if (n > 0) {
+                float[] hsv = new float[3];
+                Color.RGBToHSV((int) (r / n), (int) (g / n), (int) (bl / n), hsv);
+                hsv[1] = Math.min(hsv[1], 0.6f);
+                hsv[2] = Math.max(0.2f, Math.min(0.42f, hsv[2] * 0.6f));
+                c.drawColor(Color.HSVToColor(hsv));
+            }
+            int m = size * 16 / 100;
+            d.setBounds(m, m, size - m, size - m);
+            d.draw(c);
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.PNG, 100, out);
+        b.recycle();
+        byte[] bytes = out.toByteArray();
+        synchronized (tiles) {
+            tiles.put(e.key(), bytes);
+        }
+        return bytes;
     }
 
     /** Ein Bild aus dem Ordner "Bilder", das wie das Paket der App heißt. */
@@ -946,11 +1023,17 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                     longFired = true;
                     key(k.equals("SELECT") ? "INDEX" : "STARTLONG");
                 }
-            } else if (e.getRepeatCount() == 0 || (Character.isLowerCase(k.charAt(0)) && e.getRepeatCount() >= 6 && e.getRepeatCount() % 3 == 0)) {
+            } else if (Character.isLowerCase(k.charAt(0))) {
+                if (e.getRepeatCount() == 0) {
+                    hold(k); // das Wiederholen beim Halten macht hold() selbst, gleichmäßig und schneller als Android
+                }
+            } else if (e.getRepeatCount() == 0) {
                 key(k);
             }
         } else if (e.getAction() == KeyEvent.ACTION_UP && hold && !longFired) {
             key(k);
+        } else if (e.getAction() == KeyEvent.ACTION_UP && k.equals(holdDir)) {
+            hold("");
         }
         return true;
     }
@@ -974,11 +1057,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             }
             if (!dir.equals(stickDir)) {
                 stickDir = dir;
-                ui.removeCallbacks(stickRepeat);
-                if (!dir.isEmpty()) {
-                    key(dir);
-                    ui.postDelayed(stickRepeat, 450);
-                }
+                hold(dir);
             }
             trigger(e.getAxisValue(MotionEvent.AXIS_LTRIGGER) + e.getAxisValue(MotionEvent.AXIS_BRAKE), true);
             trigger(e.getAxisValue(MotionEvent.AXIS_RTRIGGER) + e.getAxisValue(MotionEvent.AXIS_GAS), false);
@@ -1003,13 +1082,35 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         }
     }
 
-    private final Runnable stickRepeat = new Runnable() {
+    /**
+     * Eine Richtung wird gehalten (Stick oder Steuerkreuz): erst ein Schritt, nach kurzer Pause zügig weiter,
+     * nach einer Sekunde noch etwas schneller. Eine leere Richtung beendet das Halten.
+     */
+    private void hold(String dir) {
+        if (dir.equals(holdDir)) {
+            return;
+        }
+        holdDir = dir;
+        ui.removeCallbacks(holdRepeat);
+        if (!dir.isEmpty()) {
+            holdSince = SystemClock.uptimeMillis();
+            step(dir);
+            ui.postDelayed(holdRepeat, 240);
+        }
+    }
+
+    private void step(String dir) {
+        if (top != null && topReady) {
+            top.evaluateJavascript("window.plKey&&plKey('" + dir + "')", null);
+        }
+    }
+
+    private final Runnable holdRepeat = new Runnable() {
         @Override
         public void run() {
-            if (!stickDir.isEmpty()) {
-                lastKey = "";
-                key(stickDir);
-                ui.postDelayed(this, 190);
+            if (!holdDir.isEmpty()) {
+                step(holdDir);
+                ui.postDelayed(this, SystemClock.uptimeMillis() - holdSince > 1000 ? 60 : 85);
             }
         }
     };
@@ -1045,8 +1146,9 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     protected void onStop() {
         super.onStop();
         displayManager.unregisterDisplayListener(this);
-        ui.removeCallbacks(stickRepeat);
+        ui.removeCallbacks(holdRepeat);
         stickDir = "";
+        holdDir = "";
         hidePanel();
     }
 
