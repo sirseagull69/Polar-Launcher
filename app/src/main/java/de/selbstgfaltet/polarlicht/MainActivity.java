@@ -756,6 +756,40 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             ui.post(() -> openAndroid(what));
         }
 
+        /** Ruhezustand, Neustart, Ausschalten. Klappt nur, wenn Ori als System-App im eigenen OS steckt; sonst "nein". */
+        @JavascriptInterface
+        public String power(String what) {
+            try {
+                if ("reboot".equals(what)) {
+                    if (checkSelfPermission("android.permission.REBOOT") != PackageManager.PERMISSION_GRANTED) return "nein";
+                    ((android.os.PowerManager) getSystemService(POWER_SERVICE)).reboot(null);
+                    return "ok";
+                }
+                if ("off".equals(what)) {
+                    if (checkSelfPermission("android.permission.SHUTDOWN") != PackageManager.PERMISSION_GRANTED) return "nein";
+                    Intent off = new Intent("com.android.internal.intent.action.REQUEST_SHUTDOWN");
+                    off.putExtra("android.intent.extra.KEY_CONFIRM", false);
+                    off.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(off);
+                    return "ok";
+                }
+                if ("sleep".equals(what)) {
+                    if (OriDienst.schlafen()) return "ok";
+                    if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") != PackageManager.PERMISSION_GRANTED) return "nein";
+                    String me = new ComponentName(MainActivity.this, OriDienst.class).flattenToString();
+                    String on = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                    if (on == null || on.isEmpty()) on = me; else if (!on.contains(me)) on = on + ":" + me;
+                    OriDienst.schlafenWennBereit = true;
+                    Settings.Secure.putString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, on);
+                    Settings.Secure.putInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED, 1);
+                    return "ok";
+                }
+            } catch (Exception e) {
+                Log.w("Polarlicht", "power " + what, e);
+            }
+            return "nein";
+        }
+
         @JavascriptInterface
         public void setBrightness(final int percent) {
             ui.post(() -> MainActivity.this.setBrightness(percent));

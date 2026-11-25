@@ -900,6 +900,7 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name.indexOf('power:') === 0) { snd('ok'); if ((J.power ? J.power(name.slice(6)) : 'nein') !== 'ok') note('Geht erst, wenn Ori das System ist.'); return; }
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
     if (nat[name]) { run(nat[name]); return; }
     if (DC_CAT[name]) { J.setPref('einst', DC_CAT[name]); setKeep = ''; run('5.1'); return; }
