@@ -128,7 +128,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         FrameLayout root = new FrameLayout(this);
         root.addView(top, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         guardHome();
-        if (prefs.getInt("homeCrashBuild", -1) != updater.localBuild()) {
+        // Der native Startbildschirm (dunkler Material-Look) ist seit 0.11 abgeschaltet: Vorgabe ist der Ori-OS-Look der Web-Ansicht.
+        // Wieder einschalten: Einstellung "nativ" auf 1.
+        if ("1".equals(prefs.getString("ui:nativ", "0")) && prefs.getInt("homeCrashBuild", -1) != updater.localBuild()) {
             try {
                 home = new HomeUi(homeHost);
                 homeTop = home.topView(this);

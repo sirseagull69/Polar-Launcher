@@ -571,53 +571,80 @@
   function mxKeys(list) {
     return '<div class="mx-keys">' + list.map(function (k) { return '<span><b>' + k[0] + '</b>' + k[1] + '</span>'; }).join('') + '</div>';
   }
-  function tileIn(a) {
-    return a.game ? (a.cov ? '<img class="cv" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : '<img class="cv" decoding="async" src="' + img(a, a.img ? 'image' : 'tile') + '" alt="">';
+  /* ---------- Ori OS: Papier-Look nach Nils' Vorlage (Canvas "Ori OS") ---------- */
+  var PAL = [['#fbdbe9', '#b8327a', '#e2609a', '#8f1f55'], ['#f8dcd6', '#b23a28', '#d1604e', '#7c2418'], ['#d9efe0', '#2f7a4d', '#4c9c6c', '#1f5a37'], ['#f6e7c4', '#9a6a12', '#c9973a', '#6e4a08'], ['#dbe5f8', '#2b4a8f', '#3d5fb5', '#1c2f66'], ['#e4dcfb', '#6a4fc7', '#8a72e0', '#4a35a0'], ['#d8eef0', '#1f7480', '#4aa3ae', '#14525b'], ['#e6e8ef', '#3a4466', '#6b7596', '#1b2340']];
+  var QUO = ['„Einer geht noch.“', '„Nur kurz reinschauen.“', '„Diesmal klappt es. Bestimmt.“', '„Wo waren wir stehen geblieben?“', '„Fünf Minuten. Höchstens.“', '„Der Akku hält das aus.“', '„Mal sehen, ob das läuft.“', '„Wie früher.“'];
+  function pal(a) { return PAL[hue(a) % PAL.length]; }
+  function quoteOf(a) { return !a ? '' : a.last ? QUO[(hue(a) * 7 + a.label.length) % QUO.length] : '„Noch nie gestartet. Wird Zeit.“'; }
+  function fold(p) {
+    return '<svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 200 160" preserveAspectRatio="none" style="display:block"><polygon points="0,160 0,96 52,60 100,104 100,160" fill="' + p[1] + '"/><polygon points="100,160 100,104 148,44 200,92 200,160" fill="' + p[2] + '"/><polygon points="52,60 100,104 74,110" fill="' + p[3] + '"/><polygon points="148,44 200,92 166,98" fill="' + p[3] + '"/><polygon points="150,16 166,16 166,32 150,32" fill="#ffe36e"/></svg>';
   }
-  function tileBg(a) { var h = hue(a); return 'background:linear-gradient(145deg,hsl(' + h + ',30%,27%),hsl(' + (h + 30) % 360 + ',32%,14%))'; }
+  /* Bild im Papierrahmen: echtes Cover, sonst gefaltete Berge, bei Apps das App-Symbol */
+  function tileIn(a) {
+    var p = pal(a);
+    if (a.game) return '<span class="o-art" style="background:' + p[0] + '">' + (a.cov ? '<img class="cv" src="' + img(a, 'icon') + '" alt="">' : fold(p) + '<b class="o-sysl">' + esc(a.sysid.toUpperCase()) + '</b>') + '</span>';
+    return '<span class="o-art" style="background:' + p[0] + '">' + (a.img ? '<img class="cv" src="' + img(a, 'image') + '" alt="">' : '<img class="ic" src="' + img(a, 'icon') + '" alt="">') + '</span>';
+  }
+  function tileBg() { return ''; }
   function homeRow() {
     return apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || (b.game ? 1 : 0) - (a.game ? 1 : 0) || a.label.localeCompare(b.label); }).slice(0, 12);
   }
-  function subOf(a) { return (a.game ? a.sys : 'App') + (a.fav ? ' · Favorit' : '') + (a.last ? ' · zuletzt am ' + new Date(a.last).toLocaleDateString('de-DE') : ''); }
+  function kickOf(a) { return (a.game ? a.sys : 'App') + (a.fav ? ' · Favorit' : ''); }
+  function subOf(a) { return kickOf(a); }
+  function lastOf(a) { return a.last ? new Date(a.last).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : 'noch nie'; }
+  function placeOf(a) { return !a.game ? '' : a.key.indexOf('g:/storage/emulated/') === 0 ? 'Intern' : 'microSD'; }
+  var W_TOP = '<svg class="welle2" aria-hidden="true" width="960" height="120" viewBox="0 0 960 120" style="position:absolute;left:0;top:0"><polygon points="0,0 960,0 960,66 800,100 620,74 430,110 240,80 90,104 0,88" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="960" height="80" viewBox="0 0 960 80" style="position:absolute;left:0;top:0"><polygon points="0,0 960,0 960,36 740,62 520,42 300,66 0,46" fill="#fbc19d"/></svg>';
+  var W_BOT = '<svg class="welle2" aria-hidden="true" width="620" height="100" viewBox="0 0 620 100" style="position:absolute;left:0;bottom:0"><polygon points="0,100 0,34 110,12 250,40 400,8 520,36 620,16 620,100" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="620" height="60" viewBox="0 0 620 60" style="position:absolute;left:0;bottom:0"><polygon points="0,60 0,30 140,12 300,34 460,10 620,28 620,60" fill="#fbc19d"/></svg>';
+  function oriBar() {
+    return '<div class="o-bar"><span class="o-bl"><b data-live="time">' + esc(st.time || '') + '</b><span>' + esc((st.weekday ? st.weekday.slice(0, 2) + '., ' : '') + (st.date || '')) + '</span></span><span class="o-br">'
+      + (st.wifi ? '<svg role="img" aria-label="WLAN verbunden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.7a10 10 0 0 1 13 0M9 16.3a5 5 0 0 1 6 0M12 19.6h.01"/></svg>' : '')
+      + (st.bt ? '<svg role="img" aria-label="Bluetooth an" width="16" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></svg>' : '')
+      + '<span class="o-bat"><svg aria-hidden="true" width="26" height="14" viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="3.5" width="' + Math.max(1, Math.round(16 * Math.min(100, st.battery || 0) / 100)) + '" height="7" rx="1.2" fill="currentColor"/><rect x="23.4" y="4.5" width="2" height="5" rx="1" fill="currentColor"/></svg><b><span data-live="bat">' + esc(st.battery) + '</span> %</b></span></span></div>';
+  }
+  var DK = {
+    start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+    fav: 'M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z', einst: 'M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4', upd: 'M12 4v11M7 11l5 5 5-5M5 20h14'
+  };
+  function oriDock(active, hint) {
+    var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['apps', 'Apps', 'swap:3.7'], ['fav', 'Favoriten', 'swap:3.4'], ['einst', 'Einstellungen', 'go:5.1']];
+    if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
+    return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 40 40"><polygon points="4,8 36,4 30,34 8,36" fill="#ff8a4c"/><polygon points="4,8 36,4 18,20" fill="#ffc9a3"/><polygon points="18,20 30,34 8,36" fill="#c2410c"/></svg><b>Ori OS</b></span><div class="o-dki">'
+      + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
+      + '</div><span class="o-hint">' + hint + '</span></nav>';
+  }
+  function oriTop(active, hint, main) { return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + oriBar() + '<main class="o-main">' + main + '</main>' + oriDock(active, hint) + '</div>'; }
   function mxHome() {
     var list = homeRow(), at = sel ? sel.key : '';
     if (!list.some(function (a) { return a.key === at; })) at = list[0] ? list[0].key : '';
-    function d(ic, t, act) { return '<button type="button" class="h-d" data-act="' + act + '" aria-label="' + t + '">' + mi(ic, 26) + '<i>' + t + '</i></button>'; }
-    return '<div class="mx" style="width:960px;height:540px"><div class="h-bar"><span class="h-time" data-live="time">' + esc(st.time || '') + '</span><span class="h-r">' + (st.wifi ? mi('wifi', 18) : '') + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>'
-      + '<div class="h-name"><small id="h-sys"></small><span id="h-title"></span></div>'
-      + '<div class="h-row" id="h-row"><div class="h-track" id="h-track">' + list.map(function (a) { return '<button type="button" class="h-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + ' style="' + tileBg(a) + '">' + tileIn(a) + '</button>'; }).join('')
-      + '<button type="button" class="h-t more" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">' + mi('grid', 34) + '<span>Alle ' + apps.length + '</span></button></div></div>'
-      + '<div class="h-dock">' + d('grid', st.games ? 'Alle Spiele' : 'Alle Apps', 'swap:' + (st.games ? '3.1' : '3.7')) + d('star', 'Favoriten', 'swap:3.4') + d('search', 'Suche', 'go:3.3') + (st.games ? d('pad', 'Apps', 'swap:3.7') : '') + d('set', 'System', 'go:5.1') + (st.upd && st.upd.available ? d('down', 'Update', 'go:6.2') : '') + '</div>'
-      + mxKeys([['A', 'Starten'], ['X', 'Optionen']]) + '</div>';
+    return oriTop('start', 'A Starten · X Details · Y Bibliothek · L2/R2 blättern',
+      '<div class="o-head"><div class="o-tt"><span class="o-kick" id="h-sys"></span><h1 class="o-h1" id="h-title"></h1><span class="o-quote" id="h-quote"></span></div>'
+      + '<div class="o-btns"><button type="button" class="o-btn" data-act="details">Details</button><button type="button" class="o-go" data-act="launch"><i>A</i>Starten</button></div></div>'
+      + '<div class="o-row" id="h-row">' + list.map(function (a) { return '<button type="button" class="o-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + '><span class="o-frame">' + tileIn(a) + '</span><span class="o-tn">' + esc(a.label) + '</span></button>'; }).join('') + '</div>'
+      + '<div class="o-chips"><span class="o-chip"><b>Zuletzt</b> · <span id="h-last"></span></span><span class="o-chip" id="h-ortc"><b>Liegt auf</b> · <span id="h-ort"></span></span><span style="flex:1"></span><button type="button" class="o-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + (st.games ? 'Spiele' : 'Apps') + ' ansehen</button></div>');
   }
-  var selT = 0, hOff = 0;
+  var selT = 0;
   function mxHomeBind() {
-    var track = document.getElementById('h-track'), tiles = qa('.h-t', track);
-    var TW = 184, GAP = 16, PAD = 40, max = Math.max(0, PAD * 2 + tiles.length * (TW + GAP) - GAP - W);
-    /* Wie auf einer Konsole: die Reihe bewegt sich nur, wenn die Auswahl an den Rand kommt. Die nächste Kachel schaut immer schon herein. */
-    function place(i) {
-      var l = PAD + i * (TW + GAP), r = l + TW;
-      if (l - hOff < PAD + 40) hOff = l - PAD - 40; else if (r - hOff > W - PAD - 110) hOff = r - (W - PAD - 110);
-      hOff = Math.max(0, Math.min(max, hOff));
-      track.style.transform = 'translate3d(' + -hOff + 'px,0,0)';
-    }
-    track.style.transition = 'none';
-    requestAnimationFrame(function () { requestAnimationFrame(function () { track.style.transition = ''; }); });
-    tiles.forEach(function (el, i) {
+    var row = document.getElementById('h-row'), tiles = qa('.o-t', row);
+    tiles.forEach(function (el) {
       var a = appByKey(el.dataset.key || '');
       el._onfoc = function () {
-        document.getElementById('h-sys').textContent = a ? subOf(a).toUpperCase() : 'BIBLIOTHEK';
-        document.getElementById('h-title').textContent = a ? a.label : 'Alles anzeigen';
-        place(i);
-        if (a && (!sel || sel.key !== a.key)) {
-          sel = a; clearTimeout(selT);
-          /* Merken und unten nachziehen erst, wenn das Blättern kurz steht: so bremst es das Blättern nicht. */
-          selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 180);
-        }
+        if (!a) return;
+        document.getElementById('h-sys').textContent = kickOf(a).toUpperCase();
+        var t = document.getElementById('h-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 26 ? '30px' : a.label.length > 18 ? '38px' : '46px';
+        document.getElementById('h-quote').textContent = quoteOf(a);
+        document.getElementById('h-last').textContent = lastOf(a);
+        document.getElementById('h-ort').textContent = placeOf(a); document.getElementById('h-ortc').style.display = a.game ? '' : 'none';
+        if (!sel || sel.key !== a.key) { sel = a; clearTimeout(selT); selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 180); }
+        var still = root.classList.contains('pl-still');
+        setTimeout(function () {
+          var r = el.getBoundingClientRect(), R = row.getBoundingClientRect(), z = R.width / row.offsetWidth || 1;
+          row.scrollTo({ left: Math.max(0, row.scrollLeft + ((r.left + r.width / 2) - (R.left + R.width / 2)) / z), behavior: still ? 'auto' : 'smooth' });
+        }, still ? 0 : 200);
       };
     });
+    if (!tiles.length) { document.getElementById('h-title').textContent = 'Noch nichts da'; }
     root._switch = function (d) { var i = tiles.indexOf(foc); if (i < 0) { setFocus(tiles[0]); return; } setFocus(tiles[Math.max(0, Math.min(tiles.length - 1, i + d))]); };
-    root._switchOn = function () { return tiles.indexOf(foc) >= 0; };
+    root._switchOn = function () { return false; };
   }
   function mxLib() {
     var favs = cur === '3.4', find = cur === '3.3', gamesTab = cur === '3.1' || cur === '3.2', list = apps.slice(), chips = '';
@@ -628,28 +655,28 @@
       var ids = [], f = pref('sysf', '');
       list.forEach(function (a) { if (ids.indexOf(a.sysid) < 0) ids.push(a.sysid); });
       if (ids.indexOf(f) < 0) f = '';
-      if (ids.length > 1) chips = [''].concat(ids).map(function (id) { return '<button type="button" class="mx-chip' + (id === f ? ' on' : '') + '" data-act="sys:' + id + '">' + (id ? esc(id.toUpperCase()) : 'Alle') + '</button>'; }).join('');
+      if (ids.length > 1) chips = [''].concat(ids).map(function (id) { return '<button type="button" class="o-fc' + (id === f ? ' on' : '') + '" data-act="sys:' + id + '">' + (id ? esc(id.toUpperCase()) : 'Alle') + '</button>'; }).join('');
       rootSys = [''].concat(ids);
       if (f) list = list.filter(function (a) { return a.sysid === f; });
     } else list = list.filter(function (a) { return !a.game; });
-    if (!find && !favs && pref('sort', 'last') === 'last') list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
+    var byLast = pref('sort', 'last') === 'last';
+    if (!find && !favs && byLast) list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
     var cards = list.map(function (a, i) {
-      var h = hue(a);
-      return '<button type="button" class="mx-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 28 + 'ms;' + tileBg(a) + '">'
-        + (a.game ? (a.cov ? '<img class="mx-cover" src="' + img(a, 'icon') + '" alt=""><span class="mx-shade"></span>' : '<b class="mx-big">' + esc(a.sysid.toUpperCase()) + '</b>') + '<span class="mx-sysb">' + esc(a.sysid.toUpperCase()) + '</span>'
-          : '<img class="mx-cover" decoding="async" src="' + img(a, a.img ? 'image' : 'tile') + '" alt=""><span class="mx-shade"></span>')
-        + (a.fav ? '<span class="mx-fav">' + mi('star', 14, 2.2) + '</span>' : '') + '<em>' + esc(a.label) + '</em></button>';
+      return '<button type="button" class="o-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 26 + 'ms">' + tileIn(a)
+        + '<span class="o-ct"><b>' + (a.fav ? '★ ' : '') + esc(a.label) + '</b><span>' + esc(a.game ? a.sys : 'App') + '</span></span></button>';
     }).join('');
     if (!list.length) {
-      if (gamesTab && !st.files) cards = '<div class="mx-empty"><b>Noch keine Spiele</b>Polarlicht braucht einmal die Erlaubnis, deine Spieleordner zu lesen.<button type="button" class="mx-play" data-act="and:files" data-first="1">Zugriff erlauben</button></div>';
-      else if (gamesTab) cards = '<div class="mx-empty"><b>' + (st.scanning ? 'Suche läuft …' : 'Keine Spiele gefunden') + '</b>Leg deine Spiele in einen Ordner „ROMs“ mit einem Unterordner je System, zum Beispiel ROMs/nds, ROMs/gba oder ROMs/switch. Cover aus ES-DE werden automatisch übernommen.<button type="button" class="mx-play" data-act="rescan" data-first="1">Neu suchen</button></div>';
-      else cards = '<div class="mx-empty"><b>' + (favs ? 'Noch keine Favoriten' : 'Nichts gefunden') + '</b>' + (favs ? 'Start auf einem Spiel oder einer App setzt einen Favoriten.' : '') + '</div>';
+      if (gamesTab && !st.files) cards = '<div class="o-empty"><b>Noch keine Spiele</b>Ori braucht einmal die Erlaubnis, deine Spieleordner zu lesen.<button type="button" class="o-go" data-act="and:files" data-first="1">Zugriff erlauben</button></div>';
+      else if (gamesTab) cards = '<div class="o-empty"><b>' + (st.scanning ? 'Suche läuft …' : 'Keine Spiele gefunden') + '</b>Leg deine Spiele in einen Ordner „ROMs“ mit einem Unterordner je System, zum Beispiel ROMs/nds, ROMs/gba oder ROMs/switch. Bilder holt Ori sich selbst.<button type="button" class="o-go" data-act="rescan" data-first="1">Neu suchen</button></div>';
+      else cards = '<div class="o-empty"><b>' + (favs ? 'Noch keine Favoriten' : 'Nichts gefunden') + '</b>' + (favs ? 'Start auf einem Spiel oder einer App setzt einen Favoriten.' : '') + '</div>';
     }
-    if (find) return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(-1)
-      + '<div class="mx-lhead"><div class="mx-find">' + mi('search', 20, 2.2) + '<span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i></i></div><div class="mx-s" style="margin-left:12px">' + list.length + ' Treffer</div></div><div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['B', 'Suche schließen']]) + '</div>';
-    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(favs ? 2 : gamesTab ? 1 : 3)
-      + '<div class="mx-lhead"><div class="mx-count">' + list.length + (favs ? ' Favoriten' : gamesTab ? ' Spiele' : ' Apps') + '</div>' + chips + (favs ? '' : '<button type="button" class="mx-chip" data-act="sort">' + (pref('sort', 'last') === 'last' ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + '<button type="button" class="mx-chip" data-act="go:3.3">' + mi('search', 16, 2.2) + 'Suche</button></div>'
-      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit']].concat(chips ? [['L2 R2', 'System']] : [])) + '</div>';
+    var name = find ? 'Suche' : favs ? 'Favoriten' : gamesTab ? 'Bibliothek' : 'Apps', count = list.length + (find ? ' Treffer' : favs ? ' Favoriten' : gamesTab ? (list.length === 1 ? ' Spiel' : ' Spiele') : ' Apps');
+    var head = find
+      ? '<div class="o-lh"><div class="o-find">' + '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4"/></svg><span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i class="blink"></i></div></div>'
+      : '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + name + '</h1><span class="o-kick">' + (favs ? 'DEINE LIEBLINGE' : gamesTab ? 'ALLE SPIELE' : 'ALLES ANDERE') + '</span></div><span class="o-quote" style="font-size:21px">' + (favs ? 'Die üblichen Verdächtigen.' : gamesTab ? 'Und du nimmst eh wieder dasselbe.' : 'Was man halt so braucht.') + '</span></div>';
+    return oriTop(find ? '' : favs ? 'fav' : gamesTab ? 'bib' : 'apps', find ? 'A Öffnen · X Details · B Suche schließen' : 'A Öffnen · X Details · Y Suchen · Start Favorit' + (chips ? ' · L2/R2 Filter' : ''),
+      head + '<div class="o-fcs">' + chips + (find || favs ? '' : '<button type="button" class="o-fc" data-act="sort">' + (byLast ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + (find ? '' : '<button type="button" class="o-fc" data-act="go:3.3">Suchen</button>') + '<span style="flex:1"></span><span class="o-cnt">' + count + (find || favs ? '' : ' · sortiert nach „' + (byLast ? 'Zuletzt gespielt' : 'Name') + '“') + '</span></div>'
+      + '<div class="o-grid">' + cards + '</div>');
   }
   var rootSys = [''];
   function mxLibBind() {
@@ -657,38 +684,36 @@
     root._switch = function (d) { if (rootSys.length < 2) return; var i = Math.max(0, rootSys.indexOf(pref('sysf', ''))); J.setPref('sysf', rootSys[(i + d + rootSys.length) % rootSys.length]); snd('ok'); show(cur); };
     root._switchOn = function () { return false; };
   }
+  function uHead(title, right) { return '<header class="u-head"><b>' + title + '</b><span>' + right + '</span></header>'; }
   function mxPanel() {
-    var a = sel, g = a && a.game ? ginfo(a) : {}, others = homeRow().filter(function (x) { return !a || x.key !== a.key; }).slice(0, 4);
-    function hs(k, n, pct) { return '<div class="u-sl" data-hs="' + k + '">' + mi(n, 22) + '<div class="u-tr"><em style="width:' + pct + '%"></em></div><b>' + pct + '</b></div>'; }
-    function tg(n, t, act, on) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '">' + mi(n, 24) + '<i>' + t + '</i></button>'; }
-    function ch(t, act) { return '<button type="button" class="u-ch" data-act="' + act + '">' + t + '</button>'; }
-    var head = a
-      ? '<div class="u-hd"><div class="u-cv" style="' + tileBg(a) + '">' + tileIn(a) + '</div><div class="u-tx"><small>' + esc(subOf(a).toUpperCase()) + '</small><div>' + esc(a.label) + '</div></div><button type="button" class="u-go" data-act="launch">' + mi('play', 20) + (a.game ? 'Spielen' : 'Öffnen') + '</button></div>'
-        + '<div class="u-chs">' + ch(a.fav ? '★ Favorit' : '☆ Favorit', 'fav') + ch('Details', 'details')
-        + (a.game ? ((g.emus || []).length > 1 ? ch('Emulator', 'go:3.6') : '') : ch('App-Info', 'and:app:' + esc(a.key))) + '</div>'
-      : '<div class="u-hd"><div class="u-tx"><small>POLARLICHT</small><div>Noch nichts ausgewählt</div></div></div>';
-    return '<div class="mx" style="width:620px;height:540px">' + head
-      + '<div class="u-lb">Schnell starten</div><div class="u-mr">' + others.map(function (b) { return '<button type="button" class="u-m" data-act="launch:' + esc(b.key) + '" style="' + tileBg(b) + '">' + tileIn(b) + '<span>' + esc(b.label) + '</span></button>'; }).join('') + '</div>'
-      + '<div class="u-sls">' + hs('b', 'sun', st.brightness || 0) + hs('v', 'vol', st.volume || 0) + '</div>'
-      + '<div class="u-tgs">' + tg('wifi', 'WLAN', 'and:wifi', st.wifi) + tg('bt', 'Bluetooth', 'and:bt', st.bt) + tg('plane', 'Flugmodus', 'and:airplane', st.airplane) + tg('search', 'Suche', 'go:3.3') + tg('grid', st.games ? 'Spiele' : 'Apps', st.games ? 'go:3.1' : 'go:3.7') + tg('star', 'Favoriten', 'go:3.4') + tg('set', 'System', 'go:5.1') + '</div>'
-      + '<div class="u-ft"><span>Akku ' + esc(st.battery) + ' %' + (st.temp ? ' · ' + esc(st.temp) : '') + '</span><span>' + esc(st.free || '') + ' frei</span></div></div>';
+    var feld = pref('unten', 'start') === 'feld', a = sel;
+    function nav(t, act, on) { return '<button type="button" class="u-nav' + (on ? ' on' : '') + '" data-act="' + act + '">' + t + '</button>'; }
+    if (feld) {
+      var tg = function (n, on, act) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '"><b>' + n + '</b><span>' + (on ? 'An' : 'Aus') + '</span></button>'; };
+      var sl = function (k, n, v) { return '<div class="u-sl"><label for="u-' + k + '">' + n + '</label><input id="u-' + k + '" type="range" min="0" max="100" value="' + v + '" data-hs="' + k + '"></div>'; };
+      return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Bedienfeld', esc(st.time || '') + ' · Akku ' + esc(st.battery) + ' %' + (st.wifi ? ' · WLAN' : '') + '<button type="button" class="u-hl" data-act="unten:start">Start</button>') + W_BOT
+        + '<div class="u-body"><section class="u-tgs">' + tg('WLAN', st.wifi, 'and:wifi') + tg('Bluetooth', st.bt, 'and:bt') + tg('Flugmodus', st.airplane, 'and:airplane') + '</section>'
+        + '<section class="u-card">' + sl('b', 'Helligkeit', st.brightness || 0) + sl('v', 'Lautstärke', st.volume || 0) + '</section>'
+        + '<span class="o-quote" style="font-size:20px">Akku ' + esc(st.battery) + ' %' + (st.temp ? ', ' + esc(st.temp) : '') + '. ' + esc(st.free || '') + ' frei.</span>'
+        + '<div style="flex:1"></div><nav class="u-navs">' + nav('Start', 'home', true) + nav('Bibliothek', st.games ? 'go:3.1' : 'go:3.7') + nav('Einstellungen', 'go:5.1') + nav('Suchen', 'go:3.3') + '</nav></div></div>';
+    }
+    var favs = homeRow().slice(0, 6);
+    return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Start', 'Tippen startet oben<button type="button" class="u-hl" data-act="unten:feld">Bedienfeld</button>') + W_BOT
+      + '<div class="u-body"><button type="button" class="u-search" data-act="go:3.3"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4"/></svg>Spiel oder App suchen</button>'
+      + '<b class="u-lb">' + (favs.some(function (x) { return x.fav; }) ? 'Favoriten und zuletzt' : 'Zuletzt') + '</b><div class="u-favs">' + favs.map(function (b) { return '<button type="button" class="u-fav' + (a && a.key === b.key ? ' on' : '') + '" data-act="launch:' + esc(b.key) + '"><span class="u-fa">' + tileIn(b) + '</span><span class="u-ft"><b>' + esc(b.label) + '</b><span>' + esc(b.game ? b.sysid.toUpperCase() : 'App') + '</span></span></button>'; }).join('') + '</div>'
+      + '<span class="o-quote" style="font-size:20px">' + (a ? esc(a.label) + ' ist oben ausgewählt.' : 'Oben ist noch nichts ausgewählt.') + '</span>'
+      + (a ? '<div class="u-acts"><button type="button" class="o-go" data-act="launch"><i>A</i>' + (a.game ? 'Spielen' : 'Öffnen') + '</button><button type="button" class="o-btn" data-act="fav">' + (a.fav ? '★ Favorit' : '☆ Favorit') + '</button><button type="button" class="o-btn" data-act="details">Details</button></div>' : '')
+      + '<div style="flex:1"></div><nav class="u-navs">' + nav('Bibliothek', st.games ? 'go:3.1' : 'go:3.7') + nav('Apps', 'go:3.7') + nav('Favoriten', 'go:3.4') + nav('Einstellungen', 'go:5.1') + '</nav></div></div>';
   }
   function mxPanelBind() {
-    qa('.u-sl', root).forEach(function (el) {
-      var k = el.dataset.hs, tr = el.children[1];
-      var drag = function (e) {
-        var p = e.touches ? e.touches[0] : e, r = tr.getBoundingClientRect(), pct = Math.round(Math.max(0, Math.min(1, (p.clientX - r.left) / r.width)) * 100);
-        tr.firstElementChild.style.width = pct + '%'; el.lastElementChild.textContent = pct;
-        if (k === 'b') J.setBrightness(pct); else J.setVolume(pct);
-        e.preventDefault();
-      };
-      el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false }); el.addEventListener('mousedown', drag);
+    qa('input[data-hs]', root).forEach(function (el) {
+      el.addEventListener('input', function () { if (el.dataset.hs === 'b') J.setBrightness(+el.value); else J.setVolume(+el.value); });
     });
   }
-  var ACC0 = '#5CF2C0', OLD0 = '#16161a'; /* OLD0 war die Vorgabe im hellen Look und wäre auf Dunkel unsichtbar */
-  var ACCS = ['#F3F3F6', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
+  var ACC0 = '#c2410c', OLD0 = '#16161a'; /* OLD0 war die Vorgabe im hellen Look und wäre auf Dunkel unsichtbar */
+  var ACCS = ['#c2410c', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
   function accDark(c) { var m = /^#([0-9a-f]{6})$/i.exec(c); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 140; }
-  function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; if (c === OLD0) c = ACC0; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
+  function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; if (c === OLD0 || c === '#5CF2C0') c = ACC0; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
   function setAcc(c) { J.setPref('acc', c); applyAcc(); J.sync(''); }
   function mxAcc() {
     var now = pref('acc', ACC0), hueNow = +pref('acch', '80');
@@ -716,47 +741,42 @@
       .replace(/#5FD38D/g, 'var(--acc)').replace(/border-radius:14px/g, 'border-radius:22px');
   }
 
-  /* ---------- Details (3.5) und Emulator-Auswahl (3.6) ---------- */
+  /* ---------- Spielseite (3.5) und Emulator-Auswahl (3.6) ---------- */
   function ginfo(a) { try { return a && a.game && J.gameInfo ? JSON.parse(J.gameInfo(a.key)) : {}; } catch (e) { return {}; } }
   function mb(n) { n = +n || 0; return n >= 1073741824 ? (n / 1073741824).toFixed(1).replace('.', ',') + ' GB' : n >= 1048576 ? Math.round(n / 1048576) + ' MB' : n ? Math.max(1, Math.round(n / 1024)) + ' KB' : '–'; }
   function emuNow(g) { var e = g.emus || []; return e.indexOf(g.chosen) >= 0 ? g.chosen : e[0] || ''; }
   function mxDet() {
-    var a = sel; if (!a) return '<div class="mx" style="width:' + (TOP ? 960 : 620) + 'px;height:540px"></div>';
-    var g = ginfo(a), h = hue(a), emu = emuNow(g), n = (g.emus || []).length;
+    var a = sel; if (!a) return '<div class="mx ori" style="width:' + (TOP ? 960 : 620) + 'px;height:540px"></div>';
+    var g = ginfo(a), emu = emuNow(g), n = (g.emus || []).length;
     if (!TOP) {
-      var t = function (ic, x, y, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:var(--acct)' : '') + '">' + mi(ic, 28, 2) + '<span><b>' + x + '</b><small>' + y + '</small></span></button>'; };
-      return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + h + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
-        + '<div style="position:relative;flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:12px">' + t('play', 'Starten', esc(a.label), 'launch', LIME)
-        + t('star', a.fav ? 'Favorit entfernen' : 'Als Favorit', a.fav ? 'Steht oben auf der Startseite' : 'Kommt auf die Startseite', 'fav')
-        + (a.game ? t('pad', 'Emulator', emu ? esc(emu) : 'Keiner installiert', n ? 'go:3.6' : 'go:!Für ' + esc(g.sysFull || a.sys) + ' ist kein passender Emulator installiert.') : t('set', 'App-Info', 'Android-Einstellungen', 'and:app:' + esc(a.key)))
-        + t('back', 'Zurück', 'Zur Bibliothek', 'go:back') + '</div></div>';
+      var t = function (x, y, act, on) { return '<button type="button" class="u-big' + (on ? ' on' : '') + '" data-act="' + act + '"><b>' + x + '</b><span>' + y + '</span></button>'; };
+      return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead(esc(a.label), esc(kickOf(a))) + W_BOT
+        + '<div class="u-body"><div class="u-bigs">' + t(a.game ? 'Spielen' : 'Öffnen', 'Startet auf dem oberen Bildschirm', 'launch', true)
+        + t(a.fav ? 'Favorit entfernen' : 'Als Favorit', a.fav ? 'Steht vorn auf der Startseite' : 'Kommt vorn auf die Startseite', 'fav')
+        + (a.game ? t('Emulator', emu ? esc(emu) : 'Keiner installiert', n ? 'go:3.6' : 'go:!Für ' + esc(g.sysFull || a.sys) + ' ist kein passender Emulator installiert.') : t('App-Info', 'Android-Einstellungen', 'and:app:' + esc(a.key)))
+        + t('Zurück', 'Zur Bibliothek', 'go:back') + '</div></div></div>';
     }
     var facts = a.game
-      ? [['System', g.sysFull || a.sys], ['Emulator', emu || 'Keiner installiert'], ['Datei', g.file || '–'], ['Größe', mb(g.size)], ['Ordner', g.folder || '–']]
-      : [['Art', 'App'], ['Favorit', a.fav ? 'Ja' : 'Nein'], ['Paket', a.key.split('/')[0]]];
-    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(a) + '</div>' + mxNav(-1)
-      + '<div class="mx-det"><div class="mx-dcov" style="' + tileBg(a) + '">'
-      + (a.game ? (a.cov ? '<img class="full" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : '<img class="full" src="' + img(a, a.img ? 'image' : 'tile') + '" alt="">') + '</div>'
-      + '<div class="mx-dinfo"><span class="mx-tag">' + esc(a.game ? a.sysid.toUpperCase() : 'APP') + (a.fav ? ' · FAVORIT' : '') + '</span>'
-      + '<div class="mx-title" style="font-size:' + (a.label.length > 24 ? 28 : a.label.length > 14 ? 36 : 46) + 'px">' + esc(a.label) + '</div>'
-      + '<div class="mx-meta">' + (a.last ? 'Zuletzt ' + (a.game ? 'gespielt' : 'geöffnet') + ' am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht ' + (a.game ? 'gespielt' : 'geöffnet')) + '</div>'
-      + '<div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="mx-play" data-act="launch" data-first="1">' + mi('play', 20) + 'Starten</button>'
-      + '<button type="button" class="mx-ghost" data-act="fav">' + (a.fav ? 'Favorit entfernen' : 'Als Favorit') + '</button>'
-      + (a.game ? (n > 1 ? '<button type="button" class="mx-ghost" data-act="go:3.6">Emulator wählen</button>' : '') : '<button type="button" class="mx-ghost" data-act="and:app:' + esc(a.key) + '">App-Info</button>') + '</div>'
-      + '<div class="mx-facts">' + facts.map(function (f) { return '<div><span>' + f[0] + '</span><b>' + esc(f[1]) + '</b></div>'; }).join('') + '</div></div></div>'
-      + mxKeys([['A', 'Auswählen'], ['X', 'Favorit']].concat(a.game && n > 1 ? [['Y', 'Emulator']] : []).concat([['B', 'Zurück']])) + '</div>';
+      ? [['System', g.sysFull || a.sys], ['Emulator', emu || 'Keiner installiert'], ['Datei', g.file || '–'], ['Größe', mb(g.size)], ['Liegt auf', placeOf(a)], ['Zuletzt', lastOf(a)]]
+      : [['Art', 'App'], ['Favorit', a.fav ? 'Ja' : 'Nein'], ['Paket', a.key.split('/')[0]], ['Zuletzt', lastOf(a)]];
+    return oriTop('', 'A Auswählen · X Favorit' + (a.game && n > 1 ? ' · Y Emulator' : '') + ' · B Zurück',
+      '<div class="o-det"><div class="o-dl"><span class="o-frame big">' + tileIn(a) + '</span><button type="button" class="o-link" data-act="go:back">‹ Zurück</button></div>'
+      + '<div class="o-dm"><span class="o-kick">' + esc(kickOf(a).toUpperCase()) + '</span><h1 class="o-h1" style="font-size:' + (a.label.length > 22 ? 30 : a.label.length > 14 ? 36 : 42) + 'px">' + esc(a.label) + '</h1><span class="o-quote">' + quoteOf(a) + '</span>'
+      + '<div class="o-btns" style="margin:8px 0 0;flex-wrap:wrap"><button type="button" class="o-go" data-act="launch" data-first="1"><i>A</i>' + (a.last ? (a.game ? 'Weiterspielen' : 'Öffnen') : 'Starten') + '</button>'
+      + '<button type="button" class="o-btn" data-act="fav">' + (a.fav ? 'Favorit entfernen' : 'Als Favorit') + '</button>'
+      + (a.game ? (n > 1 ? '<button type="button" class="o-btn" data-act="go:3.6">Emulator wählen</button>' : '') : '<button type="button" class="o-btn" data-act="and:app:' + esc(a.key) + '">App-Info</button>') + '</div></div>'
+      + '<section class="o-facts"><span class="o-kick" style="padding-bottom:6px">ANGABEN</span>' + facts.map(function (f) { return '<div><b>' + f[0] + '</b><span>' + esc(f[1]) + '</span></div>'; }).join('') + '</section></div>');
   }
   function mxEmu() {
-    var a = sel, g = ginfo(a), list = g.emus || [], now = emuNow(g), w = TOP ? 960 : 620;
+    var a = sel, g = ginfo(a), list = g.emus || [], now = emuNow(g), name = esc(g.sysFull || (a && a.sys) || 'dieses System');
     var rows = list.map(function (e, i) {
       var on = e === now;
-      return '<button type="button" class="mx-row' + (on ? ' on' : '') + '" data-act="emu:' + esc(e) + '" data-scroll="1"' + (on || (!now && i === 0) ? ' data-first="1"' : '') + '><span>' + esc(e) + '</span><small>' + (on ? 'Ausgewählt' : i === 0 ? 'Vorschlag' : '') + '</small></button>';
+      return '<button type="button" class="o-rowb' + (on ? ' on' : '') + '" data-act="emu:' + esc(e) + '" data-scroll="1"' + (on || (!now && i === 0) ? ' data-first="1"' : '') + '><b>' + esc(e) + '</b><span>' + (on ? 'Ausgewählt' : i === 0 ? 'Vorschlag' : '') + '</span></button>';
     }).join('');
-    if (!list.length) rows = '<div class="mx-empty"><b>Kein Emulator</b>Für ' + esc(g.sysFull || (a && a.sys) || 'dieses System') + ' ist kein passender Emulator installiert. Installier einen und öffne diese Seite noch einmal.</div>';
-    return '<div class="mx" style="width:' + w + 'px;height:540px"><div id="mx-bgs">' + mxBg(TOP ? a : null) + '</div>' + (TOP ? mxNav(-1) : '')
-      + '<div class="mx-list" style="left:' + (TOP ? 28 : 20) + 'px;right:' + (TOP ? 28 : 20) + 'px;top:' + (TOP ? 86 : 20) + 'px;bottom:' + (TOP ? 58 : 20) + 'px">'
-      + '<div class="mx-lt">Emulator für ' + esc(g.sysFull || (a && a.sys) || 'dieses System') + '</div><div class="mx-s" style="margin:-4px 0 6px">Gilt für alle Spiele dieses Systems.</div>' + rows + '</div>'
-      + (TOP ? mxKeys([['A', 'Auswählen'], ['B', 'Zurück']]) : '') + '</div>';
+    if (!list.length) rows = '<div class="o-empty"><b>Kein Emulator</b>Für ' + name + ' ist kein passender Emulator installiert. Installier einen und öffne diese Seite noch einmal.</div>';
+    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">Emulator</h1><span class="o-kick">' + name.toUpperCase() + '</span></div><span class="o-quote" style="font-size:21px">Gilt für alle Spiele dieses Systems.</span></div><div class="o-list">' + rows + '</div>';
+    if (TOP) return oriTop('', 'A Auswählen · B Zurück', inner);
+    return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Emulator', name) + W_BOT + '<div class="u-body"><div class="o-list">' + rows + '</div></div></div>';
   }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
@@ -771,6 +791,7 @@
     if (k === 'launch') launch(v ? appByKey(v) : sel);
     else if (k === 'details') details();
     else if (k === 'fav') fav(sel);
+    else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
     else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
@@ -794,7 +815,7 @@
     html = mix ? mix[0]() : skin(html);
     stage.innerHTML = html; root = stage.firstElementChild; foc = null;
     if (mix) root.dataset.mix = '1';
-    if (!mix && !/^1\.([1-6]|18)$/.test(key)) root.classList.add('pl-inv');
+    if (!mix && !/^1\.([1-6]|18)$/.test(key)) { root.classList.add('pl-inv'); if (pref('acc', ACC0) === ACC0) root.style.setProperty('--acc', '#f3713d'); }
     if (mix && mix[1]) mix[1]();
     tag();
     if (mix) {
