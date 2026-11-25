@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="ui:setup">1</string>
+    <int name="introBoot" value="1" />
+    <string name="ui:sel">com.android.chrome/com.google.android.apps.chrome.Main</string>
+</map>
