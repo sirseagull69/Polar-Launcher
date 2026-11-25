@@ -575,6 +575,9 @@
   var PAL = [['#fbdbe9', '#b8327a', '#e2609a', '#8f1f55'], ['#f8dcd6', '#b23a28', '#d1604e', '#7c2418'], ['#d9efe0', '#2f7a4d', '#4c9c6c', '#1f5a37'], ['#f6e7c4', '#9a6a12', '#c9973a', '#6e4a08'], ['#dbe5f8', '#2b4a8f', '#3d5fb5', '#1c2f66'], ['#e4dcfb', '#6a4fc7', '#8a72e0', '#4a35a0'], ['#d8eef0', '#1f7480', '#4aa3ae', '#14525b'], ['#e6e8ef', '#3a4466', '#6b7596', '#1b2340']];
   var QUO = ['„Einer geht noch.“', '„Nur kurz reinschauen.“', '„Diesmal klappt es. Bestimmt.“', '„Wo waren wir stehen geblieben?“', '„Fünf Minuten. Höchstens.“', '„Der Akku hält das aus.“', '„Mal sehen, ob das läuft.“', '„Wie früher.“'];
   function pal(a) { return PAL[hue(a) % PAL.length]; }
+  /* Ori, der gefaltete Kranich: Nils' eigene Animationen von selbstgfaltet.de. 'abendrot' für Papier, 'hell' für dunkle Flächen. */
+  function ori(name, size, dark, cls) { return '<img class="o-ori' + (cls ? ' ' + cls : '') + '" data-ori="' + name + '" alt="" aria-hidden="true" width="' + size + '" height="' + size + '" src="ori/' + name + '-' + (dark ? 'hell' : 'abendrot') + '.svg">'; }
+  var greeted = false;
   function quoteOf(a) { return !a ? '' : a.last ? QUO[(hue(a) * 7 + a.label.length) % QUO.length] : '„Noch nie gestartet. Wird Zeit.“'; }
   function fold(p) {
     return '<svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 200 160" preserveAspectRatio="none" style="display:block"><polygon points="0,160 0,96 52,60 100,104 100,160" fill="' + p[1] + '"/><polygon points="100,160 100,104 148,44 200,92 200,160" fill="' + p[2] + '"/><polygon points="52,60 100,104 74,110" fill="' + p[3] + '"/><polygon points="148,44 200,92 166,98" fill="' + p[3] + '"/><polygon points="150,16 166,16 166,32 150,32" fill="#ffe36e"/></svg>';
@@ -608,7 +611,7 @@
   function oriDock(active, hint) {
     var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['apps', 'Apps', 'swap:3.7'], ['fav', 'Favoriten', 'swap:3.4'], ['einst', 'Einstellungen', 'go:5.1']];
     if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
-    return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 40 40"><polygon points="4,8 36,4 30,34 8,36" fill="#ff8a4c"/><polygon points="4,8 36,4 18,20" fill="#ffc9a3"/><polygon points="18,20 30,34 8,36" fill="#c2410c"/></svg><b>Ori OS</b></span><div class="o-dki">'
+    return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 44, true) + '<b>Ori OS</b></span><div class="o-dki">'
       + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
       + '</div><span class="o-hint">' + hint + '</span></nav>';
   }
@@ -617,7 +620,7 @@
     var list = homeRow(), at = sel ? sel.key : '';
     if (!list.some(function (a) { return a.key === at; })) at = list[0] ? list[0].key : '';
     return oriTop('start', 'A Starten · X Details · Y Bibliothek · L2/R2 blättern',
-      '<div class="o-head"><div class="o-tt"><span class="o-kick" id="h-sys"></span><h1 class="o-h1" id="h-title"></h1><span class="o-quote" id="h-quote"></span></div>'
+      '<div class="o-head"><div class="o-tt"><span class="o-kick" id="h-sys"></span><h1 class="o-h1" id="h-title"></h1><span class="o-quote" id="h-quote"></span></div>' + ori(greeted ? 'ruhezustand' : 'winkt', 92, false, 'o-ohome') + '<span style="flex:1"></span>'
       + '<div class="o-btns"><button type="button" class="o-btn" data-act="details">Details</button><button type="button" class="o-go" data-act="launch"><i>A</i>Starten</button></div></div>'
       + '<div class="o-row" id="h-row">' + list.map(function (a) { return '<button type="button" class="o-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + '><span class="o-frame">' + tileIn(a) + '</span><span class="o-tn">' + esc(a.label) + '</span></button>'; }).join('') + '</div>'
       + '<div class="o-chips"><span class="o-chip"><b>Zuletzt</b> · <span id="h-last"></span></span><span class="o-chip" id="h-ortc"><b>Liegt auf</b> · <span id="h-ort"></span></span><span style="flex:1"></span><button type="button" class="o-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + (st.games ? 'Spiele' : 'Apps') + ' ansehen</button></div>');
@@ -625,6 +628,7 @@
   var selT = 0;
   function mxHomeBind() {
     var row = document.getElementById('h-row'), tiles = qa('.o-t', row);
+    if (!greeted) { greeted = true; var oh = root.querySelector('.o-ohome'); timers.push(setTimeout(function () { if (oh && oh.isConnected) oh.src = 'ori/ruhezustand-abendrot.svg'; }, 4400)); }
     tiles.forEach(function (el) {
       var a = appByKey(el.dataset.key || '');
       el._onfoc = function () {
@@ -666,14 +670,14 @@
         + '<span class="o-ct"><b>' + (a.fav ? '★ ' : '') + esc(a.label) + '</b><span>' + esc(a.game ? a.sys : 'App') + '</span></span></button>';
     }).join('');
     if (!list.length) {
-      if (gamesTab && !st.files) cards = '<div class="o-empty"><b>Noch keine Spiele</b>Ori braucht einmal die Erlaubnis, deine Spieleordner zu lesen.<button type="button" class="o-go" data-act="and:files" data-first="1">Zugriff erlauben</button></div>';
-      else if (gamesTab) cards = '<div class="o-empty"><b>' + (st.scanning ? 'Suche läuft …' : 'Keine Spiele gefunden') + '</b>Leg deine Spiele in einen Ordner „ROMs“ mit einem Unterordner je System, zum Beispiel ROMs/nds, ROMs/gba oder ROMs/switch. Bilder holt Ori sich selbst.<button type="button" class="o-go" data-act="rescan" data-first="1">Neu suchen</button></div>';
-      else cards = '<div class="o-empty"><b>' + (favs ? 'Noch keine Favoriten' : 'Nichts gefunden') + '</b>' + (favs ? 'Start auf einem Spiel oder einer App setzt einen Favoriten.' : '') + '</div>';
+      if (gamesTab && !st.files) cards = '<div class="o-empty">' + ori('ratlos', 120) + '<b>Noch keine Spiele</b>Ori braucht einmal die Erlaubnis, deine Spieleordner zu lesen.<button type="button" class="o-go" data-act="and:files" data-first="1">Zugriff erlauben</button></div>';
+      else if (gamesTab) cards = '<div class="o-empty">' + ori(st.scanning ? 'sammelt' : 'ratlos', 120) + '<b>' + (st.scanning ? 'Suche läuft …' : 'Keine Spiele gefunden') + '</b>Leg deine Spiele in einen Ordner „ROMs“ mit einem Unterordner je System, zum Beispiel ROMs/nds, ROMs/gba oder ROMs/switch. Bilder holt Ori sich selbst.<button type="button" class="o-go" data-act="rescan" data-first="1">Neu suchen</button></div>';
+      else cards = '<div class="o-empty">' + ori('ratlos', 120) + '<b>' + (favs ? 'Noch keine Favoriten' : 'Nichts gefunden') + '</b>' + (favs ? 'Start auf einem Spiel oder einer App setzt einen Favoriten.' : '') + '</div>';
     }
     var name = find ? 'Suche' : favs ? 'Favoriten' : gamesTab ? 'Bibliothek' : 'Apps', count = list.length + (find ? ' Treffer' : favs ? ' Favoriten' : gamesTab ? (list.length === 1 ? ' Spiel' : ' Spiele') : ' Apps');
     var head = find
-      ? '<div class="o-lh"><div class="o-find">' + '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4"/></svg><span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i class="blink"></i></div></div>'
-      : '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + name + '</h1><span class="o-kick">' + (favs ? 'DEINE LIEBLINGE' : gamesTab ? 'ALLE SPIELE' : 'ALLES ANDERE') + '</span></div><span class="o-quote" style="font-size:21px">' + (favs ? 'Die üblichen Verdächtigen.' : gamesTab ? 'Und du nimmst eh wieder dasselbe.' : 'Was man halt so braucht.') + '</span></div>';
+      ? '<div class="o-lh"><div class="o-find">' + '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4"/></svg><span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i class="blink"></i></div>' + ori(list.length ? 'websuche' : 'ratlos', 54) + '</div>'
+      : '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + name + '</h1><span class="o-kick">' + (favs ? 'DEINE LIEBLINGE' : gamesTab ? 'ALLE SPIELE' : 'ALLES ANDERE') + '</span></div><span class="o-say">' + '<span class="o-quote" style="font-size:21px">' + (favs ? 'Die üblichen Verdächtigen.' : gamesTab ? 'Und du nimmst eh wieder dasselbe.' : 'Was man halt so braucht.') + '</span>' + ori(favs ? 'triumph' : gamesTab ? 'sassy' : 'ruhezustand-2', 54) + '</span></div>';
     return oriTop(find ? '' : favs ? 'fav' : gamesTab ? 'bib' : 'apps', find ? 'A Öffnen · X Details · B Suche schließen' : 'A Öffnen · X Details · Y Suchen · Start Favorit' + (chips ? ' · L2/R2 Filter' : ''),
       head + '<div class="o-fcs">' + chips + (find || favs ? '' : '<button type="button" class="o-fc" data-act="sort">' + (byLast ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + (find ? '' : '<button type="button" class="o-fc" data-act="go:3.3">Suchen</button>') + '<span style="flex:1"></span><span class="o-cnt">' + count + (find || favs ? '' : ' · sortiert nach „' + (byLast ? 'Zuletzt gespielt' : 'Name') + '“') + '</span></div>'
       + '<div class="o-grid">' + cards + '</div>');
@@ -694,14 +698,14 @@
       return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Bedienfeld', esc(st.time || '') + ' · Akku ' + esc(st.battery) + ' %' + (st.wifi ? ' · WLAN' : '') + '<button type="button" class="u-hl" data-act="unten:start">Start</button>') + W_BOT
         + '<div class="u-body"><section class="u-tgs">' + tg('WLAN', st.wifi, 'and:wifi') + tg('Bluetooth', st.bt, 'and:bt') + tg('Flugmodus', st.airplane, 'and:airplane') + '</section>'
         + '<section class="u-card">' + sl('b', 'Helligkeit', st.brightness || 0) + sl('v', 'Lautstärke', st.volume || 0) + '</section>'
-        + '<span class="o-quote" style="font-size:20px">Akku ' + esc(st.battery) + ' %' + (st.temp ? ', ' + esc(st.temp) : '') + '. ' + esc(st.free || '') + ' frei.</span>'
+        + '<span class="o-say l">' + ori((st.battery || 100) <= 15 ? 'ungeduldig' : 'ruhezustand-2', 58) + '<span class="o-quote" style="font-size:20px">Akku ' + esc(st.battery) + ' %' + (st.temp ? ', ' + esc(st.temp) : '') + '. ' + esc(st.free || '') + ' frei.</span></span>'
         + '<div style="flex:1"></div><nav class="u-navs">' + nav('Start', 'home', true) + nav('Bibliothek', st.games ? 'go:3.1' : 'go:3.7') + nav('Einstellungen', 'go:5.1') + nav('Suchen', 'go:3.3') + '</nav></div></div>';
     }
     var favs = homeRow().slice(0, 6);
     return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Start', 'Tippen startet oben<button type="button" class="u-hl" data-act="unten:feld">Bedienfeld</button>') + W_BOT
       + '<div class="u-body"><button type="button" class="u-search" data-act="go:3.3"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4"/></svg>Spiel oder App suchen</button>'
       + '<b class="u-lb">' + (favs.some(function (x) { return x.fav; }) ? 'Favoriten und zuletzt' : 'Zuletzt') + '</b><div class="u-favs">' + favs.map(function (b) { return '<button type="button" class="u-fav' + (a && a.key === b.key ? ' on' : '') + '" data-act="launch:' + esc(b.key) + '"><span class="u-fa">' + tileIn(b) + '</span><span class="u-ft"><b>' + esc(b.label) + '</b><span>' + esc(b.game ? b.sysid.toUpperCase() : 'App') + '</span></span></button>'; }).join('') + '</div>'
-      + '<span class="o-quote" style="font-size:20px">' + (a ? esc(a.label) + ' ist oben ausgewählt.' : 'Oben ist noch nichts ausgewählt.') + '</span>'
+      + '<span class="o-say l">' + ori('ruhezustand', 58) + '<span class="o-quote" style="font-size:20px">' + (a ? esc(a.label) + ' ist oben ausgewählt.' : 'Oben ist noch nichts ausgewählt.') + '</span></span>'
       + (a ? '<div class="u-acts"><button type="button" class="o-go" data-act="launch"><i>A</i>' + (a.game ? 'Spielen' : 'Öffnen') + '</button><button type="button" class="o-btn" data-act="fav">' + (a.fav ? '★ Favorit' : '☆ Favorit') + '</button><button type="button" class="o-btn" data-act="details">Details</button></div>' : '')
       + '<div style="flex:1"></div><nav class="u-navs">' + nav('Bibliothek', st.games ? 'go:3.1' : 'go:3.7') + nav('Apps', 'go:3.7') + nav('Favoriten', 'go:3.4') + nav('Einstellungen', 'go:5.1') + '</nav></div></div>';
   }
@@ -761,7 +765,7 @@
       : [['Art', 'App'], ['Favorit', a.fav ? 'Ja' : 'Nein'], ['Paket', a.key.split('/')[0]], ['Zuletzt', lastOf(a)]];
     return oriTop('', 'A Auswählen · X Favorit' + (a.game && n > 1 ? ' · Y Emulator' : '') + ' · B Zurück',
       '<div class="o-det"><div class="o-dl"><span class="o-frame big">' + tileIn(a) + '</span><button type="button" class="o-link" data-act="go:back">‹ Zurück</button></div>'
-      + '<div class="o-dm"><span class="o-kick">' + esc(kickOf(a).toUpperCase()) + '</span><h1 class="o-h1" style="font-size:' + (a.label.length > 22 ? 30 : a.label.length > 14 ? 36 : 42) + 'px">' + esc(a.label) + '</h1><span class="o-quote">' + quoteOf(a) + '</span>'
+      + '<div class="o-dm"><span class="o-kick">' + esc(kickOf(a).toUpperCase()) + '</span><h1 class="o-h1" style="font-size:' + (a.label.length > 22 ? 30 : a.label.length > 14 ? 36 : 42) + 'px">' + esc(a.label) + '</h1><span class="o-say l">' + ori(a.last ? 'ruhezustand' : 'winkt', 60) + '<span class="o-quote">' + quoteOf(a) + '</span></span>'
       + '<div class="o-btns" style="margin:8px 0 0;flex-wrap:wrap"><button type="button" class="o-go" data-act="launch" data-first="1"><i>A</i>' + (a.last ? (a.game ? 'Weiterspielen' : 'Öffnen') : 'Starten') + '</button>'
       + '<button type="button" class="o-btn" data-act="fav">' + (a.fav ? 'Favorit entfernen' : 'Als Favorit') + '</button>'
       + (a.game ? (n > 1 ? '<button type="button" class="o-btn" data-act="go:3.6">Emulator wählen</button>' : '') : '<button type="button" class="o-btn" data-act="and:app:' + esc(a.key) + '">App-Info</button>') + '</div></div>'
@@ -773,8 +777,8 @@
       var on = e === now;
       return '<button type="button" class="o-rowb' + (on ? ' on' : '') + '" data-act="emu:' + esc(e) + '" data-scroll="1"' + (on || (!now && i === 0) ? ' data-first="1"' : '') + '><b>' + esc(e) + '</b><span>' + (on ? 'Ausgewählt' : i === 0 ? 'Vorschlag' : '') + '</span></button>';
     }).join('');
-    if (!list.length) rows = '<div class="o-empty"><b>Kein Emulator</b>Für ' + name + ' ist kein passender Emulator installiert. Installier einen und öffne diese Seite noch einmal.</div>';
-    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">Emulator</h1><span class="o-kick">' + name.toUpperCase() + '</span></div><span class="o-quote" style="font-size:21px">Gilt für alle Spiele dieses Systems.</span></div><div class="o-list">' + rows + '</div>';
+    if (!list.length) rows = '<div class="o-empty">' + ori('ratlos', 110) + '<b>Kein Emulator</b>Für ' + name + ' ist kein passender Emulator installiert. Installier einen und öffne diese Seite noch einmal.</div>';
+    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">Emulator</h1><span class="o-kick">' + name.toUpperCase() + '</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">Gilt für alle Spiele dieses Systems.</span>' + ori(list.length ? 'denkt-nach' : 'ratlos', 54) + '</span></div><div class="o-list">' + rows + '</div>';
     if (TOP) return oriTop('', 'A Auswählen · B Zurück', inner);
     return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Emulator', name) + W_BOT + '<div class="u-body"><div class="o-list">' + rows + '</div></div></div>';
   }
