@@ -238,8 +238,12 @@
       var cx = Math.abs((b.left + b.right) - (a.left + a.right)) / 2, cy = Math.abs((b.top + b.bottom) - (a.top + a.bottom)) / 2;
       var score = Math.max(p, 0) + s * 4 + (horiz ? cy : cx) * 0.15;
       if (s > 0 && s > Math.max(p, 0) * 2 + 60) return;
+      /* links/rechts: was auf gleicher Höhe liegt, gewinnt immer vor etwas schräg darunter (z. B. der Leiste) */
+      if (horiz && s === 0) score -= 100000;
       if (score < bs) { bs = score; best = el; }
     });
+    /* Von den Einstellungen nach links landet man beim gerade offenen Bereich, nicht irgendwo in der Liste */
+    if (best && dir === 'left' && best.classList.contains('o-cat') && !foc.classList.contains('o-cat')) { var on = root.querySelector('.o-cat.on'); if (on) best = on; }
     if (best) setFocus(best);
   }
 
@@ -875,7 +879,7 @@
   var DC_PAIR = { Sperr: 'UntenSperr', Boot: 'UntenSperr', Einrichtung: 'Tastatur', Schnellmenue: 'BedienfeldSpiel', Medien: 'UntenTouchpad', Update: 'UntenAkku', Ausschalten: 'UntenAkku' };
   var DC_CAT = { Einst: 'bildschirme', EinstNetzwerk: 'netzwerk', EinstController: 'controller', EinstRgb: 'rgb', EinstTon: 'ton', EinstLeistung: 'leistung', EinstSpeicher: 'speicher', EinstEmulatoren: 'emulatoren', EinstSystem: 'system' };
   var DC_DOCK = { start: 'start', bibliothek: 'bib', emulatoren: 'emu', apps: 'apps', medien: 'med', einstellungen: 'einst', aus: 'aus' };
-  function dcKey(name) { return DC_TOP.indexOf(name) >= 0 ? 'dc:' + name + ':' + (DC_PAIR[name] || '') : 'dc:' + (cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '') + ':' + name; }
+  function dcKey(name) { return DC_TOP.indexOf(name) >= 0 ? 'dc:' + name + ':' + (DC_PAIR[name] || '') : 'dc:' + (cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '@' + cur) + ':' + name; }
   function dcLoad(name) {
     if (DCC[name] !== undefined) return DCC[name];
     var raw = J.html('dc-' + name.toLowerCase()); if (!raw) return (DCC[name] = null);
@@ -904,6 +908,8 @@
     if (name.indexOf('power:') === 0) { snd('ok'); if ((J.power ? J.power(name.slice(6)) : 'nein') !== 'ok') note('Geht erst, wenn Ori das System ist.'); return; }
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
     if (nat[name]) { run(nat[name]); return; }
+    /* Unten zurück zum echten Bedienfeld bzw. Start-Begleiter statt zur Vorlage aus dem Canvas */
+    if (!TOP && (name === 'Bedienfeld' || name === 'UntenStart')) { J.setPref('unten', name === 'Bedienfeld' ? 'feld' : 'start'); snd('ok'); var tk = cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '@' + cur; J.swap(tk && tk !== '@' ? 'dc:' + tk + ':' : 'home'); return; }
     if (DC_CAT[name]) { J.setPref('einst', DC_CAT[name]); setKeep = ''; run('5.1'); return; }
     if (!DC_ALL[name]) { note('Diese Ansicht gibt es noch nicht.'); return; }
     snd('ok'); var k = dcKey(name);
@@ -966,7 +972,7 @@
   }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
-    if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
+    if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
@@ -998,6 +1004,8 @@
 
   /* ---------- Anzeigen ---------- */
   function show(key) {
+    /* "dc:@3.1:UntenRgb": unten wechselt, oben bleibt die Ansicht 3.1 stehen, wie sie ist */
+    if (TOP && key.indexOf('dc:@') === 0) { key = key.split(':')[1].slice(1); if (key === cur && root && root.firstChild) return; }
     var mix = mixFor(key), html = mix ? '' : J.html(key + '-' + side);
     if (!mix && !html) return;
     timers.forEach(clearTimeout); timers = []; idx = null;
