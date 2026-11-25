@@ -359,3 +359,8 @@ img{display:block}
 .o-cat{min-height:38px;font-size:15px}
 .o-sec{-webkit-mask-image:none;mask-image:none;padding:0 4px 0 0;margin-bottom:6px}
 .o-sr{min-height:52px}
+/* 0.15.5: Raster springt ohne Gleiten, damit es beim schnellen Blättern mitkommt */
+.o-scroll{scroll-behavior:auto}
+/* Fokus darf die Einblende-Animation der Karten nicht neu starten (sonst blinken Karten beim Blättern weg) */
+.ori .o-card.mx-foc{animation:o-in .4s ease both}
+.o-grid{padding-bottom:170px}

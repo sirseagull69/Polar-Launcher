@@ -204,7 +204,21 @@
     if (!el || foc === el) return;
     if (foc) ring(foc, false);
     foc = el; ring(el, true);
-    if (el.dataset.scroll === 'box') { var bx = el.closest('.o-scroll'); if (bx) { var r1 = el.getBoundingClientRect(), r2 = bx.getBoundingClientRect(), pad = 10; if (r1.top < r2.top + pad) bx.scrollTop -= r2.top + pad - r1.top; else if (r1.bottom > r2.bottom - pad) bx.scrollTop += r1.bottom - (r2.bottom - pad); } }
+    if (el.dataset.scroll === 'box') {
+      var bx = el.closest('.o-scroll');
+      if (bx) {
+        var r1 = el.getBoundingClientRect(), r2 = bx.getBoundingClientRect(), pad = 10;
+        if (bx.classList.contains('o-grid')) {
+          /* Im Raster auf ganze Reihen einrasten, damit oben keine halbe Reihe angeschnitten ist */
+          var gcs = getComputedStyle(bx), stp = (parseFloat(gcs.gridAutoRows) || r1.height) + (parseFloat(gcs.rowGap) || 12);
+          var ct = r1.top - r2.top + bx.scrollTop - (parseFloat(gcs.paddingTop) || 0), row = Math.round(ct / stp);
+          var vis = Math.max(1, Math.floor((bx.clientHeight - (parseFloat(gcs.paddingTop) || 0) + (parseFloat(gcs.rowGap) || 12)) / stp)), top0 = Math.round(bx.scrollTop / stp);
+          if (row < top0) top0 = row; else if (row > top0 + vis - 1) top0 = row - vis + 1;
+          bx.scrollTop = top0 * stp;
+        } else if (r1.top < r2.top + pad) bx.scrollTop -= r2.top + pad - r1.top;
+        else if (r1.bottom > r2.bottom - pad) bx.scrollTop += r1.bottom - (r2.bottom - pad);
+      }
+    }
     else if (el.scrollIntoView && el.dataset.scroll) el.scrollIntoView({ block: 'nearest' });
     if (el._onfoc) el._onfoc();
     if (cur === '5.3a' && WALLS[labelOf(el)]) wall(WALLS[labelOf(el)]);
@@ -699,7 +713,7 @@
     var byLast = pref('sort', 'last') === 'last';
     if (!find && !favs && byLast) list.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
     var cards = list.map(function (a, i) {
-      return '<button type="button" class="o-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="1"' + (i === 0 ? ' data-first="1"' : '') + ' style="animation-delay:' + Math.min(i, 12) * 26 + 'ms">' + tileIn(a)
+      return '<button type="button" class="o-card" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '" data-scroll="box"' + (i === 0 ? ' data-first="1"' : '') + ' style="' + (i < 10 ? 'animation-delay:' + i * 26 + 'ms' : 'animation:none') + '">' + tileIn(a)
         + '<span class="o-ct"><b>' + (a.fav ? '★ ' : '') + esc(a.label) + '</b><span>' + esc(a.game ? a.sys : 'App') + '</span></span></button>';
     }).join('');
     if (!list.length) {
@@ -713,7 +727,7 @@
       : '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + name + '</h1><span class="o-kick">' + (favs ? 'DEINE LIEBLINGE' : gamesTab ? 'ALLE SPIELE' : 'ALLES ANDERE') + '</span></div><span class="o-say">' + '<span class="o-quote" style="font-size:21px">' + (favs ? 'Die üblichen Verdächtigen.' : gamesTab ? 'Und du nimmst eh wieder dasselbe.' : 'Was man halt so braucht.') + '</span>' + ori(favs ? 'triumph' : gamesTab ? 'sassy' : 'ruhezustand-2', 54) + '</span></div>';
     return oriTop(find ? '' : favs ? 'fav' : gamesTab ? 'bib' : 'apps', find ? 'A Öffnen · X Details · B Suche schließen' : 'A Öffnen · X Details · Y Suchen · Start Favorit' + (chips ? ' · L2/R2 Filter' : ''),
       head + '<div class="o-fcs">' + chips + (find || favs ? '' : '<button type="button" class="o-fc" data-act="sort">' + (byLast ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + (find ? '' : '<button type="button" class="o-fc" data-act="go:3.3">Suchen</button>') + '<span style="flex:1"></span><span class="o-cnt">' + count + (find || favs ? '' : ' · sortiert nach „' + (byLast ? 'Zuletzt gespielt' : 'Name') + '“') + '</span></div>'
-      + '<div class="o-grid">' + cards + '</div>');
+      + '<div class="o-grid o-scroll">' + cards + '</div>');
   }
   var rootSys = [''];
   function mxLibBind() {
