@@ -347,3 +347,10 @@ img{display:block}
 .o-seg button,.o-sws button{min-height:38px}
 .o-seg button{font-size:14px;padding:0 14px}
 .o-cats{-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)}
+/* Ohne weißen Kasten (0.15.2): Einstellungen stehen direkt auf dem Papier */
+.o-sec{background:transparent;box-shadow:none;border-radius:0;padding:0 4px 0 0;margin-bottom:8px}
+.o-sr+.o-sr::before{border-top-color:rgba(27,35,64,.1)}
+.ori .o-sr.mx-foc{background:rgba(255,253,248,.85)}
+.o-seg{background:rgba(27,35,64,.07)}
+.o-tr{background:rgba(27,35,64,.1)}
+.o-sec{-webkit-mask-image:linear-gradient(#000 86%,transparent);mask-image:linear-gradient(#000 86%,transparent);padding-bottom:30px}
