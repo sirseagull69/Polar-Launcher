@@ -90,3 +90,18 @@ img{display:block}
 .mx-big{position:absolute;left:0;right:0;top:34%;text-align:center;font:800 26px Unbounded,sans-serif;opacity:.85}
 .mx-empty{grid-column:1/-1;max-width:560px;padding:28px 6px;display:flex;flex-direction:column;gap:14px;align-items:flex-start;font-size:16px;line-height:1.4;color:rgba(255,255,255,.72)}
 .mx-empty b{font:800 26px Unbounded,sans-serif;color:#fff;letter-spacing:-.03em}
+
+.mx-det{position:absolute;left:28px;right:28px;top:86px;bottom:58px;display:flex;gap:26px;align-items:center;animation:mx-in .5s cubic-bezier(.2,.8,.2,1) both}
+.mx-dcov{flex:none;width:300px;height:300px;border-radius:28px;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.mx-dcov img{width:120px;height:120px}.mx-dcov img.full{width:100%;height:100%;object-fit:cover}.mx-dcov b{font:800 54px Unbounded,sans-serif;opacity:.9}
+.mx-dinfo{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:12px}
+.mx-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;padding:14px 16px;border-radius:22px;background:rgba(18,18,26,.74);border:1px solid rgba(255,255,255,.09)}
+.mx-facts div{min-width:0;display:flex;flex-direction:column;gap:1px}.mx-facts div:nth-child(n+5){grid-column:1/-1}
+.mx-facts span{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.mx-facts b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx-list{position:absolute;display:flex;flex-direction:column;gap:10px;overflow:auto;animation:mx-in .5s cubic-bezier(.2,.8,.2,1) both;padding:6px}
+.mx-lt{font:800 26px/1.1 Unbounded,sans-serif;letter-spacing:-.03em}
+.mx-row{flex:none;height:62px;padding:0 22px;border-radius:22px;background:#17171f;display:flex;align-items:center;gap:12px;font-weight:800;font-size:16px;text-align:left;scroll-margin:8px}
+.mx-row small{margin-left:auto;font-size:13px;font-weight:600;opacity:.65}
+.mx-row.on{background:var(--acc);color:#0b0b10!important}.mx-row.on small{opacity:.8}
+.mx-row.mx-foc{transform:none}

@@ -392,7 +392,7 @@
     '3.1': { k: { B: 'home' } }, '3.2': { k: { B: swap('3.1') } }, '3.4': { k: { B: 'home' } }, '3.7': { k: { B: 'home' } },
     '3.3': { k: { Y: null, START: 'back', L1: null, R1: null }, enter0: function () { } },
     '3.5': { l: { 'Starten': function () { launch(sel); }, 'Emulator wählen': '3.6', 'Favorit': function () { fav(sel); }, 'Bild ändern': '3.10', 'Speicherstände': '4.2', 'Ausblenden': OS },
-             k: { X: function () { fav(sel); }, Y: null, L1: null, R1: null, START: null } },
+             k: { X: function () { fav(sel); }, Y: function () { if (sel && sel.game && (ginfo(sel).emus || []).length > 1) { snd('ok'); J.go('3.6'); } }, L1: null, R1: null, START: null } },
     '3.6': { k: { START: 'back', X: null, Y: null, L1: null, R1: null } },
     '3.8': { l: { 'Im Hintergrund weiter': 'back' }, k: { X: 'back', Y: null, L1: null, R1: null, START: null }, note: 'Bilder aus dem Netz kommen noch. Eigene Bilder gehen schon: siehe 3.10.' },
     '3.9': { l: { 'Eigenes Bild wählen': '3.10', 'Erneut suchen': '3.8', 'Ohne Bild': 'back' }, k: { X: null, Y: null, L1: null, R1: null, START: null } },
@@ -547,7 +547,8 @@
     sun: '<circle cx="12" cy="12" r="3.5"></circle><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"></path>',
     bat: '<rect x="3" y="8" width="16" height="8" rx="2"></rect><path d="M21 11v2"></path>', plane: '<path d="M3 11l18-7-7 18-3-8z"></path>',
     star: '<path d="M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"></path>', search: '<circle cx="11" cy="11" r="6"></circle><path d="M16 16l4 4"></path>',
-    down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"></path>'
+    down: '<path d="M12 4v11M7 11l5 5 5-5M5 20h14"></path>',
+    back: '<path d="M10 6l-6 6 6 6M4 12h16"></path>', pad: '<rect x="3" y="8" width="18" height="9" rx="4.5"></rect><path d="M7.5 11v3M6 12.5h3"></path><circle cx="16" cy="12.5" r="1"></circle>'
   };
   function mi(n, s, w) { return '<svg aria-hidden="true" width="' + s + '" height="' + s + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w || 1.9) + '" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none">' + MXI[n] + '</svg>'; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
@@ -687,8 +688,53 @@
       .replace(/#0A0D14/g, '#0b0b10').replace(/#121724/g, '#17171f').replace(/#1A2132/g, '#22222e').replace(/#1F2533/g, '#2a2a36').replace(/#3A4358/g, '#3a3a48')
       .replace(/#5FD38D/g, 'var(--acc)').replace(/border-radius:14px/g, 'border-radius:22px');
   }
+
+  /* ---------- Details (3.5) und Emulator-Auswahl (3.6) ---------- */
+  function ginfo(a) { try { return a && a.game && J.gameInfo ? JSON.parse(J.gameInfo(a.key)) : {}; } catch (e) { return {}; } }
+  function mb(n) { n = +n || 0; return n >= 1073741824 ? (n / 1073741824).toFixed(1).replace('.', ',') + ' GB' : n >= 1048576 ? Math.round(n / 1048576) + ' MB' : n ? Math.max(1, Math.round(n / 1024)) + ' KB' : '–'; }
+  function emuNow(g) { var e = g.emus || []; return e.indexOf(g.chosen) >= 0 ? g.chosen : e[0] || ''; }
+  function mxDet() {
+    var a = sel; if (!a) return '<div class="mx" style="width:' + (TOP ? 960 : 620) + 'px;height:540px"></div>';
+    var g = ginfo(a), h = hue(a), emu = emuNow(g), n = (g.emus || []).length;
+    if (!TOP) {
+      var t = function (ic, x, y, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:' + INK : '') + '">' + mi(ic, 28, 2) + '<span><b>' + x + '</b><small>' + y + '</small></span></button>'; };
+      return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + h + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
+        + '<div style="position:relative;flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:12px">' + t('play', 'Starten', esc(a.label), 'launch', LIME)
+        + t('star', a.fav ? 'Favorit entfernen' : 'Als Favorit', a.fav ? 'Steht oben auf der Startseite' : 'Kommt auf die Startseite', 'fav')
+        + (a.game ? t('pad', 'Emulator', emu ? esc(emu) : 'Keiner installiert', n ? 'go:3.6' : 'go:!Für ' + esc(g.sysFull || a.sys) + ' ist kein passender Emulator installiert.') : t('set', 'App-Info', 'Android-Einstellungen', 'and:app:' + esc(a.key)))
+        + t('back', 'Zurück', 'Zur Bibliothek', 'go:back') + '</div></div>';
+    }
+    var facts = a.game
+      ? [['System', g.sysFull || a.sys], ['Emulator', emu || 'Keiner installiert'], ['Datei', g.file || '–'], ['Größe', mb(g.size)], ['Ordner', g.folder || '–']]
+      : [['Art', 'App'], ['Favorit', a.fav ? 'Ja' : 'Nein'], ['Paket', a.key.split('/')[0]]];
+    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(a) + '</div>' + mxNav(-1)
+      + '<div class="mx-det"><div class="mx-dcov" style="background:radial-gradient(circle at 28% 18%,hsl(' + h + ',55%,36%),hsl(' + (h + 40) % 360 + ',50%,16%))">'
+      + (a.game ? (a.cov ? '<img class="full" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : (a.img ? '<img class="full" src="' + img(a, 'image') + '" alt="">' : '<img src="' + img(a, 'icon') + '" alt="">')) + '</div>'
+      + '<div class="mx-dinfo"><span class="mx-tag">' + esc(a.game ? a.sysid.toUpperCase() : 'APP') + (a.fav ? ' · FAVORIT' : '') + '</span>'
+      + '<div class="mx-title" style="font-size:' + (a.label.length > 24 ? 28 : a.label.length > 14 ? 36 : 46) + 'px">' + esc(a.label) + '</div>'
+      + '<div class="mx-meta">' + (a.last ? 'Zuletzt ' + (a.game ? 'gespielt' : 'geöffnet') + ' am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht ' + (a.game ? 'gespielt' : 'geöffnet')) + '</div>'
+      + '<div style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="mx-play" data-act="launch" data-first="1">' + mi('play', 20) + 'Starten</button>'
+      + '<button type="button" class="mx-ghost" data-act="fav">' + (a.fav ? 'Favorit entfernen' : 'Als Favorit') + '</button>'
+      + (a.game ? (n > 1 ? '<button type="button" class="mx-ghost" data-act="go:3.6">Emulator wählen</button>' : '') : '<button type="button" class="mx-ghost" data-act="and:app:' + esc(a.key) + '">App-Info</button>') + '</div>'
+      + '<div class="mx-facts">' + facts.map(function (f) { return '<div><span>' + f[0] + '</span><b>' + esc(f[1]) + '</b></div>'; }).join('') + '</div></div></div>'
+      + mxKeys([['A', 'Auswählen'], ['X', 'Favorit']].concat(a.game && n > 1 ? [['Y', 'Emulator']] : []).concat([['B', 'Zurück']])) + '</div>';
+  }
+  function mxEmu() {
+    var a = sel, g = ginfo(a), list = g.emus || [], now = emuNow(g), w = TOP ? 960 : 620;
+    var rows = list.map(function (e, i) {
+      var on = e === now;
+      return '<button type="button" class="mx-row' + (on ? ' on' : '') + '" data-act="emu:' + esc(e) + '" data-scroll="1"' + (on || (!now && i === 0) ? ' data-first="1"' : '') + '><span>' + esc(e) + '</span><small>' + (on ? 'Ausgewählt' : i === 0 ? 'Vorschlag' : '') + '</small></button>';
+    }).join('');
+    if (!list.length) rows = '<div class="mx-empty"><b>Kein Emulator</b>Für ' + esc(g.sysFull || (a && a.sys) || 'dieses System') + ' ist kein passender Emulator installiert. Installier einen und öffne diese Seite noch einmal.</div>';
+    return '<div class="mx" style="width:' + w + 'px;height:540px"><div id="mx-bgs">' + mxBg(TOP ? a : null) + '</div>' + (TOP ? mxNav(-1) : '')
+      + '<div class="mx-list" style="left:' + (TOP ? 28 : 20) + 'px;right:' + (TOP ? 28 : 20) + 'px;top:' + (TOP ? 86 : 20) + 'px;bottom:' + (TOP ? 58 : 20) + 'px">'
+      + '<div class="mx-lt">Emulator für ' + esc(g.sysFull || (a && a.sys) || 'dieses System') + '</div><div class="mx-s" style="margin:-4px 0 6px">Gilt für alle Spiele dieses Systems.</div>' + rows + '</div>'
+      + (TOP ? mxKeys([['A', 'Auswählen'], ['B', 'Zurück']]) : '') + '</div>';
+  }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
+    if (key === '3.5') return [mxDet, null];
+    if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
     if (TOP) return home ? [mxHome, mxHomeBind] : lib ? [mxLib, mxLibBind] : null;
     return home || lib || key === '2.3' ? [mxPanel, mxPanelBind] : null;
@@ -697,6 +743,8 @@
     var i = a.indexOf(':'), k = i < 0 ? a : a.slice(0, i), v = i < 0 ? '' : a.slice(i + 1);
     if (k === 'launch') launch(v ? appByKey(v) : sel);
     else if (k === 'details') details();
+    else if (k === 'fav') fav(sel);
+    else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
@@ -815,6 +863,7 @@
       state: function () { var d = new Date(); return JSON.stringify({ time: d.toTimeString().slice(0, 5), date: d.toLocaleDateString('de-DE'), weekday: 'Dienstag', battery: 87, version: '0.4.0 · Build 6', tz: 'Europe/Berlin', model: 'AYN Thor', region: 'DE', used: '41 GB', total: '256 GB', free: '215 GB', temp: '31 °C', wifi: true, bt: false, airplane: false, brightness: 65, volume: 40, upd: {}, files: true, games: A.filter(function (a) { return a.game; }).length }); },
       apps: function () { return JSON.stringify(A); }, rescan: function () {}, pref: function (k) { return P[k]; }, setPref: function (k, v) { P[k] = v; },
       go: function (k) { if (now && k !== 'home') stack.push(now); to(k); }, swap: function (k) { to(k); }, back: function () { to(stack.pop() || 'home'); },
+      gameInfo: function (k) { var sy = k.split('/')[2]; return JSON.stringify({ sys: sy, sysFull: { nds: 'Nintendo DS', gba: 'Nintendo Game Boy Advance', gc: 'Nintendo GameCube', switch: 'Nintendo Switch' }[sy] || sy, file: 'spiel.' + sy, folder: '/storage/emulated/0/ROMs/' + sy, size: 268435456, chosen: P['emu:' + sy] || '', emus: sy === 'gc' ? ['Dolphin'] : sy === 'switch' ? [] : ['melonDS', 'DraStic', 'RetroArch (melonDS DS)'] }); },
       launch: function (k) { note('Starte ' + k); }, fav: function (k) { A.forEach(function (a) { if (a.key === k) a.fav = !a.fav; }); },
       android: function (w) { note('Android: ' + w); }, setBrightness: function () {}, setVolume: function () {}, updateCheck: function () {}, updateInstall: function () {},
       type: function (c) { query = c === '\b' ? query.slice(0, -1) : query + c; window.plEvent('q', query); }, sync: function (w) { window.plSync(w); }, log: function (m) { console.log(m); }

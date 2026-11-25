@@ -416,6 +416,34 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             });
         }
 
+        /** Angaben zu einem Spiel: Datei, Größe, System und die Emulatoren, die es starten können. */
+        @JavascriptInterface
+        public String gameInfo(String key) {
+            JSONObject o = new JSONObject();
+            try {
+                Roms.Game g = game(key);
+                if (g == null) {
+                    return "{}";
+                }
+                java.io.File f = new java.io.File(g.path);
+                o.put("sys", g.sys);
+                o.put("sysFull", g.sysFull);
+                o.put("file", f.getName());
+                o.put("folder", f.getParent());
+                o.put("size", f.length());
+                o.put("changed", f.lastModified());
+                o.put("chosen", prefs.getString("ui:emu:" + g.sys, ""));
+                JSONArray list = new JSONArray();
+                for (Roms.Launch l : emulators(g)) {
+                    list.put(l.label);
+                }
+                o.put("emus", list);
+            } catch (Exception ignored) {
+                // leere Angaben
+            }
+            return o.toString();
+        }
+
         @JavascriptInterface
         public void launch(final String key) {
             ui.post(() -> {
@@ -661,13 +689,18 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         }).start();
     }
 
-    private void launchGame(Roms.Game g) {
+    /** Alle installierten Emulatoren, die dieses Spiel starten können. */
+    private List<Roms.Launch> emulators(Roms.Game g) {
         Set<String> installed = new HashSet<>();
         for (PackageInfo p : getPackageManager().getInstalledPackages(0)) {
             installed.add(p.packageName);
         }
         String volume = g.path.startsWith("/storage/emulated/") ? "primary" : g.path.split("/").length > 2 ? g.path.split("/")[2] : "primary";
-        List<Roms.Launch> options = roms.options(g, installed, volume);
+        return roms.options(g, installed, volume);
+    }
+
+    private void launchGame(Roms.Game g) {
+        List<Roms.Launch> options = emulators(g);
         if (options.isEmpty()) {
             Toast.makeText(this, "Für " + g.sysFull + " ist kein passender Emulator installiert.", Toast.LENGTH_LONG).show();
             return;
