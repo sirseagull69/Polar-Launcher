@@ -1,6 +1,5 @@
 package de.selbstgfaltet.polarlicht;
 
-import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +10,7 @@ import android.content.ComponentName;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.AdaptiveIconDrawable;
@@ -40,7 +40,10 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.Toast;
+
+import androidx.activity.ComponentActivity;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -52,6 +55,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,7 +69,7 @@ import java.util.TimeZone;
  * oben für den Controller, unten für Touch. Diese Klasse liefert die echten Daten und führt aus,
  * was die Oberfläche auslöst.
  */
-public class MainActivity extends Activity implements DisplayManager.DisplayListener, Updater.Listener {
+public class MainActivity extends ComponentActivity implements DisplayManager.DisplayListener, Updater.Listener {
     private static final String TAG = "Polarlicht";
     private static final String BASE = "file:///android_asset/ui/host.html?side=";
 
@@ -89,6 +93,11 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     private String holdDir = "";
     private long holdSince = 0L;
     private final HashMap<String, byte[]> tiles = new HashMap<>();
+    /** Neuer Startbildschirm (Compose). null, wenn er abgeschaltet ist: dann läuft überall die Web-Ansicht. */
+    HomeUi home;
+    private View homeTop;
+    volatile boolean homeShowing = false;
+    private int homeTotal = 0;
     private final Roms roms = new Roms();
     private volatile List<Roms.Game> games = new ArrayList<>();
     private volatile boolean scanning = false;
@@ -116,9 +125,176 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             current = prefs.getString("ui:setup", "").equals("1") ? homeKey() : "1.7";
         }
         top = makeWeb(this, "oben");
-        setContentView(top);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(top, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        guardHome();
+        if (prefs.getInt("homeCrashBuild", -1) != updater.localBuild()) {
+            try {
+                home = new HomeUi(homeHost);
+                homeTop = home.topView(this);
+                homeTop.setVisibility(View.GONE);
+                root.addView(homeTop, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            } catch (Throwable t) {
+                Log.w(TAG, "Startbildschirm neu: " + t);
+                home = null;
+                homeTop = null;
+            }
+        }
+        setContentView(root);
         updater.check(false);
         scanGames();
+    }
+
+    /**
+     * Sicherung: stürzt die App ab, während der neue Startbildschirm zu sehen ist, wird er für diesen Build
+     * abgeschaltet. Beim nächsten Start läuft dann wieder die Web-Ansicht, der Launcher bleibt benutzbar.
+     */
+    private void guardHome() {
+        final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
+            try {
+                if (homeShowing) {
+                    prefs.edit().putInt("homeCrashBuild", updater.localBuild()).commit();
+                }
+            } catch (Throwable ignored) {
+                // dann eben ohne Merker
+            }
+            if (old != null) {
+                old.uncaughtException(thread, error);
+            }
+        });
+    }
+
+    private boolean isHome(String key) {
+        return home != null && key.matches("2\\.[124567]");
+    }
+
+    /** Die Kacheln der Startreihe: Favoriten zuerst, dann zuletzt gestartet. */
+    private List<HomeItem> homeItems() {
+        List<HomeItem> out = new ArrayList<>();
+        synchronized (apps) {
+            for (Apps.Entry e : apps.all) {
+                out.add(new HomeItem(e.key(), e.label, "App", "", e.fav, e.last, false));
+            }
+        }
+        Set<String> favs = prefs.getStringSet("gfavs", new HashSet<String>());
+        for (Roms.Game g : games) {
+            out.add(new HomeItem(g.key(), g.label, g.sysFull, g.sys.toUpperCase(Locale.ROOT), favs.contains(g.key()),
+                    prefs.getLong("last:" + g.key(), 0L), true));
+        }
+        Collections.sort(out, (a, b) -> {
+            if (a.fav != b.fav) {
+                return a.fav ? -1 : 1;
+            }
+            if (a.last != b.last) {
+                return a.last > b.last ? -1 : 1;
+            }
+            if (a.game != b.game) {
+                return a.game ? -1 : 1;
+            }
+            return a.label.compareToIgnoreCase(b.label);
+        });
+        homeTotal = out.size();
+        return new ArrayList<>(out.subList(0, Math.min(12, out.size())));
+    }
+
+    private void syncHome() {
+        if (home != null && homeShowing) {
+            home.set(homeItems(), homeTotal, prefs.getString("ui:sel", ""));
+        }
+    }
+
+    private final HomeHost homeHost = new HomeHost() {
+        @Override
+        public Bitmap picture(String key) {
+            try {
+                Roms.Game g = game(key);
+                if (g != null) {
+                    String p = g.cover != null ? g.cover : g.art;
+                    if (p == null) {
+                        File own = imageFile(new File(g.path).getName());
+                        p = own == null ? null : own.getPath();
+                    }
+                    return p == null ? null : decodeSmall(p);
+                }
+                Apps.Entry e = find(key);
+                if (e == null) {
+                    return null;
+                }
+                File f = imageFile(e.pkg);
+                return f != null ? decodeSmall(f.getPath()) : tileBitmap(e);
+            } catch (Throwable t) {
+                Log.w(TAG, "Kachelbild " + key + ": " + t);
+                return null;
+            }
+        }
+
+        @Override
+        public String stateJson() {
+            return bridge.state();
+        }
+
+        @Override
+        public void launch(String key) {
+            bridge.launch(key);
+        }
+
+        @Override
+        public void open(String screen) {
+            ui.post(() -> MainActivity.this.open(screen, true));
+        }
+
+        @Override
+        public void details(String key, String screen) {
+            prefs.edit().putString("ui:sel", key).apply();
+            ui.post(() -> MainActivity.this.open(screen, true));
+        }
+
+        @Override
+        public void selected(String key) {
+            prefs.edit().putString("ui:sel", key).apply();
+        }
+
+        @Override
+        public void fav(String key) {
+            bridge.fav(key);
+            ui.post(() -> syncHome());
+        }
+
+        @Override
+        public void android(String what) {
+            ui.post(() -> openAndroid(what));
+        }
+
+        @Override
+        public void brightness(int percent) {
+            ui.post(() -> setBrightness(percent));
+        }
+
+        @Override
+        public void volume(int percent) {
+            bridge.setVolume(percent);
+        }
+
+        @Override
+        public void sound(String name) {
+            if (top != null && topReady && name.matches("[a-z]{1,12}")) {
+                top.evaluateJavascript("window.plSnd&&plSnd('" + name + "')", null);
+            }
+        }
+    };
+
+    private static Bitmap decodeSmall(String path) {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, bounds);
+        int sample = 1;
+        while (Math.min(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 400) {
+            sample *= 2;
+        }
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sample;
+        return BitmapFactory.decodeFile(path, options);
     }
 
     /** Wahr beim ersten Öffnen nach dem Einschalten des Geräts. */
@@ -221,6 +397,18 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                 return cached;
             }
         }
+        Bitmap b = tileBitmap(e);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        b.compress(Bitmap.CompressFormat.PNG, 100, out);
+        b.recycle();
+        byte[] bytes = out.toByteArray();
+        synchronized (tiles) {
+            tiles.put(e.key(), bytes);
+        }
+        return bytes;
+    }
+
+    private Bitmap tileBitmap(Apps.Entry e) throws Exception {
         final int size = 288;
         Drawable d = getPackageManager().getActivityIcon(e.component());
         Bitmap b = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -268,14 +456,7 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             d.setBounds(m, m, size - m, size - m);
             d.draw(c);
         }
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        b.compress(Bitmap.CompressFormat.PNG, 100, out);
-        b.recycle();
-        byte[] bytes = out.toByteArray();
-        synchronized (tiles) {
-            tiles.put(e.key(), bytes);
-        }
-        return bytes;
+        return b;
     }
 
     /** Ein Bild aus dem Ordner "Bilder", das wie das Paket der App heißt. */
@@ -340,6 +521,18 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     }
 
     private void showBoth() {
+        boolean h = isHome(current);
+        homeShowing = h;
+        if (home != null) {
+            if (h) {
+                home.set(homeItems(), homeTotal, prefs.getString("ui:sel", ""));
+            }
+            homeTop.setVisibility(h ? View.VISIBLE : View.GONE);
+            top.setVisibility(h ? View.INVISIBLE : View.VISIBLE);
+            if (panel != null) {
+                panel.showHome(h);
+            }
+        }
         String js = "window.plShow&&plShow('" + current + "')";
         if (top != null && topReady) {
             top.evaluateJavascript(js, null);
@@ -365,6 +558,10 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
         }
         lastKey = name;
         lastKeyAt = now;
+        if (homeShowing && home != null) {
+            home.press(name);
+            return;
+        }
         if (top != null && topReady) {
             top.evaluateJavascript("window.plKey&&plKey('" + name + "')", null);
         }
@@ -797,7 +994,10 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                         got++;
                         if (System.currentTimeMillis() - shown > 4000L) {
                             shown = System.currentTimeMillis();
-                            ui.post(() -> both("window.plSync&&plSync('reload')"));
+                            ui.post(() -> {
+                                both("window.plSync&&plSync('reload')");
+                                syncHome();
+                            });
                         }
                     }
                 }
@@ -806,7 +1006,10 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
             }
             coverRun = false;
             if (got > 0) {
-                ui.post(() -> both("window.plSync&&plSync('reload')"));
+                ui.post(() -> {
+                    both("window.plSync&&plSync('reload')");
+                    syncHome();
+                });
             }
         }).start();
     }
@@ -1007,7 +1210,12 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     public boolean dispatchKeyEvent(KeyEvent e) {
         int code = e.getKeyCode();
         if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            ui.postDelayed(() -> both("window.plSync&&plSync('')"), 150);
+            ui.postDelayed(() -> {
+                both("window.plSync&&plSync('')");
+                if (home != null && homeShowing) {
+                    home.refresh();
+                }
+            }, 150);
             return super.dispatchKeyEvent(e);
         }
         String k = name(code);
@@ -1100,6 +1308,10 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
     }
 
     private void step(String dir) {
+        if (homeShowing && home != null) {
+            home.press(dir);
+            return;
+        }
         if (top != null && topReady) {
             top.evaluateJavascript("window.plKey&&plKey('" + dir + "')", null);
         }
@@ -1190,6 +1402,9 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
 
     @Override
     public void onUpdateState() {
+        if (home != null && homeShowing) {
+            home.refresh();
+        }
         if (top != null && topReady) {
             top.evaluateJavascript("window.plEvent&&plEvent('update')", null);
         }

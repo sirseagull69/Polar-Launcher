@@ -854,6 +854,7 @@
     });
   }
 
+  window.plSnd = snd;
   window.plShow = function (key) { try { show(key); } catch (e) { J.log('show ' + key + ': ' + e + ' ' + (e.stack || '')); } };
   window.plSync = function (what) {
     if (!root) return;
