@@ -625,7 +625,7 @@
     if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
     return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 46) + '<b>Ori OS</b></span><div class="o-dki">'
       + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
-      + '</div><span class="o-hint">' + hint + '</span></nav>';
+      + '</div><span class="o-hint"></span></nav>';
   }
   var W_TOPB = '<svg class="welle2" aria-hidden="true" width="960" height="110" viewBox="0 0 960 110" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,110V40C70,20 150,12 240,22S400,52 500,46S660,14 760,16S900,40 960,34V110Z" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="960" height="70" viewBox="0 0 960 70" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,70V36C80,20 170,14 260,22S430,44 520,40S690,16 780,18S910,34 960,30V70Z" fill="#fbc19d"/></svg>';
   function oriTop(active, hint, main) { return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + W_TOPB + oriBar() + '<main class="o-main">' + main + '</main>' + oriDock(active, hint) + '</div>'; }
