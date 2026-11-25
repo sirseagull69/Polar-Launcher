@@ -66,8 +66,15 @@ else
   export USE_CCACHE=1
   export CCACHE_EXEC=/usr/bin/ccache
 fi
+# Speicher-Schreiber: alle 5 s eine Zeile, sofort auf die Platte. Stürzt Linux ab, sieht man danach, ob der Arbeitsspeicher voll war.
+SPEICHER="$HOME/android/speicher.log"
+( while sleep 5; do
+    printf '%s frei=%sMB swapfrei=%sMB\n' "$(date +%T)" "$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo)" "$(awk '/SwapFree/ {printf "%d", $2/1024}' /proc/meminfo)" >> "$SPEICHER"; sync "$SPEICHER"
+  done ) &
+SCHREIBER=$!
+trap 'kill $SCHREIBER ${WACHE:-} 2>/dev/null || true' EXIT
 KERNE=$(nproc)
-JOBS=$(( KERNE > 8 ? 8 : KERNE ))
+JOBS=$(( KERNE > 6 ? 6 : KERNE ))
 echo "Baue mit $JOBS gleichzeitigen Schritten (gedrosselt wegen 32 GB Arbeitsspeicher)."
 if m bacon -j"$JOBS" 2>&1 | tee "$PROTOKOLL"; then
   sag "Fertig"
