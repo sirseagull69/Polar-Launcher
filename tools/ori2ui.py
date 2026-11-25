@@ -37,7 +37,8 @@ def rund(m):
 
 src = sys.argv[1]
 out = os.path.join(os.path.dirname(__file__), '..', 'app', 'src', 'main', 'assets', 'ui', 's')
-skip = {'Main', 'Bibliothek', 'Spiel', 'Apps', 'Leiste', 'Dock', 'Einst', 'EinstNetzwerk', 'EinstController', 'EinstRgb', 'EinstTon', 'EinstLeistung', 'EinstSpeicher', 'EinstEmulatoren', 'EinstSystem'}
+# Ausschalten ist von Hand als großes Fenster gebaut (s/dc-ausschalten.html), nicht mehr aus dem Canvas erzeugt
+skip = {'Ausschalten', 'Main', 'Bibliothek', 'Spiel', 'Apps', 'Leiste', 'Dock', 'Einst', 'EinstNetzwerk', 'EinstController', 'EinstRgb', 'EinstTon', 'EinstLeistung', 'EinstSpeicher', 'EinstEmulatoren', 'EinstSystem'}
 names = []
 for f in sorted(glob.glob(os.path.join(src, '*.dc.html'))):
     name = os.path.basename(f)[:-8]

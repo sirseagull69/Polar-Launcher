@@ -504,7 +504,7 @@
     if ((k === 'L1' || k === 'R1') && root._tabs) { root._tabs(k === 'R1' ? 1 : -1); return; }
     if (root.dataset.mix && cur !== '3.3' && cur !== 'acc' && (k === 'L1' || k === 'R1')) {
       /* L1/R1 gehen die Leiste entlang, in derselben Reihenfolge wie die Symbole unten */
-      var T = ['home', '3.1', 'dc:Emulatoren:', '3.7', 'dc:Medien:' + DC_PAIR.Medien, '3.4'], at = cur[0] === '2' ? 0 : cur === '3.1' || cur === '3.2' ? 1 : cur.indexOf('dc:Emulatoren') === 0 ? 2 : cur === '3.7' ? 3 : cur.indexOf('dc:Medien') === 0 ? 4 : cur === '3.4' ? 5 : -1;
+      var T = ['home', '3.1', 'dc:Emulatoren:', '3.7', 'dc:Medien:' + DC_PAIR.Medien, '5.1', 'dc:Ausschalten:' + DC_PAIR.Ausschalten], at = cur[0] === '2' ? 0 : cur === '3.1' || cur === '3.2' || cur === '3.4' ? 1 : cur.indexOf('dc:Emulatoren') === 0 ? 2 : cur === '3.7' ? 3 : cur.indexOf('dc:Medien') === 0 ? 4 : /^5\./.test(cur) ? 5 : cur.indexOf('dc:Ausschalten') === 0 ? 6 : -1;
       if (at < 0) { snd('taste'); return; }
       var to = T[(at + (k === 'R1' ? 1 : T.length - 1)) % T.length];
       snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
@@ -836,6 +836,9 @@
       system: ['System & Updates', upd.available ? 'Da liegt was Neues für dich.' : 'Alles aktuell. Ich hab nachgesehen.', [V('Version', 'Ori ' + (st.version || '')), V('Updates', upd.available ? 'Update verfügbar' : 'Jetzt suchen', '', upd.available ? 'go:6.2' : 'go:6.1'), V('Gerät', (st.model || '') + ' · ' + (st.android || '')), W('akzent', 'Akzentfarbe', [['Orange', '#c2410c'], ['Pink', '#b8327a'], ['Lila', '#6a4fc7'], ['Blau', '#2b4a8f'], ['Grün', '#2f7a4d'], ['Gold', '#9a6a12'], ['Tinte', '#141b31']], '', { cur: pref('acc', ACC0), act: 'acc:' }), C('design', 'Design', ['Hell', 'Dunkel', 'Automatisch'], 'Hell'), V('Datum, Sprache und mehr', 'Android-Einstellungen', '', 'and:settings')]]
     };
     var p = P[seite], any = false, n = 0;
+    /* Beim Neuzeichnen bleibt der Rahmen dort, wo er gerade steht, statt nach oben zu springen */
+    if (foc && foc.dataset && foc.dataset.id && root && root.contains(foc) && (foc.dataset.id.indexOf('cat:') === 0 || foc.dataset.id.indexOf(seite + ':') === 0)) setKeep = foc.dataset.id;
+    if (setKeep && setKeep.indexOf('cat:') !== 0 && setKeep.indexOf(seite + ':') !== 0) setKeep = 'cat:' + seite;
     function first(id) { n++; return (setKeep ? setKeep === id : n === 1) ? ' data-first="1"' : ''; }
     var rows = p[2].map(function (r, i) {
       var id = seite + ':' + (r.id || r.label), dot = r.real ? '' : '<i class="o-later" title="wirkt erst im eigenen OS"></i>', lab = '<span class="o-sl">' + dot + '<span><b>' + r.label + '</b>' + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span></span>';
@@ -846,9 +849,9 @@
       if (r.k === 'c') return '<div class="o-sr">' + lab + '<span class="o-seg">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" data-act="' + o.act + '">' + o.name + '</button>'; }).join('') + '</span></div>';
       return '<div class="o-sr">' + lab + '<span class="o-sws">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" aria-label="' + o.name + '" data-act="' + o.act + '"><i style="background:' + o.color + '"></i></button>'; }).join('') + '</span></div>';
     }).join('');
-    return oriTop('einst', 'A Ändern · ← → Regler · L1/R1 Bereich · B Zurück',
+    return oriTop('einst', 'A Ändern · ← → Regler · B Zurück',
       '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + p[0] + '</h1><span class="o-kick">EINSTELLUNGEN</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + p[1] + '</span>' + ori(seite === 'system' && !upd.available ? 'fertig' : seite === 'leistung' ? 'sport' : seite === 'emulatoren' ? 'sortiert' : seite === 'netzwerk' && !st.wifi ? 'ratlos' : 'ruhezustand-2', 54) + '</span></div>'
-      + '<div class="o-set"><nav class="o-cats" aria-label="Einstellungsbereiche">' + SETC.map(function (c) { return '<button type="button" class="o-cat' + (c[0] === seite ? ' on' : '') + '" data-id="cat:' + c[0] + '" data-act="ecat:' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</nav>'
+      + '<div class="o-set"><nav class="o-cats" aria-label="Einstellungsbereiche">' + SETC.map(function (c) { return '<button type="button" class="o-cat' + (c[0] === seite ? ' on' : '') + '" data-id="cat:' + c[0] + '"' + (setKeep === 'cat:' + c[0] ? ' data-first="1"' : '') + ' data-act="ecat:' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</nav>'
       + '<div class="o-scol"><section class="o-sec">' + rows + '</section>' + (any ? '<span class="o-note"><i class="o-later"></i>merkt sich Ori schon, wirkt aber erst im eigenen OS</span>' : '') + '</div></div>');
   }
   function mxSetBind() {
@@ -862,7 +865,6 @@
       };
       el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
     });
-    root._tabs = function (d) { var i = 0; SETC.forEach(function (c, n) { if (c[0] === seite) i = n; }); setKeep = ''; J.setPref('einst', SETC[(i + d + SETC.length) % SETC.length][0]); snd('ok'); J.sync('reload'); };
   }
   /* ---------- Die Ansichten aus dem Canvas "Ori OS" laufen direkt: Vorlage + Logik je Ansicht aus s/dc-<name>.html ---------- */
   var DCC = {}, DCS = {};
@@ -928,7 +930,14 @@
         if (link && lo === 'href') { (function (h) { if (h && !/^https?:/.test(h)) el._act = function () { dcGo(h); }; })(dcFill(at.value, scope)); continue; }
         try { el.setAttribute(lo === 'defaultvalue' ? 'value' : an, dcFill(at.value, scope)); } catch (e) { /* unbekanntes Attribut */ }
       }
-      dcBuild(ch, scope, el); out.appendChild(el);
+      var into = el;
+      if (link && /flex|grid/.test(el.style.display)) {
+        into = document.createElement('span'); var es = el.style, is = into.style;
+        ['flexDirection', 'justifyContent', 'alignItems', 'gap', 'flexWrap', 'padding', 'minHeight'].forEach(function (pn) { if (es[pn]) is[pn] = es[pn]; });
+        is.display = es.display.replace('inline-', ''); is.boxSizing = 'border-box'; is.width = '100%'; is.height = '100%';
+        es.padding = '0'; es.display = es.display.indexOf('inline') === 0 ? 'inline-block' : 'block'; el.appendChild(into);
+      }
+      dcBuild(ch, scope, into); out.appendChild(el);
     }
   }
   function dcView(name) {
