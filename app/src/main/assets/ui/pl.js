@@ -605,11 +605,16 @@
   /* Papierwellen: weiche, runde Bögen in zwei Lagen, die langsam gegeneinander wandern */
   var W_TOP = '<svg class="welle2" aria-hidden="true" width="960" height="120" viewBox="0 0 960 120" preserveAspectRatio="none" style="position:absolute;left:0;top:0"><path d="M0,0H960V70C900,96 840,104 770,92S640,62 560,74S420,112 340,104S180,72 110,82S30,98 0,90Z" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="960" height="80" viewBox="0 0 960 80" preserveAspectRatio="none" style="position:absolute;left:0;top:0"><path d="M0,0H960V38C890,56 820,64 740,56S600,34 520,42S380,68 300,62S140,40 80,44S20,50 0,48Z" fill="#fbc19d"/></svg>';
   var W_BOT = '<svg class="welle2" aria-hidden="true" width="620" height="100" viewBox="0 0 620 100" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,100V36C40,18 80,10 130,16S220,42 280,38S370,10 430,12S530,34 570,30S605,20 620,18V100Z" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="620" height="60" viewBox="0 0 620 60" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,60V32C50,18 100,12 160,18S260,36 320,32S420,12 480,14S580,28 620,26V60Z" fill="#fbc19d"/></svg>';
-  function oriBar() {
-    return '<div class="o-bar"><span class="o-bl"><b data-live="time">' + esc(st.time || '') + '</b><span>' + esc((st.weekday ? st.weekday.slice(0, 2) + '., ' : '') + (st.date || '')) + '</span></span><span class="o-br">'
+  /* Statussymbole: WLAN, Bluetooth, Flugmodus und Akku, je nachdem, was gerade gilt */
+  function oriStatus() {
+    return (st.airplane ? '<svg role="img" aria-label="Flugmodus an" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-7-7 18-3-8z"/></svg>' : '')
       + (st.wifi ? '<svg role="img" aria-label="WLAN verbunden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.7a10 10 0 0 1 13 0M9 16.3a5 5 0 0 1 6 0M12 19.6h.01"/></svg>' : '')
       + (st.bt ? '<svg role="img" aria-label="Bluetooth an" width="16" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 4V3l5 4L7 17"/></svg>' : '')
-      + '<span class="o-bat"><svg aria-hidden="true" width="26" height="14" viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="3.5" width="' + Math.max(1, Math.round(16 * Math.min(100, st.battery || 0) / 100)) + '" height="7" rx="1.2" fill="currentColor"/><rect x="23.4" y="4.5" width="2" height="5" rx="1" fill="currentColor"/></svg><b data-live="bat">' + parseInt(st.battery, 10) + ' %</b></span></span></div>';
+      + (st.upd && st.upd.available ? '<svg role="img" aria-label="Update verfügbar" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>' : '')
+      + '<span class="o-bat"><svg aria-hidden="true" width="26" height="14" viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="3.5" width="' + Math.max(1, Math.round(16 * Math.min(100, parseInt(st.battery, 10) || 0) / 100)) + '" height="7" rx="1.2" fill="' + ((parseInt(st.battery, 10) || 100) <= 15 ? '#c2410c' : 'currentColor') + '"/><rect x="23.4" y="4.5" width="2" height="5" rx="1" fill="currentColor"/></svg><b data-live="bat">' + parseInt(st.battery, 10) + ' %</b></span>';
+  }
+  function oriBar() {
+    return '<div class="o-bar"><span class="o-bl"><b data-live="time">' + esc(st.time || '') + '</b><span>' + esc((st.weekday ? st.weekday.slice(0, 2) + '., ' : '') + (st.date || '')) + '</span></span><span class="o-br">' + oriStatus() + '</span></div>';
   }
   var DK = {
     start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', emu: 'M8 8h8v8H8zM5 5h14v14H5zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3', med: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01', aus: 'M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
@@ -941,7 +946,11 @@
       if (inner && /background:\s*(#f8e9dc|rgb\(248, 233, 220\))/i.test(inner.getAttribute('style') || '')) {
         inner.style.background = 'transparent'; root.insertAdjacentHTML('beforeend', W === 960 ? W_TOP + W_TOPB : W_BOT);
       }
-      if (inner) { inner.style.position = 'relative'; root.appendChild(inner); }
+      if (inner) {
+        /* Wo die Vorlage den Status als Text schreibt ("Akku 82 % · WLAN"), stehen am Gerät die echten Symbole */
+        qa('span,div', inner).forEach(function (el) { if (!el.children.length && /^(\d\d:\d\d · )?Akku \d+ %( · WLAN)?$/.test(el.textContent.trim())) { el.className = 'o-br'; el.innerHTML = oriStatus(); } });
+        inner.style.position = 'relative'; root.appendChild(inner);
+      }
     }];
   }
   function mixFor(key) {

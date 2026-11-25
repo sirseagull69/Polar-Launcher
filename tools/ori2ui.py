@@ -52,7 +52,7 @@ for f in sorted(glob.glob(os.path.join(src, '*.dc.html'))):
     dunkel = bool(re.search(r'^\s*<[a-z]+ style="[^"]*background: #1[0-9a-f]{5}', body.strip()))
     def logo(m):
         g = int(m.group(1)); n = max(44, int(g * 1.7))
-        return '<img alt="" aria-hidden="true" class="o-ori' + (' wippen' if 'wippen' in m.group(0) else '') + '" width="%d" height="%d" style="margin:%dpx" src="ori/%s-%s.svg">' % (n, n, -(n - g) // 2, 'aufwachen' if name == 'Boot' else 'ruhezustand', 'hell' if dunkel else 'abendrot')
+        return '<img alt="" aria-hidden="true" class="o-ori' + (' wippen' if 'wippen' in m.group(0) else '') + '" width="%d" height="%d" style="margin:%dpx 2px %dpx -6px" src="ori/%s-%s.svg">' % (n, n, -(n - g) // 2, -(n - g) // 2, 'aufwachen' if name == 'Boot' else 'ruhezustand', 'hell' if dunkel else 'abendrot')
     body = re.sub(r'<svg[^>]*width="(\d+)"[^>]*viewBox="0 0 40 40"[^>]*>.*?</svg>', logo, body, flags=re.S)
     farbe = re.search(r'<style>.*?\ba\{color:(#[0-9a-fA-F]{3,8})', s, flags=re.S)
     if farbe and farbe.group(1).lower() != '#1b2340':
