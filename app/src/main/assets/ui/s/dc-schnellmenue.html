@@ -1,0 +1,81 @@
+<div style="width: 960px; height: 540px; position: relative; font-family: 'Source Serif 4', serif; color: #1b2340; background: #0d1223; overflow: hidden">
+
+<svg aria-hidden="true" width="960" height="540" viewBox="0 0 960 540" style="position: absolute; left: 0; top: 0"><polygon points="0,540 0,330 90,300 90,540" fill="#2a1f4a"/><polygon points="90,540 90,240 190,200 190,540" fill="#3a2a66"/><polygon points="190,540 190,300 300,270 300,540" fill="#2a1f4a"/><polygon points="300,540 300,160 400,120 400,540" fill="#46306e"/><polygon points="400,540 400,280 520,250 520,540" fill="#2a1f4a"/><polygon points="520,540 520,210 640,180 640,540" fill="#3a2a66"/><polygon points="120,270 150,258 150,280 120,292" fill="#e2609a"/><polygon points="330,190 360,178 360,200 330,212" fill="#ffe36e"/><polygon points="330,250 360,238 360,260 330,272" fill="#e2609a"/><polygon points="550,240 580,228 580,250 550,262" fill="#ffe36e"/></svg>
+<span style="position: absolute; left: 24px; bottom: 20px; font-size: 12px; color: #c9d0e6">[HIER LÄUFT DAS SPIEL]</span>
+
+<sc-if value="{{showStats}}" hint-placeholder-val="{{ true }}">
+<div aria-label="Leistungsanzeige" style="position: absolute; left: 16px; top: 14px; display: flex; gap: 2px; background: rgba(13,18,35,0.82); border-radius: 12px; padding: 6px 8px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14)">
+<sc-for list="{{stats}}" as="s" hint-placeholder-count="6">
+<span style="display: flex; flex-direction: column; align-items: center; padding: 0 9px; min-width: 44px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 16px; color: {{s.color}}; line-height: 1.1">{{s.val}}</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 9.5px; letter-spacing: 0.1em; color: #c9d0e6">{{s.name}}</span></span>
+</sc-for>
+</div>
+</sc-if>
+
+<aside style="position: absolute; right: 0; top: 0; width: 320px; height: 540px; box-sizing: border-box; background: #f9ebf1; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; box-shadow: -10px 0 30px rgba(0,0,0,0.4)">
+<svg aria-hidden="true" width="320" height="70" viewBox="0 0 320 70" style="position: absolute; left: 0; top: 0"><path d="M0,0L320,0L320,40Q230,62 180,53Q130,44 90,54Q50,64 0,52L0,0Z" fill="#f5d0e0"/></svg>
+<div style="position: relative; display: flex; flex-direction: column">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #a3285f">NEONHAUSEN · PAUSIERT</span>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; line-height: 1.1; letter-spacing: -0.02em">Schnellmenü</h1>
+</div>
+
+<div style="position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px">
+<a href="Main.dc.html" style="grid-column: span 2; height: 48px; border-radius: 13px; background: #a3285f; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 12px rgba(163,40,95,0.3)">Fortsetzen</a>
+<button type="button" style="height: 46px; border: 0; border-radius: 12px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 6px rgba(20,27,49,0.1); cursor: pointer">Speichern</button>
+<button type="button" style="height: 46px; border: 0; border-radius: 12px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 6px rgba(20,27,49,0.1); cursor: pointer">Laden</button>
+<button type="button" style="height: 46px; border: 0; border-radius: 12px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 6px rgba(20,27,49,0.1); cursor: pointer">Bildschirmfoto</button>
+<button type="button" style="height: 46px; border: 0; border-radius: 12px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 6px rgba(20,27,49,0.1); cursor: pointer">Clip aufnehmen</button>
+</div>
+
+<div style="background: #fffdf8; border-radius: 14px; padding: 9px 12px 10px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); display: flex; flex-direction: column; gap: 6px; margin-top: 4px">
+<span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Leistungsprofil</span><span style="font-size: 11.5px; color: #4d556e">L/R wechseln</span></span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px">
+<sc-for list="{{profiles}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="height: 44px; border: 0; border-radius: 11px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; background: {{p.bg}}; color: {{p.fg}}">{{p.name}}</button>
+</sc-for>
+</div>
+<span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 18px; color: #a3285f; line-height: 1.1">{{profileNote}}</span>
+</div>
+
+<div style="background: #fffdf8; border-radius: 14px; padding: 0 12px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); min-height: 48px; display: flex; align-items: center; justify-content: space-between">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Leistungsanzeige</span>
+<button type="button" aria-pressed="{{showStats}}" aria-label="Leistungsanzeige" onClick="{{flipStats}}" style="width: 50px; height: 44px; border: 0; background: transparent; padding: 8px 0; cursor: pointer"><span style="display: block; width: 50px; height: 28px; border-radius: 14px; background: {{track}}; position: relative"><span style="position: absolute; top: 3px; left: {{knob}}; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(20,27,49,0.3)"></span></span></button>
+</div>
+
+<div style="flex: 1"></div>
+<a href="Main.dc.html" style="height: 44px; border-radius: 12px; background: #141b31; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center">Spiel beenden</a>
+</aside>
+</div>
+<!--dc-script-->
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var s = this.state || {};
+var cur = s.profil || 'Ausgewogen';
+var show = s.stats === undefined ? true : s.stats;
+var data = {
+Sparsam: ['30', '4,1 W', '46 °C', 'Hält am längsten. Sieht man aber.'],
+Ausgewogen: ['60', '7,2 W', '54 °C', 'Passt für fast alles.'],
+Leistung: ['90', '11 W', '63 °C', 'Mehr Bilder, mehr Lüfter.'],
+Turbo: ['120', '15 W', '71 °C', 'Alles, was geht. Akku weint.']
+};
+var d = data[cur];
+return {
+showStats: show,
+track: show ? '#a3285f' : '#8d93a6',
+knob: show ? '25px' : '3px',
+flipStats: function () { self.setState({ stats: !show }); },
+profileNote: d[3],
+profiles: Object.keys(data).map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : '#f4e3ea', fg: on ? '#ffffff' : '#1b2340', pick: function () { self.setState({ profil: n }); } }; }),
+stats: [
+{ name: 'FPS', val: d[0], color: '#7fe3a1' },
+{ name: 'CPU', val: '48 %', color: '#ffffff' },
+{ name: 'GPU', val: '61 %', color: '#ffffff' },
+{ name: 'TEMP', val: d[2], color: '#ffc37a' },
+{ name: 'WATT', val: d[1], color: '#ffffff' },
+{ name: 'AKKU', val: '82 %', color: '#ffffff' }
+]
+};
+}
+}
+<!--dc-props-->
+{}

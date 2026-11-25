@@ -1,0 +1,48 @@
+<div style="width: 620px; height: 540px; position: relative; display: flex; flex-direction: column; font-family: 'Source Serif 4', serif; color: #1b2340; background: #f8e9dc; overflow: hidden">
+
+<header style="position: relative; height: 48px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 18px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; color: #1b2340">RGB-Licht</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #4d556e; padding-right: 12px">Leuchtringe an den Sticks<a href="Bedienfeld.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; color: #9a3a0c">Bedienfeld</a></span>
+</header>
+<div style="position: relative; flex: 1; min-height: 0; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #141b31; border-radius: 16px; height: 128px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 90px">
+<span class="{{anim}}" style="width: 84px; height: 84px; border-radius: 50%; box-sizing: border-box; border: 9px solid {{color}}; background: #0d1223; box-shadow: 0 0 26px {{color}}; opacity: {{glow}}"></span>
+<span class="{{anim}}" style="width: 84px; height: 84px; border-radius: 50%; box-sizing: border-box; border: 9px solid {{color}}; background: #0d1223; box-shadow: 0 0 26px {{color}}; opacity: {{glow}}"></span>
+</div>
+<section style="background: #fffdf8; border-radius: 16px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); padding: 2px 6px 2px 14px; display: flex; align-items: center; justify-content: space-between; min-height: 52px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Farbe</span>
+<div style="display: flex">
+<sc-for list="{{colors}}" as="c" hint-placeholder-count="8">
+<button type="button" aria-pressed="{{c.on}}" aria-label="{{c.name}}" onClick="{{c.pick}}" style="width: 48px; height: 48px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer"><span style="width: 30px; height: 30px; border-radius: 50%; background: {{c.color}}; box-shadow: {{c.ring}}"></span></button>
+</sc-for>
+</div>
+</section>
+<section style="background: #fffdf8; border-radius: 16px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); padding: 8px 14px 10px; display: flex; flex-direction: column; gap: 5px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Effekt</span>
+<div style="display: flex; gap: 4px; background: #f1e6d8; border-radius: 13px; padding: 3px">
+<sc-for list="{{effects}}" as="o" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="flex: 1; height: 40px; padding: 0 12px; border: 0; border-radius: 10px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; background: {{o.bg}}; color: {{o.fg}}">{{o.name}}</button>
+</sc-for>
+</div>
+</section>
+<section style="background: #fffdf8; border-radius: 16px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); padding: 2px 14px">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px"><label for="rgb-hell" style="width: 96px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Helligkeit</label><input id="rgb-hell" type="range" min="0" max="100" defaultValue="60" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px"></div>
+<div style="border-top: 1px solid #efe6d8"><div style="display: flex; align-items: center; gap: 12px; min-height: 44px"><label for="rgb-tempo" style="width: 96px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Tempo</label><input id="rgb-tempo" type="range" min="0" max="100" defaultValue="40" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px"></div></div>
+</section>
+</div>
+</div>
+<!--dc-script-->
+class Component extends DCLogic {
+renderVals() {
+var self = this; var s = this.state || {};
+function seg(key, names, def) { var cur = s[key] || def; return names.map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : 'transparent', fg: on ? '#ffffff' : '#1b2340', pick: function () { var u = {}; u[key] = n; self.setState(u); } }; }); }
+var col = s.farbe || 'Orange', eff = s.effekt || 'Atmen';
+var cols = [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#5b8cff'], ['Türkis', '#4ac9c0'], ['Grün', '#5fd08a'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']];
+var hex = cols.filter(function (c) { return c[0] === col; })[0][1];
+return { color: eff === 'Aus' ? '#343d5c' : hex, glow: eff === 'Aus' ? 0.6 : 1, anim: eff === 'Atmen' || eff === 'Welle' ? 'atmen' : '',
+effects: seg('effekt', ['Fest', 'Atmen', 'Welle', 'Spielfarbe', 'Aus'], 'Atmen'),
+colors: cols.map(function (c) { var on = c[0] === col; return { name: c[0], color: c[1], on: on, ring: on ? '0 0 0 3px #fffdf8, 0 0 0 5px #141b31' : 'inset 0 0 0 1px rgba(20,27,49,0.25)', pick: function () { self.setState({ farbe: c[0] }); } }; }) };
+}
+}
+<!--dc-props-->
+{}

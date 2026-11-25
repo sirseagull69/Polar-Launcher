@@ -1,0 +1,75 @@
+<div style="width: 620px; height: 540px; position: relative; display: flex; flex-direction: column; font-family: 'Source Serif 4', serif; color: #1b2340; background: #f9ebf1; overflow: hidden">
+
+<header style="position: relative; height: 48px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 0 18px">
+<span style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; color: #1b2340">Neonhausen</span><span style="font-family: 'Caveat', cursive; font-size: 17px; color: #ff9ac6">läuft oben</span></span>
+<span style="font-size: 12.5px; color: #4d556e">12:30 · Akku 82 %</span>
+</header>
+
+
+<div style="position: relative; flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 9px">
+
+<section aria-label="Leistungsanzeige" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+<div style="background: #141b31; border-radius: 13px; padding: 8px 6px 7px; display: flex; flex-direction: column; align-items: center"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px; color: {{s.color}}; line-height: 1.1">{{s.val}}</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 9.5px; letter-spacing: 0.1em; color: #c9d0e6">{{s.name}}</span></div>
+</sc-for>
+</section>
+
+<section style="background: #fffdf8; border-radius: 16px; padding: 8px 14px 10px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; flex-direction: column; gap: 5px">
+<span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Leistungsprofil</span><span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 18px; color: #a3285f">{{note}}</span></span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{profiles}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="height: 44px; border: 0; border-radius: 11px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; background: {{p.bg}}; color: {{p.fg}}">{{p.name}}</button>
+</sc-for>
+</div>
+</section>
+
+<section style="background: #fffdf8; border-radius: 16px; padding: 2px 6px 2px 14px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; align-items: center; justify-content: space-between; min-height: 50px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">RGB-Licht</span>
+<div style="display: flex">
+<sc-for list="{{colors}}" as="c" hint-placeholder-count="7">
+<button type="button" aria-pressed="{{c.on}}" aria-label="{{c.name}}" onClick="{{c.pick}}" style="width: 44px; height: 44px; border: 0; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer"><span style="width: 26px; height: 26px; border-radius: 50%; background: {{c.color}}; box-shadow: {{c.ring}}"></span></button>
+</sc-for>
+</div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Speichern</button>
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Laden</button>
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Bildschirmfoto</button>
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Clip aufnehmen</button>
+<a href="Tastatur.dc.html" style="height: 48px; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,27,49,0.1)">Tastatur</a>
+<a href="Bedienfeld.dc.html" style="height: 48px; border-radius: 13px; background: #a3285f; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center">Spiel beenden</a>
+</section>
+
+<section style="background: #fffdf8; border-radius: 16px; padding: 2px 14px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+<label for="bs-hell" style="width: 96px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Helligkeit</label>
+<input id="bs-hell" type="range" min="0" max="100" defaultValue="70" style="flex: 1; min-width: 0; accent-color: #a3285f; height: 28px">
+</div>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px; border-top: 1px solid #efe6d8">
+<label for="bs-laut" style="width: 96px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Lautstärke</label>
+<input id="bs-laut" type="range" min="0" max="100" defaultValue="45" style="flex: 1; min-width: 0; accent-color: #a3285f; height: 28px">
+</div>
+</section>
+</div>
+</div>
+<!--dc-script-->
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var s = this.state || {};
+var cur = s.profil || 'Ausgewogen';
+var col = s.farbe || 'Pink';
+var data = { Sparsam: ['30', '46 °C', '4,1 W', 'Hält am längsten.'], Ausgewogen: ['60', '54 °C', '7,2 W', 'Passt für fast alles.'], Leistung: ['90', '63 °C', '11 W', 'Mehr Bilder, mehr Lüfter.'], Turbo: ['120', '71 °C', '15 W', 'Alles, was geht.'] };
+var d = data[cur];
+var cols = [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']];
+return {
+note: d[3],
+stats: [{ name: 'FPS', val: d[0], color: '#7fe3a1' }, { name: 'TEMP', val: d[1], color: '#ffc37a' }, { name: 'WATT', val: d[2], color: '#ffffff' }, { name: 'LÜFTER', val: 'Auto', color: '#ffffff' }, { name: 'AKKU', val: '82 %', color: '#ffffff' }],
+profiles: Object.keys(data).map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : '#f4e3ea', fg: on ? '#ffffff' : '#1b2340', pick: function () { self.setState({ profil: n }); } }; }),
+colors: cols.map(function (c) { var on = c[0] === col; return { name: c[0], color: c[1], on: on, ring: on ? '0 0 0 3px #fffdf8, 0 0 0 5px #141b31' : 'inset 0 0 0 1px rgba(20,27,49,0.25)', pick: function () { self.setState({ farbe: c[0] }); } }; })
+};
+}
+}
+<!--dc-props-->
+{}

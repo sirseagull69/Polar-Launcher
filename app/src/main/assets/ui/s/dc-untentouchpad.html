@@ -1,0 +1,29 @@
+<div style="width: 620px; height: 540px; position: relative; display: flex; flex-direction: column; font-family: 'Source Serif 4', serif; color: #1b2340; background: #f8e9dc; overflow: hidden">
+
+<header style="position: relative; height: 48px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 18px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; color: #1b2340">Touchpad</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #4d556e; padding-right: 12px">Steuert den Zeiger oben<a href="Bedienfeld.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; color: #9a3a0c">Bedienfeld</a></span>
+</header>
+<div style="position: relative; flex: 1; min-height: 0; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="flex: 1; min-height: 0; border-radius: 18px; background: #fffdf8; box-shadow: inset 0 0 0 2px #e6dccd; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px">
+<svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c2410c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 8-6 2-2 6z"/></svg>
+<span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 24px; color: #9a3a0c">Hier wischen. Oben bewegt sich was.</span>
+<span style="font-size: 12.5px; color: #4d556e">Tippen = Klick · Zwei Finger = Scrollen</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Linksklick</button>
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Rechtsklick</button>
+<button type="button" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer">Scrollen</button>
+<a href="Tastatur.dc.html" style="height: 48px; border: 0; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: #1b2340; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer; display: flex; align-items: center; justify-content: center">Tastatur</a>
+</div>
+<section style="background: #fffdf8; border-radius: 16px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); padding: 2px 14px"><div style="display: flex; align-items: center; gap: 12px; min-height: 44px"><label for="tp-tempo" style="width: 96px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Zeigertempo</label><input id="tp-tempo" type="range" min="0" max="100" defaultValue="55" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px"></div></section>
+</div>
+</div>
+<!--dc-script-->
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+<!--dc-props-->
+{}

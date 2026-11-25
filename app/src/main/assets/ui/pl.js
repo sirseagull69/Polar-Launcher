@@ -503,7 +503,10 @@
     if ((k === 'L2' || k === 'R2') && root._switch) { root._switch(k === 'R2' ? 1 : -1); return; }
     if ((k === 'L1' || k === 'R1') && root._tabs) { root._tabs(k === 'R1' ? 1 : -1); return; }
     if (root.dataset.mix && cur !== '3.3' && cur !== 'acc' && (k === 'L1' || k === 'R1')) {
-      var T = ['home', '3.1', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 3 : cur === '3.7' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 3)) % 4];
+      /* L1/R1 gehen die Leiste entlang, in derselben Reihenfolge wie die Symbole unten */
+      var T = ['home', '3.1', 'dc:Emulatoren:', '3.7', 'dc:Medien:' + DC_PAIR.Medien, '3.4'], at = cur[0] === '2' ? 0 : cur === '3.1' || cur === '3.2' ? 1 : cur.indexOf('dc:Emulatoren') === 0 ? 2 : cur === '3.7' ? 3 : cur.indexOf('dc:Medien') === 0 ? 4 : cur === '3.4' ? 5 : -1;
+      if (at < 0) { snd('taste'); return; }
+      var to = T[(at + (k === 'R1' ? 1 : T.length - 1)) % T.length];
       snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
     }
     if (k === 'A' && root.dataset.mix) { act(foc); return; }
@@ -516,6 +519,7 @@
   /* ---------- Alle Ansichten (Select lang halten) ---------- */
   function toggleIndex() {
     if (idx) { idx.el.parentNode.removeChild(idx.el); idx = null; snd('back'); return; }
+    if (!window.PL_SCREENS['dc:Emulatoren:']) { var all = {}; Object.keys(DC_ALL).forEach(function (n) { all[DC_TOP.indexOf(n) >= 0 ? 'dc:' + n + ':' + (DC_PAIR[n] || '') : 'dc::' + n] = DC_ALL[n]; }); Object.keys(window.PL_SCREENS).forEach(function (k) { all[k] = window.PL_SCREENS[k]; }); window.PL_SCREENS = all; }
     var keys = Object.keys(window.PL_SCREENS), el = document.createElement('div');
     el.style.cssText = 'position:absolute;inset:0;background:rgba(10,13,20,.96);padding:28px 44px;box-sizing:border-box;color:#EEF1F6;font-family:\'Space Grotesk\',sans-serif;display:flex;flex-direction:column;gap:12px;z-index:50';
     el.innerHTML = '<div style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#A3ABBA;letter-spacing:.04em">ALLE ANSICHTEN · ' + keys.length + '</div><div style="flex:1 1 0;min-height:0;overflow:hidden;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:start;padding:6px;margin:-6px"></div>';
@@ -523,7 +527,7 @@
     keys.forEach(function (k) {
       var r = document.createElement('div');
       r.style.cssText = 'height:34px;border-radius:10px;background:#121724;display:flex;align-items:center;gap:10px;padding:0 12px;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden';
-      r.innerHTML = '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#A3ABBA;width:34px;flex:none">' + k + '</span>' + window.PL_SCREENS[k];
+      r.innerHTML = '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#A3ABBA;width:34px;flex:none">' + (k.indexOf('dc:') === 0 ? 'Ori' : k) + '</span>' + window.PL_SCREENS[k];
       box.appendChild(r);
     });
     stage.appendChild(el); idx = { el: el, rows: qa('div', box), i: Math.max(0, keys.indexOf(cur)), keys: keys };
@@ -608,11 +612,11 @@
       + '<span class="o-bat"><svg aria-hidden="true" width="26" height="14" viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3.5" y="3.5" width="' + Math.max(1, Math.round(16 * Math.min(100, st.battery || 0) / 100)) + '" height="7" rx="1.2" fill="currentColor"/><rect x="23.4" y="4.5" width="2" height="5" rx="1" fill="currentColor"/></svg><b data-live="bat">' + parseInt(st.battery, 10) + ' %</b></span></span></div>';
   }
   var DK = {
-    start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+    start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', emu: 'M8 8h8v8H8zM5 5h14v14H5zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3', med: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01', aus: 'M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
     fav: 'M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z', einst: 'M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4', upd: 'M12 4v11M7 11l5 5 5-5M5 20h14'
   };
   function oriDock(active, hint) {
-    var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['apps', 'Apps', 'swap:3.7'], ['fav', 'Favoriten', 'swap:3.4'], ['einst', 'Einstellungen', 'go:5.1']];
+    var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['emu', 'Emulatoren', 'dc:Emulatoren'], ['apps', 'Apps', 'swap:3.7'], ['med', 'Medien', 'dc:Medien'], ['einst', 'Einstellungen', 'go:5.1'], ['aus', 'Aus', 'dc:Ausschalten']];
     if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
     return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 46) + '<b>Ori OS</b></span><div class="o-dki">'
       + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
@@ -718,6 +722,7 @@
         + '<div class="u-body"><section class="u-tgs">' + tg('WLAN', st.wifi, 'and:wifi') + tg('Bluetooth', st.bt, 'and:bt') + tg('Flugmodus', st.airplane, 'and:airplane') + '</section>'
         + '<section class="u-card">' + sl('b', 'Helligkeit', st.brightness || 0) + sl('v', 'Lautstärke', st.volume || 0) + '</section>'
         + '<span class="o-say l">' + ori((st.battery || 100) <= 15 ? 'ungeduldig' : 'ruhezustand-2', 58) + '<span class="o-quote" style="font-size:20px">Akku ' + parseInt(st.battery, 10) + ' %' + (st.temp ? ', ' + esc(st.temp) : '') + '. ' + esc(st.free || '') + ' frei.</span></span>'
+        + '<nav class="u-navs s">' + nav('Leistung', 'dc:UntenLeistung') + nav('RGB', 'dc:UntenRgb') + nav('Tasten', 'dc:UntenTasten') + nav('Touchpad', 'dc:UntenTouchpad') + nav('Akku', 'dc:UntenAkku') + nav('Mitteilungen', 'dc:Mitteilungen') + '</nav>'
         + '<div style="flex:1"></div><nav class="u-navs">' + nav('Start', 'home', true) + nav('Bibliothek', st.games ? 'go:3.1' : 'go:3.7') + nav('Einstellungen', 'go:5.1') + nav('Suchen', 'go:3.3') + '</nav></div></div>';
     }
     var favs = homeRow().slice(0, 6);
@@ -852,11 +857,97 @@
       };
       el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
     });
-    root._tabs = function (d) { var i = 0; SETC.forEach(function (c, n) { if (c[0] === seite) i = n; }); setKeep = ''; J.setPref('einst', SETC[(i + d + SETC.length) % SETC.length][0]); snd('ok'); show(cur); };
+    root._tabs = function (d) { var i = 0; SETC.forEach(function (c, n) { if (c[0] === seite) i = n; }); setKeep = ''; J.setPref('einst', SETC[(i + d + SETC.length) % SETC.length][0]); snd('ok'); J.sync('reload'); };
+  }
+  /* ---------- Die Ansichten aus dem Canvas "Ori OS" laufen direkt: Vorlage + Logik je Ansicht aus s/dc-<name>.html ---------- */
+  var DCC = {}, DCS = {};
+  var DC_ALL = { Boot: 'Hochfahren', Sperr: 'Sperrbildschirm', Einrichtung: 'Ersteinrichtung', Emulatoren: 'Emulatoren', Medien: 'Medien', Schnell: 'Schnelleinstellungen', Schnellmenue: 'Im Spiel: Schnellmenü', Ausschalten: 'Ausschalten', Update: 'Systemupdate',
+    Bedienfeld: 'Bedienfeld (Vorlage)', BedienfeldSpiel: 'Bedienfeld im Spiel', Tastatur: 'Tastatur', TastaturZahlen: 'Tastatur: Zahlen', Mitteilungen: 'Mitteilungen', UntenSperr: 'Sperrbildschirm unten', UntenStart: 'Start-Begleiter (Vorlage)', UntenLeistung: 'Leistungsmonitor', UntenRgb: 'RGB-Licht', UntenTasten: 'Tastenbelegung', UntenTouchpad: 'Touchpad', UntenDS: 'Zweiter Spielbildschirm (DS)', UntenAkku: 'Akku & Laden', UntenFoto: 'Bildschirmfoto gemacht' };
+  var DC_TOP = ['Boot', 'Sperr', 'Einrichtung', 'Emulatoren', 'Medien', 'Schnell', 'Schnellmenue', 'Ausschalten', 'Update'];
+  var DC_PAIR = { Sperr: 'UntenSperr', Boot: 'UntenSperr', Einrichtung: 'Tastatur', Schnellmenue: 'BedienfeldSpiel', Medien: 'UntenTouchpad', Update: 'UntenAkku', Ausschalten: 'UntenAkku' };
+  var DC_CAT = { Einst: 'bildschirme', EinstNetzwerk: 'netzwerk', EinstController: 'controller', EinstRgb: 'rgb', EinstTon: 'ton', EinstLeistung: 'leistung', EinstSpeicher: 'speicher', EinstEmulatoren: 'emulatoren', EinstSystem: 'system' };
+  var DC_DOCK = { start: 'start', bibliothek: 'bib', emulatoren: 'emu', apps: 'apps', medien: 'med', einstellungen: 'einst', aus: 'aus' };
+  function dcKey(name) { return DC_TOP.indexOf(name) >= 0 ? 'dc:' + name + ':' + (DC_PAIR[name] || '') : 'dc:' + (cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '') + ':' + name; }
+  function dcLoad(name) {
+    if (DCC[name] !== undefined) return DCC[name];
+    var raw = J.html('dc-' + name.toLowerCase()); if (!raw) return (DCC[name] = null);
+    try {
+      var a = raw.split('\n<!--dc-script-->\n'), b = a[1].split('\n<!--dc-props-->\n'), tpl = document.createElement('template');
+      tpl.innerHTML = a[0];
+      return (DCC[name] = { tpl: tpl.content, Cls: new Function('DCLogic', b[0] + '\nreturn Component;')(function DCLogic() {}), props: JSON.parse(b[1] || '{}') });
+    } catch (e) { J.log('Ansicht ' + name + ': ' + e); return (DCC[name] = null); }
+  }
+  function dcGet(scope, expr) {
+    expr = expr.replace(/^\s*\{\{\s*|\s*\}\}\s*$/g, '').trim();
+    if (expr === 'true') return true; if (expr === 'false') return false; if (/^-?\d+(\.\d+)?$/.test(expr)) return +expr;
+    var v = scope, p = expr.split('.');
+    for (var i = 0; i < p.length; i++) { if (v === null || v === undefined) return undefined; v = v[p[i]]; }
+    return v;
+  }
+  function dcFill(t, scope) { return t.indexOf('{{') < 0 ? t : t.replace(/\{\{\s*([^}]+?)\s*\}\}/g, function (m, e) { var v = dcGet(scope, e); return v === null || v === undefined ? '' : v; }); }
+  /* Die Beispielwerte aus dem Canvas für Uhrzeit, Datum und Akku werden durch die echten ersetzt */
+  function dcLive(t) {
+    if (t.indexOf('12:30') < 0 && t.indexOf('82 %') < 0 && t.indexOf('25. N') < 0) return t;
+    var d = new Date(), tag = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }), kurz = d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long' });
+    return t.replace(/12:30/g, st.time || '12:30').replace(/82 %/g, parseInt(st.battery, 10) + ' %').replace(/MITTWOCH, 25\. NOVEMBER/g, tag.toUpperCase()).replace(/Mittwoch, 25\. November/g, tag).replace(/Mi\., 25\. November/g, kurz);
+  }
+  function dcGo(name) {
+    name = name.replace(/\.dc\.html$/, '');
+    var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
+    if (nat[name]) { run(nat[name]); return; }
+    if (DC_CAT[name]) { J.setPref('einst', DC_CAT[name]); setKeep = ''; run('5.1'); return; }
+    if (!DC_ALL[name]) { note('Diese Ansicht gibt es noch nicht.'); return; }
+    snd('ok'); var k = dcKey(name);
+    if (cur.indexOf('dc:') === 0 && DC_TOP.indexOf(name) < 0) J.swap(k); else J.go(k);
+  }
+  function dcBuild(node, scope, out) {
+    for (var ch = node.firstChild; ch; ch = ch.nextSibling) {
+      if (ch.nodeType === 3) { out.appendChild(document.createTextNode(dcLive(dcFill(ch.nodeValue, scope)))); continue; }
+      if (ch.nodeType !== 1) continue;
+      var tag = ch.localName;
+      if (tag === 'sc-for') { var list = dcGet(scope, ch.getAttribute('list') || '') || [], as = ch.getAttribute('as') || 'item'; for (var i = 0; i < list.length; i++) { var sc = Object.create(scope); sc[as] = list[i]; dcBuild(ch, sc, out); } continue; }
+      if (tag === 'sc-if') { if (dcGet(scope, ch.getAttribute('value') || '')) dcBuild(ch, scope, out); continue; }
+      if (tag === 'helmet') continue;
+      if (tag === 'dc-import') {
+        var nm = ch.getAttribute('name'), box = document.createElement('div');
+        box.innerHTML = nm === 'Leiste' ? oriBar() : nm === 'Dock' ? oriDock(DC_DOCK[ch.getAttribute('active')] || '', dcFill(ch.getAttribute('hinweis') || '', scope)) : '';
+        while (box.firstChild) out.appendChild(box.firstChild);
+        continue;
+      }
+      var link = tag === 'a', el = link ? document.createElement('button') : document.createElementNS(ch.namespaceURI, ch.tagName.toLowerCase() === tag ? tag : ch.tagName);
+      if (link) { el.type = 'button'; el.className = 'dc-a'; }
+      for (var n = 0; n < ch.attributes.length; n++) {
+        var at = ch.attributes[n], an = at.name, lo = an.toLowerCase();
+        if (lo.indexOf('hint-') === 0) continue;
+        if (lo === 'onclick') { (function (fn) { if (typeof fn === 'function') el._act = function () { snd('ok'); fn(); }; })(dcGet(scope, at.value)); continue; }
+        if (link && lo === 'href') { (function (h) { if (h && !/^https?:/.test(h)) el._act = function () { dcGo(h); }; })(dcFill(at.value, scope)); continue; }
+        try { el.setAttribute(lo === 'defaultvalue' ? 'value' : an, dcFill(at.value, scope)); } catch (e) { /* unbekanntes Attribut */ }
+      }
+      dcBuild(ch, scope, el); out.appendChild(el);
+    }
+  }
+  function dcView(name) {
+    var d = dcLoad(name), W = DC_TOP.indexOf(name) >= 0 ? 960 : 620;
+    if (!d) return [function () { return '<div class="mx ori" style="width:' + (TOP ? 960 : 620) + 'px;height:540px"><div class="o-empty" style="margin:60px">' + ori('ratlos', 120) + '<b>Diese Ansicht fehlt</b></div></div>'; }, null];
+    return [function () { return '<div class="mx ori dc" style="width:' + W + 'px;height:540px"></div>'; }, function () {
+      var inst = new d.Cls(); inst.props = d.props; inst.state = DCS[name] || {};
+      inst.setState = function (s) {
+        DCS[name] = Object.assign({}, inst.state, s);
+        var i = items.indexOf(foc); show(cur); if (i >= 0 && items[i]) setFocus(items[i], true);
+      };
+      var vals; try { vals = inst.renderVals() || {}; } catch (e) { J.log('Ansicht ' + name + ': ' + e); vals = {}; }
+      var frag = document.createDocumentFragment(); dcBuild(d.tpl, vals, frag);
+      var inner = null; for (var c = frag.firstChild; c; c = c.nextSibling) if (c.nodeType === 1) { inner = c; break; }
+      if (inner && /background:\s*(#f8e9dc|rgb\(248, 233, 220\))/i.test(inner.getAttribute('style') || '')) {
+        inner.style.background = 'transparent'; root.insertAdjacentHTML('beforeend', W === 960 ? W_TOP + W_TOPB : W_BOT);
+      }
+      if (inner) { inner.style.position = 'relative'; root.appendChild(inner); }
+    }];
   }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
-    if (/^5\./.test(key)) return TOP ? [mxSet, mxSetBind] : [mxPanel, mxPanelBind];
+    if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
+    if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -868,8 +959,9 @@
     if (k === 'launch') launch(v ? appByKey(v) : sel);
     else if (k === 'details') details();
     else if (k === 'fav') fav(sel);
+    else if (k === 'dc') dcGo(v);
     else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
-    else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); show(cur); }
+    else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); J.sync('reload'); }
     else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); show(cur); }
     else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
     else if (k === 'untenw') { J.setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }

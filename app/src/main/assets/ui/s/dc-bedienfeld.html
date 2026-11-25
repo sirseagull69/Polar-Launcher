@@ -1,0 +1,71 @@
+<div style="width: 620px; height: 540px; position: relative; display: flex; flex-direction: column; font-family: 'Source Serif 4', serif; color: #1b2340; background: #f8e9dc; overflow: hidden">
+
+<header style="position: relative; height: 48px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 18px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; color: #1b2340">Bedienfeld</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #4d556e">12:30 · Akku 82 % · WLAN<a href="Mitteilungen.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; color: #9a3a0c">3 Mitteilungen</a></span>
+</header>
+
+
+<div style="position: relative; flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+
+<section style="background: #fffdf8; border-radius: 16px; padding: 9px 14px 11px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Leistungsprofil</span><span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 18px; color: #9a3a0c">{{note}}</span></span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{profiles}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="height: 44px; border: 0; border-radius: 11px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; background: {{p.bg}}; color: {{p.fg}}">{{p.name}}</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Schnellschalter" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{toggles}}" as="t" hint-placeholder-count="6">
+<button type="button" aria-pressed="{{t.on}}" onClick="{{t.flip}}" style="border: 0; border-radius: 14px; background: {{t.bg}}; padding: 8px 12px; text-align: left; display: flex; flex-direction: column; justify-content: center; min-height: 52px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); cursor: pointer"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px; color: {{t.fg}}">{{t.name}}</span><span style="font-family: 'Source Serif 4', serif; font-size: 11.5px; color: {{t.subFg}}">{{t.state}}</span></button>
+</sc-for>
+</section>
+
+<section style="background: #fffdf8; border-radius: 16px; padding: 4px 14px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+<label for="bf-oben" style="width: 120px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Helligkeit oben</label>
+<input id="bf-oben" type="range" min="0" max="100" defaultValue="70" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px">
+</div>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px; border-top: 1px solid #efe6d8">
+<label for="bf-unten" style="width: 120px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Helligkeit unten</label>
+<input id="bf-unten" type="range" min="0" max="100" defaultValue="55" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px">
+</div>
+<div style="display: flex; align-items: center; gap: 12px; min-height: 44px; border-top: 1px solid #efe6d8">
+<label for="bf-laut" style="width: 120px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13.5px">Lautstärke</label>
+<input id="bf-laut" type="range" min="0" max="100" defaultValue="45" style="flex: 1; min-width: 0; accent-color: #c2410c; height: 28px">
+</div>
+</section>
+
+<div style="flex: 1"></div>
+
+<nav aria-label="Schnellstart" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<a href="Main.dc.html" style="height: 48px; border-radius: 13px; background: #141b31; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center">Start</a>
+<a href="Bibliothek.dc.html" style="height: 48px; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,27,49,0.1)">Bibliothek</a>
+<a href="Einst.dc.html" style="height: 48px; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,27,49,0.1)">Einstellungen</a>
+<a href="Tastatur.dc.html" style="height: 48px; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,27,49,0.1)">Suchen</a>
+<a href="Ausschalten.dc.html" style="height: 48px; border-radius: 13px; background: #fffdf8; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,27,49,0.1)">Aus</a>
+</nav>
+</div>
+</div>
+<!--dc-script-->
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var s = this.state || {};
+var cur = s.profil || 'Ausgewogen';
+var notes = { Sparsam: 'Hält am längsten.', Ausgewogen: 'Passt für fast alles.', Leistung: 'Mehr Bilder, mehr Lüfter.', Turbo: 'Alles, was geht.' };
+var tg = [['wlan', 'WLAN', true, 'Verbunden', 'Aus'], ['bt', 'Bluetooth', true, 'An', 'Aus'], ['flug', 'Flugmodus', false, 'An', 'Aus'], ['ruhe', 'Nicht stören', false, 'An', 'Aus'], ['rgb', 'RGB-Licht', true, 'Atmen · Orange', 'Aus'], ['anz', 'Leistungsanzeige', true, 'Im Spiel sichtbar', 'Aus']];
+return {
+note: notes[cur],
+profiles: Object.keys(notes).map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : '#f1e9dc', fg: on ? '#ffffff' : '#1b2340', pick: function () { self.setState({ profil: n }); } }; }),
+toggles: tg.map(function (t) {
+var on = s[t[0]] === undefined ? t[2] : s[t[0]];
+return { name: t[1], on: on, state: on ? t[3] : t[4], bg: on ? '#141b31' : '#fffdf8', fg: on ? '#ffffff' : '#1b2340', subFg: on ? '#c9d0e6' : '#4d556e', flip: function () { var u = {}; u[t[0]] = !on; self.setState(u); } };
+})
+};
+}
+}
+<!--dc-props-->
+{}
