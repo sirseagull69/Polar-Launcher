@@ -354,3 +354,8 @@ img{display:block}
 .o-seg{background:rgba(27,35,64,.07)}
 .o-tr{background:rgba(27,35,64,.1)}
 .o-sec{-webkit-mask-image:linear-gradient(#000 86%,transparent);mask-image:linear-gradient(#000 86%,transparent);padding-bottom:30px}
+/* 0.15.4: alles passt ohne Scrollen, nichts rutscht mehr hinter die Wellen */
+.o-cats{gap:2px;padding:2px 4px;-webkit-mask-image:none;mask-image:none}
+.o-cat{min-height:38px;font-size:15px}
+.o-sec{-webkit-mask-image:none;mask-image:none;padding:0 4px 0 0;margin-bottom:6px}
+.o-sr{min-height:52px}
