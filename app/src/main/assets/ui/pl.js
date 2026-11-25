@@ -612,44 +612,59 @@
   function oriDock(active, hint) {
     var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['apps', 'Apps', 'swap:3.7'], ['fav', 'Favoriten', 'swap:3.4'], ['einst', 'Einstellungen', 'go:5.1']];
     if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
-    return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 44, true) + '<b>Ori OS</b></span><div class="o-dki">'
+    return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 46) + '<b>Ori OS</b></span><div class="o-dki">'
       + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
       + '</div><span class="o-hint">' + hint + '</span></nav>';
   }
-  function oriTop(active, hint, main) { return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + oriBar() + '<main class="o-main">' + main + '</main>' + oriDock(active, hint) + '</div>'; }
+  var W_TOPB = '<svg class="welle2" aria-hidden="true" width="960" height="110" viewBox="0 0 960 110" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,110V40C70,20 150,12 240,22S400,52 500,46S660,14 760,16S900,40 960,34V110Z" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="960" height="70" viewBox="0 0 960 70" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,70V36C80,20 170,14 260,22S430,44 520,40S690,16 780,18S910,34 960,30V70Z" fill="#fbc19d"/></svg>';
+  function oriTop(active, hint, main) { return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + W_TOPB + oriBar() + '<main class="o-main">' + main + '</main>' + oriDock(active, hint) + '</div>'; }
   function mxHome() {
     var list = homeRow(), at = sel ? sel.key : '';
     if (!list.some(function (a) { return a.key === at; })) at = list[0] ? list[0].key : '';
     return oriTop('start', 'A Starten · X Details · Y Bibliothek · L2/R2 blättern',
       '<div class="o-head"><div class="o-tt"><span class="o-kick" id="h-sys"></span><h1 class="o-h1" id="h-title"></h1><span class="o-quote" id="h-quote"></span></div>' + ori(greeted ? 'ruhezustand' : 'winkt', 92, false, 'o-ohome') + '<span style="flex:1"></span>'
       + '<div class="o-btns"><button type="button" class="o-btn" data-act="details">Details</button><button type="button" class="o-go" data-act="launch"><i>A</i>Starten</button></div></div>'
-      + '<div class="o-row" id="h-row">' + list.map(function (a) { return '<button type="button" class="o-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + '><span class="o-frame">' + tileIn(a) + '</span><span class="o-tn">' + esc(a.label) + '</span></button>'; }).join('') + '</div>'
+      + '<div class="o-row" id="h-row"><div class="o-track" id="h-track">' + list.map(function (a) { return '<button type="button" class="o-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + '><span class="o-frame">' + tileIn(a) + '</span><span class="o-tn">' + esc(a.label) + '</span></button>'; }).join('') + '</div></div>'
       + '<div class="o-chips"><span class="o-chip"><b>Zuletzt</b> · <span id="h-last"></span></span><span class="o-chip" id="h-ortc"><b>Liegt auf</b> · <span id="h-ort"></span></span><span style="flex:1"></span><button type="button" class="o-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + (st.games ? 'Spiele' : 'Apps') + ' ansehen</button></div>');
   }
-  var selT = 0;
+  var selT = 0, hOff = 0, txtT = 0;
   function mxHomeBind() {
-    var row = document.getElementById('h-row'), tiles = qa('.o-t', row);
+    var track = document.getElementById('h-track'), tiles = qa('.o-t', track);
+    /* Die Reihe bewegt sich nur über transform (läuft auf der Grafikkarte): nichts wird neu umbrochen, darum bleibt schnelles Blättern flüssig.
+       Jede Kachel ist in voller Größe angelegt und wird verkleinert gezeigt, nur die gewählte steht auf 1. */
+    var BIG = 237, S = 2 / 3, STEP = 158 + 14, PAD = 28, W = 960, max = Math.max(0, PAD * 2 + tiles.length * STEP - 14 + (BIG - 158) - W);
+    function place(f) {
+      var l = PAD + f * STEP;
+      if (l - hOff < PAD) hOff = l - PAD; else if (l + BIG - hOff > W - PAD - 120) hOff = l + BIG - (W - PAD - 120);
+      hOff = Math.max(0, Math.min(max, hOff));
+      track.style.transform = 'translate3d(' + -hOff + 'px,0,0)';
+      for (var i = 0; i < tiles.length; i++) tiles[i].style.transform = 'translate3d(' + (PAD + i * STEP + (i > f ? BIG - 158 : 0)) + 'px,0,0) scale(' + (i === f ? 1 : S) + ')';
+    }
+    function text(a) {
+      document.getElementById('h-sys').textContent = kickOf(a).toUpperCase();
+      var t = document.getElementById('h-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 26 ? '30px' : a.label.length > 18 ? '38px' : '46px';
+      document.getElementById('h-quote').textContent = quoteOf(a);
+      document.getElementById('h-last').textContent = lastOf(a);
+      document.getElementById('h-ort').textContent = placeOf(a); document.getElementById('h-ortc').style.display = a.game ? '' : 'none';
+    }
+    var first = 0; tiles.forEach(function (el, i) { if (el.dataset.first) first = i; });
+    track.style.transition = 'none'; tiles.forEach(function (el) { el.style.transition = 'none'; });
+    place(first); if (tiles[first]) text(appByKey(tiles[first].dataset.key));
+    requestAnimationFrame(function () { requestAnimationFrame(function () { track.style.transition = ''; tiles.forEach(function (el) { el.style.transition = ''; }); }); });
     if (!greeted) { greeted = true; var oh = root.querySelector('.o-ohome'); timers.push(setTimeout(function () { if (oh && oh.isConnected) oh.src = 'ori/ruhezustand-abendrot.svg'; }, 4400)); }
-    tiles.forEach(function (el) {
+    tiles.forEach(function (el, i) {
       var a = appByKey(el.dataset.key || '');
       el._onfoc = function () {
         if (!a) return;
-        document.getElementById('h-sys').textContent = kickOf(a).toUpperCase();
-        var t = document.getElementById('h-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 26 ? '30px' : a.label.length > 18 ? '38px' : '46px';
-        document.getElementById('h-quote').textContent = quoteOf(a);
-        document.getElementById('h-last').textContent = lastOf(a);
-        document.getElementById('h-ort').textContent = placeOf(a); document.getElementById('h-ortc').style.display = a.game ? '' : 'none';
-        if (!sel || sel.key !== a.key) { sel = a; clearTimeout(selT); selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 180); }
-        var still = root.classList.contains('pl-still');
-        setTimeout(function () {
-          var r = el.getBoundingClientRect(), R = row.getBoundingClientRect(), z = R.width / row.offsetWidth || 1;
-          row.scrollTo({ left: Math.max(0, row.scrollLeft + ((r.left + r.width / 2) - (R.left + R.width / 2)) / z), behavior: still ? 'auto' : 'smooth' });
-        }, still ? 0 : 200);
+        place(i);
+        /* Titel, Spruch und der untere Bildschirm ziehen erst nach, wenn das Blättern kurz steht */
+        clearTimeout(txtT); txtT = setTimeout(function () { text(a); }, 70);
+        if (!sel || sel.key !== a.key) { sel = a; clearTimeout(selT); selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 260); }
       };
     });
     if (!tiles.length) { document.getElementById('h-title').textContent = 'Noch nichts da'; }
     root._switch = function (d) { var i = tiles.indexOf(foc); if (i < 0) { setFocus(tiles[0]); return; } setFocus(tiles[Math.max(0, Math.min(tiles.length - 1, i + d))]); };
-    root._switchOn = function () { return false; };
+    root._switchOn = function () { return tiles.indexOf(foc) >= 0; };
   }
   function mxLib() {
     var favs = cur === '3.4', find = cur === '3.3', gamesTab = cur === '3.1' || cur === '3.2', list = apps.slice(), chips = '';
