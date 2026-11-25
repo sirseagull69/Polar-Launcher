@@ -492,6 +492,7 @@
     if (k === 'up' || k === 'down' || k === 'left' || k === 'right') {
       if (k === 'left' || k === 'right') {
         if (root._switch && (!root._switchOn || root._switchOn())) { root._switch(k === 'right' ? 1 : -1); return; }
+        if (foc && foc._adj) { foc._adj(k === 'right' ? 5 : -5); snd('fokus'); return; }
         if (foc && foc._hue) { foc._hue(+foc.dataset.hue + (k === 'right' ? 10 : -10)); snd('fokus'); return; }
         var sl = foc && findSlider(foc);
         if (sl) { sliderSet(foc, sl, (+sl.dataset.v || parseFloat(sl.children[1].style.width) || 0) + (k === 'right' ? 5 : -5), true); snd('fokus'); J.sync(''); return; }
@@ -500,6 +501,7 @@
     }
     var t = lookup('k', k);
     if ((k === 'L2' || k === 'R2') && root._switch) { root._switch(k === 'R2' ? 1 : -1); return; }
+    if ((k === 'L1' || k === 'R1') && root._tabs) { root._tabs(k === 'R1' ? 1 : -1); return; }
     if (root.dataset.mix && cur !== '3.3' && cur !== 'acc' && (k === 'L1' || k === 'R1')) {
       var T = ['home', '3.1', '3.7', '3.4'], at = cur[0] === '2' ? 0 : cur === '3.4' ? 3 : cur === '3.7' ? 2 : 1, to = T[(at + (k === 'R1' ? 1 : 3)) % 4];
       snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
@@ -799,8 +801,62 @@
     if (TOP) return oriTop('', 'A Auswählen · B Zurück', inner);
     return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Emulator', name) + W_BOT + '<div class="u-body"><div class="o-list">' + rows + '</div></div></div>';
   }
+  /* ---------- Einstellungen (5.x) nach der Vorlage "Ori OS": neun Bereiche, fünf Zeilenarten ---------- */
+  var SETC = [['bildschirme', 'Bildschirme'], ['netzwerk', 'WLAN & Netzwerk'], ['controller', 'Controller'], ['rgb', 'RGB-Licht'], ['ton', 'Ton'], ['leistung', 'Leistung & Lüfter'], ['speicher', 'Speicher'], ['emulatoren', 'Emulatoren'], ['system', 'System & Updates']];
+  var setKeep = '';
+  function mxSet() {
+    var seite = pref('einst', 'bildschirme'); if (!SETC.some(function (c) { return c[0] === seite; })) seite = 'bildschirme';
+    function g(id, def) { var v = pref('e:' + seite + ':' + id, null); return v === null ? def : v; }
+    /* wirkt = true: die Einstellung tut schon etwas. Sonst merkt Ori sie sich nur, bis das eigene OS sie umsetzen kann. */
+    function V(label, value, sub, act) { return { k: 'v', label: label, value: value, sub: sub || '', act: act || '', real: !!act }; }
+    function T(id, label, def, sub, real) { var on = real ? real.on : g(id, def ? '1' : '0') === '1'; return { k: 't', id: id, label: label, sub: sub || '', on: on, act: real ? real.act : 'eset:' + id + ':' + (on ? '0' : '1'), real: !!real }; }
+    function S(id, label, val, real) { return { k: 's', id: id, label: label, val: real ? real.val : +g(id, val), hs: real ? real.hs : '', real: !!real }; }
+    function C(id, label, names, def, real) { var c = real ? real.cur : g(id, def); return { k: 'c', id: id, label: label, real: !!real, opts: names.map(function (n) { return { name: n, on: n === c, act: real ? real.act + n : 'eset:' + id + ':' + n }; }) }; }
+    function W(id, label, cols, def, real) { var c = real ? real.cur : g(id, def); return { k: 'w', id: id, label: label, real: !!real, opts: cols.map(function (x) { return { name: x[0], color: x[1], on: (real ? x[1] : x[0]) === c, act: real ? real.act + x[1] : 'eset:' + id + ':' + x[0] }; }) }; }
+    var b = st.brightness || 0, upd = st.upd || {};
+    var P = {
+      bildschirme: ['Bildschirme', 'Zwei Bildschirme. Doppelt so viel zu putzen.', [S('oben', 'Helligkeit oben', 70, { val: b, hs: 'b' }), S('unten', 'Helligkeit unten', 55, { val: b, hs: 'b' }), V('Bildwiederholrate', '120 Hz', '', 'and:display'), C('farbe', 'Farbmodus', ['Natürlich', 'Kräftig', 'Warm'], 'Kräftig'), C('zweit', 'Unterer Bildschirm', ['Start', 'Bedienfeld'], '', { cur: pref('unten', 'start') === 'feld' ? 'Bedienfeld' : 'Start', act: 'untenw:' }), T('still', 'Bewegungen reduzieren', false, 'Wellen, Kacheln und Ori halten still', { on: pref('sw:Bewegungen reduzieren', '0') === '1', act: 'sw:Bewegungen reduzieren' }), T('nacht', 'Nachtlicht', false)]],
+      netzwerk: ['WLAN & Netzwerk', 'Ohne WLAN bin ich auch nur ein Gameboy.', [T('wlan', 'WLAN', true, '', { on: !!st.wifi, act: 'and:wifi' }), V('Netzwerke', st.wifi ? 'Verbunden' : 'Nicht verbunden', '', 'and:wifi'), T('flug', 'Flugmodus', false, '', { on: !!st.airplane, act: 'and:airplane' }), T('hotspot', 'Hotspot', false), V('Streamen im Heimnetz', 'Noch nicht eingerichtet', 'PS5 und PC aufs Thor holen'), V('VPN', 'Aus')]],
+      controller: ['Controller & Bluetooth', 'Die Tasten sind unschuldig. Meistens.', [T('bt', 'Bluetooth', true, '', { on: !!st.bt, act: 'and:bt' }), V('Tastenbelegung', 'Standard'), T('trigger', 'Trigger tauschen', false, 'L2 und R2 vertauschen'), S('tot', 'Stick-Totzone', 10), S('vib', 'Vibration', 60), T('gyro', 'Bewegungssteuerung', true), V('Externer Controller', 'Koppeln', '', 'and:bt')]],
+      rgb: ['RGB-Licht', 'Bunt macht schneller. Angeblich.', [T('an', 'Beleuchtung', true, 'Leuchtringe an den Sticks'), C('effekt', 'Effekt', ['Fest', 'Atmen', 'Regenbogen', 'Welle'], 'Atmen'), W('farbe', 'Farbe', [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']], 'Orange'), S('hell', 'Helligkeit', 60), S('tempo', 'Tempo', 40), T('spiel', 'Farbe vom Spiel übernehmen', true, 'Sticks leuchten in der Farbe des Spiels'), T('laden', 'Beim Laden pulsieren', false)]],
+      ton: ['Ton', 'Lauter geht. Aber muss das sein?', [S('laut', 'Lautstärke', 45, { val: st.volume || 0, hs: 'v' }), V('Ausgabe', 'Lautsprecher', '', 'and:sound'), T('tasten', 'Tastentöne', true, '', { on: pref('sw:Tastentöne', '1') !== '0', act: 'sw:Tastentöne' }), C('klang', 'Systemklänge', ['Papier', 'Sanft', 'Aus'], 'Papier'), T('mikro', 'Mikrofon', false), V('Kopfhörer', 'Koppeln', '', 'and:bt')]],
+      leistung: ['Leistung & Lüfter', 'Turbo klingt gut. Der Akku sieht das anders.', [C('profil', 'Leistungsprofil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), C('luefter', 'Lüfter', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'), T('anzeige', 'Leistungsanzeige', true, 'FPS, Temperatur, Watt und Akku im Spiel'), V('Position der Anzeige', 'Oben links'), V('Bildrate begrenzen', '60 FPS'), T('merken', 'Profil je Spiel merken', true), T('schonen', 'Akku schonen', true, 'Nur bis 80 % laden')]],
+      speicher: ['Speicher', 'Platz ist da. Noch.', [V('Interner Speicher', (st.free || '–') + ' frei von ' + (st.total || '–'), '', 'and:storage'), V('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Fehlt noch', '', 'and:files'), C('ziel', 'Neue Spiele speichern auf', ['Intern', 'microSD'], 'microSD'), T('sichern', 'Speicherstände sichern', true, 'Kopie auf die microSD-Karte'), V('Spiele-Ordner', (st.games || 0) + ' Spiele gefunden', 'Ordner „ROMs“ mit einem Unterordner je System', 'rescan'), V('Apps verwalten', '', '', 'and:apps')]],
+      emulatoren: ['Emulatoren', 'Alte Spiele, neues Papier.', [V('Emulator je System', 'Auf der Spielseite wählen', 'Spiel öffnen, Details, Emulator wählen'), C('skala', 'Auflösung hochrechnen', ['Original', '2×', '3×'], '2×'), C('ds2', 'DS: zweiter Bildschirm', ['Unten', 'Nebeneinander'], 'Unten'), T('cover', 'Cover automatisch laden', true, 'Aus dem offenen libretro-Archiv', { on: pref('covers', '1') !== '0', act: 'pset:covers' }), V('Spiele-Ordner durchsuchen', st.scanning ? 'Sucht …' : 'Jetzt suchen', '', 'rescan')]],
+      system: ['System & Updates', upd.available ? 'Da liegt was Neues für dich.' : 'Alles aktuell. Ich hab nachgesehen.', [V('Version', 'Ori ' + (st.version || '')), V('Updates', upd.available ? 'Update verfügbar' : 'Jetzt suchen', '', upd.available ? 'go:6.2' : 'go:6.1'), V('Gerät', (st.model || '') + ' · ' + (st.android || '')), W('akzent', 'Akzentfarbe', [['Orange', '#c2410c'], ['Pink', '#b8327a'], ['Lila', '#6a4fc7'], ['Blau', '#2b4a8f'], ['Grün', '#2f7a4d'], ['Gold', '#9a6a12'], ['Tinte', '#141b31']], '', { cur: pref('acc', ACC0), act: 'acc:' }), C('design', 'Design', ['Hell', 'Dunkel', 'Automatisch'], 'Hell'), V('Datum, Sprache und mehr', 'Android-Einstellungen', '', 'and:settings')]]
+    };
+    var p = P[seite], any = false, n = 0;
+    function first(id) { n++; return (setKeep ? setKeep === id : n === 1) ? ' data-first="1"' : ''; }
+    var rows = p[2].map(function (r, i) {
+      var id = seite + ':' + (r.id || r.label), dot = r.real ? '' : '<i class="o-later" title="wirkt erst im eigenen OS"></i>', lab = '<span class="o-sl">' + dot + '<span><b>' + r.label + '</b>' + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span></span>';
+      if (!r.real) any = true;
+      if (r.k === 'v') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-act="' + (r.act || 'go:!Das merkt sich Ori noch nicht. Kommt mit dem eigenen OS.') + '">' + lab + '<span class="o-sv">' + esc(r.value) + (r.act ? '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' : '') + '</span></button>';
+      if (r.k === 't') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-act="' + r.act + '" aria-pressed="' + r.on + '">' + lab + '<span class="o-sw' + (r.on ? ' on' : '') + '"><i></i></span></button>';
+      if (r.k === 's') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-sl="' + (r.hs || 'e:' + seite + ':' + r.id) + '" data-v="' + r.val + '">' + lab + '<span class="o-tr"><i style="width:' + r.val + '%"></i></span><span class="o-sn">' + r.val + '</span></button>';
+      if (r.k === 'c') return '<div class="o-sr">' + lab + '<span class="o-seg">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" data-act="' + o.act + '">' + o.name + '</button>'; }).join('') + '</span></div>';
+      return '<div class="o-sr">' + lab + '<span class="o-sws">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" aria-label="' + o.name + '" data-act="' + o.act + '"><i style="background:' + o.color + '"></i></button>'; }).join('') + '</span></div>';
+    }).join('');
+    return oriTop('einst', 'A Ändern · ← → Regler · L1/R1 Bereich · B Zurück',
+      '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + p[0] + '</h1><span class="o-kick">EINSTELLUNGEN</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + p[1] + '</span>' + ori(seite === 'system' && !upd.available ? 'fertig' : seite === 'leistung' ? 'sport' : seite === 'emulatoren' ? 'sortiert' : seite === 'netzwerk' && !st.wifi ? 'ratlos' : 'ruhezustand-2', 54) + '</span></div>'
+      + '<div class="o-set"><nav class="o-cats" aria-label="Einstellungsbereiche">' + SETC.map(function (c) { return '<button type="button" class="o-cat' + (c[0] === seite ? ' on' : '') + '" data-id="cat:' + c[0] + '" data-act="ecat:' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</nav>'
+      + '<div class="o-scol"><section class="o-sec">' + rows + '</section>' + (any ? '<span class="o-note"><i class="o-later"></i>merkt sich Ori schon, wirkt aber erst im eigenen OS</span>' : '') + '</div></div>');
+  }
+  function mxSetBind() {
+    var seite = pref('einst', 'bildschirme');
+    qa('[data-sl]', root).forEach(function (el) {
+      el._adj = function (d) {
+        var v = Math.max(0, Math.min(100, (+el.dataset.v || 0) + d)), k = el.dataset.sl; el.dataset.v = v;
+        el.querySelector('.o-tr i').style.width = v + '%'; el.querySelector('.o-sn').textContent = v;
+        if (k === 'b') { J.setBrightness(v); qa('[data-sl="b"]', root).forEach(function (o) { if (o !== el) { o.dataset.v = v; o.querySelector('.o-tr i').style.width = v + '%'; o.querySelector('.o-sn').textContent = v; } }); }
+        else if (k === 'v') J.setVolume(v); else J.setPref(k, String(v));
+      };
+      el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
+    });
+    root._tabs = function (d) { var i = 0; SETC.forEach(function (c, n) { if (c[0] === seite) i = n; }); setKeep = ''; J.setPref('einst', SETC[(i + d + SETC.length) % SETC.length][0]); snd('ok'); show(cur); };
+  }
   function mixFor(key) {
     if (key === 'acc') return [mxAcc, mxAccBind];
+    if (/^5\./.test(key)) return TOP ? [mxSet, mxSetBind] : [mxPanel, mxPanelBind];
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -813,11 +869,15 @@
     else if (k === 'details') details();
     else if (k === 'fav') fav(sel);
     else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
+    else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); show(cur); }
+    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); show(cur); }
+    else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
+    else if (k === 'untenw') { J.setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }
     else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
-    else if (k === 'acc') { snd('ok'); setAcc(v); }
+    else if (k === 'acc') { snd('ok'); setAcc(v); if (/^5\./.test(cur)) { var an = ''; qa('.o-sws button', root).forEach(function (bn) { if (bn.dataset.act === 'acc:' + v) an = bn.dataset.id; }); setKeep = an; show(cur); } }
     else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }
     else if (k === 'rescan') { snd('ok'); J.rescan(); note('Suche läuft …'); }
     else if (k === 'and') run('@' + v);
