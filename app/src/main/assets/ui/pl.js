@@ -204,7 +204,8 @@
     if (!el || foc === el) return;
     if (foc) ring(foc, false);
     foc = el; ring(el, true);
-    if (el.scrollIntoView && el.dataset.scroll) el.scrollIntoView({ block: 'nearest' });
+    if (el.dataset.scroll === 'box') { var bx = el.closest('.o-scroll'); if (bx) { var r1 = el.getBoundingClientRect(), r2 = bx.getBoundingClientRect(), pad = 10; if (r1.top < r2.top + pad) bx.scrollTop -= r2.top + pad - r1.top; else if (r1.bottom > r2.bottom - pad) bx.scrollTop += r1.bottom - (r2.bottom - pad); } }
+    else if (el.scrollIntoView && el.dataset.scroll) el.scrollIntoView({ block: 'nearest' });
     if (el._onfoc) el._onfoc();
     if (cur === '5.3a' && WALLS[labelOf(el)]) wall(WALLS[labelOf(el)]);
     if (!quiet) snd('fokus');
@@ -841,18 +842,18 @@
     if (setKeep && setKeep.indexOf('cat:') !== 0 && setKeep.indexOf(seite + ':') !== 0) setKeep = 'cat:' + seite;
     function first(id) { n++; return (setKeep ? setKeep === id : n === 1) ? ' data-first="1"' : ''; }
     var rows = p[2].map(function (r, i) {
-      var id = seite + ':' + (r.id || r.label), dot = r.real ? '' : '<i class="o-later" title="wirkt erst im eigenen OS"></i>', lab = '<span class="o-sl">' + dot + '<span><b>' + r.label + '</b>' + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span></span>';
+      var id = seite + ':' + (r.id || r.label), dot = '', lab = '<span class="o-sl">' + dot + '<span><b>' + r.label + '</b>' + (r.sub ? '<small>' + r.sub + '</small>' : '') + '</span></span>';
       if (!r.real) any = true;
-      if (r.k === 'v') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-act="' + (r.act || 'go:!Das merkt sich Ori noch nicht. Kommt mit dem eigenen OS.') + '">' + lab + '<span class="o-sv">' + esc(r.value) + (r.act ? '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' : '') + '</span></button>';
-      if (r.k === 't') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-act="' + r.act + '" aria-pressed="' + r.on + '">' + lab + '<span class="o-sw' + (r.on ? ' on' : '') + '"><i></i></span></button>';
-      if (r.k === 's') return '<button type="button" class="o-sr" data-id="' + id + '"' + first(id) + ' data-sl="' + (r.hs || 'e:' + seite + ':' + r.id) + '" data-v="' + r.val + '">' + lab + '<span class="o-tr"><i style="width:' + r.val + '%"></i></span><span class="o-sn">' + r.val + '</span></button>';
-      if (r.k === 'c') return '<div class="o-sr">' + lab + '<span class="o-seg">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" data-act="' + o.act + '">' + o.name + '</button>'; }).join('') + '</span></div>';
-      return '<div class="o-sr">' + lab + '<span class="o-sws">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" aria-label="' + o.name + '" data-act="' + o.act + '"><i style="background:' + o.color + '"></i></button>'; }).join('') + '</span></div>';
+      if (r.k === 'v') return '<button type="button" class="o-sr" data-scroll="box"' + (r.real ? '' : ' data-later="1"') + ' data-id="' + id + '"' + first(id) + ' data-act="' + (r.act || 'go:!Das merkt sich Ori noch nicht. Kommt mit dem eigenen OS.') + '">' + lab + '<span class="o-sv">' + esc(r.value) + (r.act ? '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>' : '') + '</span></button>';
+      if (r.k === 't') return '<button type="button" class="o-sr" data-scroll="box"' + (r.real ? '' : ' data-later="1"') + ' data-id="' + id + '"' + first(id) + ' data-act="' + r.act + '" aria-pressed="' + r.on + '">' + lab + '<span class="o-sw' + (r.on ? ' on' : '') + '"><i></i></span></button>';
+      if (r.k === 's') return '<button type="button" class="o-sr" data-scroll="box"' + (r.real ? '' : ' data-later="1"') + ' data-id="' + id + '"' + first(id) + ' data-sl="' + (r.hs || 'e:' + seite + ':' + r.id) + '" data-v="' + r.val + '">' + lab + '<span class="o-tr"><i style="width:' + r.val + '%"></i></span><span class="o-sn">' + r.val + '</span></button>';
+      if (r.k === 'c') return '<div class="o-sr"' + (r.real ? '' : ' data-later="1"') + '>' + lab + '<span class="o-seg">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-scroll="box" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" data-act="' + o.act + '">' + o.name + '</button>'; }).join('') + '</span></div>';
+      return '<div class="o-sr"' + (r.real ? '' : ' data-later="1"') + '>' + lab + '<span class="o-sws">' + r.opts.map(function (o) { var oid = id + ':' + o.name; return '<button type="button" data-scroll="box" data-id="' + oid + '"' + ((setKeep ? setKeep === oid : false) ? ' data-first="1"' : '') + ' class="' + (o.on ? 'on' : '') + '" aria-label="' + o.name + '" data-act="' + o.act + '"><i style="background:' + o.color + '"></i></button>'; }).join('') + '</span></div>';
     }).join('');
     return oriTop('einst', 'A Ändern · ← → Regler · B Zurück',
       '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + p[0] + '</h1><span class="o-kick">EINSTELLUNGEN</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + p[1] + '</span>' + ori(seite === 'system' && !upd.available ? 'fertig' : seite === 'leistung' ? 'sport' : seite === 'emulatoren' ? 'sortiert' : seite === 'netzwerk' && !st.wifi ? 'ratlos' : 'ruhezustand-2', 54) + '</span></div>'
-      + '<div class="o-set"><nav class="o-cats" aria-label="Einstellungsbereiche">' + SETC.map(function (c) { return '<button type="button" class="o-cat' + (c[0] === seite ? ' on' : '') + '" data-id="cat:' + c[0] + '"' + (setKeep === 'cat:' + c[0] ? ' data-first="1"' : '') + ' data-act="ecat:' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</nav>'
-      + '<div class="o-scol"><section class="o-sec">' + rows + '</section>' + (any ? '<span class="o-note"><i class="o-later"></i>merkt sich Ori schon, wirkt aber erst im eigenen OS</span>' : '') + '</div></div>');
+      + '<div class="o-set"><nav class="o-cats o-scroll" aria-label="Einstellungsbereiche">' + SETC.map(function (c) { return '<button type="button" data-scroll="box" class="o-cat' + (c[0] === seite ? ' on' : '') + '" data-id="cat:' + c[0] + '"' + (setKeep === 'cat:' + c[0] ? ' data-first="1"' : '') + ' data-act="ecat:' + c[0] + '">' + c[1] + '</button>'; }).join('') + '</nav>'
+      + '<div class="o-scol"><section class="o-sec o-scroll">' + rows + '</section></div></div>');
   }
   function mxSetBind() {
     var seite = pref('einst', 'bildschirme');
@@ -981,7 +982,7 @@
     else if (k === 'dc') dcGo(v);
     else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
     else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); J.sync('reload'); }
-    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); show(cur); }
+    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later) note('Merkt sich Ori. Wirkt im eigenen OS.'); }
     else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
     else if (k === 'untenw') { J.setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }
     else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
