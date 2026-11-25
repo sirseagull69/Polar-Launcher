@@ -146,14 +146,14 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     }
 
     /**
-     * Sicherung: stürzt die App ab, während der neue Startbildschirm zu sehen ist, wird er für diesen Build
+     * Sicherung: stürzt die App ab, solange der neue Startbildschirm eingeschaltet ist, wird er für diesen Build
      * abgeschaltet. Beim nächsten Start läuft dann wieder die Web-Ansicht, der Launcher bleibt benutzbar.
      */
     private void guardHome() {
         final Thread.UncaughtExceptionHandler old = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
             try {
-                if (homeShowing) {
+                if (home != null) {
                     prefs.edit().putInt("homeCrashBuild", updater.localBuild()).commit();
                 }
             } catch (Throwable ignored) {
