@@ -669,10 +669,18 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                     media.add(new File(r.getParentFile(), "ES-DE/downloaded_media"));
                 }
                 found = roms.scan(roots, media);
+                File covers = new File(getFilesDir(), "covers");
+                for (Roms.Game g : found) {
+                    File c = Covers.file(covers, g.sys, g.path);
+                    if (g.cover == null && c.isFile() && c.length() > 0) {
+                        g.cover = c.getAbsolutePath();
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Spielesuche: " + e);
             }
             final List<Roms.Game> result = found;
+            loadCovers(result);
             ui.post(() -> {
                 boolean changed = result.size() != games.size();
                 games = result;
@@ -686,6 +694,43 @@ public class MainActivity extends Activity implements DisplayManager.DisplayList
                     }
                 }
             });
+        }).start();
+    }
+
+    private volatile boolean coverRun;
+
+    /** Holt fehlende Spielbilder im Hintergrund aus dem Netz. Abschaltbar über die Einstellung "covers". */
+    private void loadCovers(final List<Roms.Game> list) {
+        if (coverRun || "0".equals(prefs.getString("ui:covers", "1"))) {
+            return;
+        }
+        coverRun = true;
+        final File dir = new File(getFilesDir(), "covers");
+        new Thread(() -> {
+            int got = 0;
+            long shown = System.currentTimeMillis();
+            try {
+                for (Roms.Game g : list) {
+                    if (g.cover != null || !Covers.knows(g.sys)) {
+                        continue;
+                    }
+                    File f = Covers.fetch(dir, g.sys, g.path);
+                    if (f != null) {
+                        g.cover = f.getAbsolutePath();
+                        got++;
+                        if (System.currentTimeMillis() - shown > 4000L) {
+                            shown = System.currentTimeMillis();
+                            ui.post(() -> both("window.plSync&&plSync('reload')"));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Spielbilder: " + e);
+            }
+            coverRun = false;
+            if (got > 0) {
+                ui.post(() -> both("window.plSync&&plSync('reload')"));
+            }
         }).start();
     }
 

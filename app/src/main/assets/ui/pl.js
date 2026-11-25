@@ -189,7 +189,7 @@
 
   /* ---------- Fokus ---------- */
   function ring(el, on) {
-    if (on && root.dataset.mix) { el.style.outline = '3px solid #fff'; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
+    if (on && root.dataset.mix) { el.style.outline = '3px solid var(--ringc,#fff)'; el.style.outlineOffset = '4px'; el.classList.add('mx-foc'); return; }
     if (!on && root.dataset.mix) { el.style.outline = 'none'; el.classList.remove('mx-foc'); return; }
     if (on) {
       el.style.outline = '3px solid #fff'; el.style.outlineOffset = '3px'; el.style.animation = 'pl-ring 2.6s ease-in-out infinite';
@@ -204,6 +204,7 @@
     if (foc) ring(foc, false);
     foc = el; ring(el, true);
     if (el.scrollIntoView && el.dataset.scroll) el.scrollIntoView({ block: 'nearest' });
+    if (el._onfoc) el._onfoc();
     if (cur === '5.3a' && WALLS[labelOf(el)]) wall(WALLS[labelOf(el)]);
     if (!quiet) snd('fokus');
   }
@@ -537,7 +538,7 @@
   }
 
   /* ---------- Neuer Look: Mix aus Kino und Bento (Start, Bibliothek, Bedienfeld) ---------- */
-  var LIME = 'var(--acc)', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:rgba(18,18,26,.74);border:1px solid rgba(255,255,255,.09)';
+  var LIME = 'var(--acc)', INK = '#0b0b10', TILE = '#17171f', GLASS = 'background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.06)';
   var MXI = {
     play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"></path>',
     grid: '<rect x="4" y="4" width="6" height="6" rx="1.5"></rect><rect x="14" y="4" width="6" height="6" rx="1.5"></rect><rect x="4" y="14" width="6" height="6" rx="1.5"></rect><rect x="14" y="14" width="6" height="6" rx="1.5"></rect>',
@@ -564,41 +565,44 @@
     function p(t, act, on) { return '<button type="button" class="mx-pill' + (on ? ' on' : '') + '" data-act="' + act + '">' + t + '</button>'; }
     var upd = st.upd && st.upd.available ? '<button type="button" class="mx-pill on" data-act="go:6.2" style="margin-left:auto">' + mi('down', 18, 2.2) + 'Update da</button>' : '';
     return '<div class="mx-nav"><span class="mx-pill mx-clock" data-live="time">' + esc(st.time || '') + '</span>' + p('Start', 'home', tab === 0) + p('Spiele', 'swap:3.1', tab === 1) + p('Apps', 'swap:3.7', tab === 3) + p('Favoriten', 'swap:3.4', tab === 2) + p('System', 'go:5.1', false) + upd
-      + '<span class="mx-pill" style="' + (upd ? '' : 'margin-left:auto;') + 'gap:10px;font-size:14px">' + (st.wifi ? mi('wifi', 18) : '') + mi('bat', 20) + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>';
+      + '<span class="mx-pill mx-stat" style="' + (upd ? '' : 'margin-left:auto;') + '">' + (st.wifi ? mi('wifi', 17) : '') + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>';
   }
   function mxKeys(list) {
     return '<div class="mx-keys">' + list.map(function (k) { return '<span><b>' + k[0] + '</b>' + k[1] + '</span>'; }).join('') + '</div>';
   }
-  function mxHome() {
-    var bar = Math.max(0, Math.min(100, st.battery || 0)), used = parseInt(st.used, 10) || 0, total = parseInt(st.total, 10) || 1;
-    return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs"></div>' + mxNav(0)
-      + '<div class="mx-hero"><div class="mx-ico"><img id="mx-icon" alt=""></div><span class="mx-tag" id="mx-label"></span><div class="mx-title" id="mx-title"></div><div class="mx-meta"><span id="mx-meta"></span><span class="mx-dots" id="mx-dots"></span></div>'
-      + '<div style="display:flex;gap:10px;margin-top:2px"><button type="button" id="mx-play" class="mx-play" data-act="launch" data-first="1">' + mi('play', 20) + 'Starten</button><button type="button" class="mx-ghost" data-act="details">Details</button></div></div>'
-      + '<div class="mx-side"><div class="mx-tile" style="grid-column:1/3;' + GLASS + '"><div class="mx-h">Zuletzt geöffnet<button type="button" class="mx-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + apps.length + ' →</button></div><div id="mx-recent" style="display:flex;gap:10px"></div></div>'
-      + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Akku</div><div class="mx-n">' + bar + ' %</div><div class="mx-s" style="margin-top:2px">' + esc(st.temp || '') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + bar + '%;background:' + (bar <= 15 ? '#FF5D5D' : LIME) + '"></i></div></div>'
-      + '<div class="mx-tile" style="' + GLASS + '"><div class="mx-s">Speicher</div><div class="mx-n">' + esc(st.free || '–') + '</div><div class="mx-s" style="margin-top:2px">frei von ' + esc(st.total || '–') + '</div><div class="mx-bar" style="margin-top:auto"><i style="width:' + Math.round(used / total * 100) + '%;background:#fff"></i></div></div></div>'
-      + mxKeys([['A', 'Auswählen'], ['X', 'Details'], ['Y', 'Bibliothek'], ['L2 R2', 'App wechseln'], ['L1 R1', 'Reiter']]) + '</div>';
+  function tileIn(a) {
+    return a.game ? (a.cov ? '<img class="cv" src="' + img(a, 'icon') + '" alt="">' : '<b>' + esc(a.sysid.toUpperCase()) + '</b>') : (a.img ? '<img class="cv" src="' + img(a, 'image') + '" alt="">' : '<img class="ic" src="' + img(a, 'icon') + '" alt="">');
   }
+  function tileBg(a) { var h = hue(a); return 'background:linear-gradient(145deg,hsl(' + h + ',58%,44%),hsl(' + (h + 40) % 360 + ',55%,22%))'; }
+  function homeRow() {
+    return apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || (b.game ? 1 : 0) - (a.game ? 1 : 0) || a.label.localeCompare(b.label); }).slice(0, 12);
+  }
+  function subOf(a) { return (a.game ? a.sys : 'App') + (a.fav ? ' · Favorit' : '') + (a.last ? ' · zuletzt am ' + new Date(a.last).toLocaleDateString('de-DE') : ''); }
+  function mxHome() {
+    var list = homeRow(), at = sel ? sel.key : '';
+    if (!list.some(function (a) { return a.key === at; })) at = list[0] ? list[0].key : '';
+    function d(ic, t, act) { return '<button type="button" class="h-d" data-act="' + act + '" aria-label="' + t + '">' + mi(ic, 26) + '<i>' + t + '</i></button>'; }
+    return '<div class="mx" style="width:960px;height:540px"><div class="h-bar"><span class="h-time" data-live="time">' + esc(st.time || '') + '</span><span class="h-r">' + (st.wifi ? mi('wifi', 18) : '') + '<span data-live="bat">' + esc(st.battery) + ' %</span></span></div>'
+      + '<div class="h-name"><small id="h-sys"></small><span id="h-title"></span></div>'
+      + '<div class="h-row" id="h-row">' + list.map(function (a) { return '<button type="button" class="h-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + ' style="' + tileBg(a) + '">' + tileIn(a) + '</button>'; }).join('')
+      + '<button type="button" class="h-t more" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">' + mi('grid', 34) + '<span>Alle ' + apps.length + '</span></button></div>'
+      + '<div class="h-dock">' + d('grid', st.games ? 'Alle Spiele' : 'Alle Apps', 'swap:' + (st.games ? '3.1' : '3.7')) + d('star', 'Favoriten', 'swap:3.4') + d('search', 'Suche', 'go:3.3') + (st.games ? d('pad', 'Apps', 'swap:3.7') : '') + d('set', 'System', 'go:5.1') + (st.upd && st.upd.available ? d('down', 'Update', 'go:6.2') : '') + '</div>'
+      + mxKeys([['A', 'Starten'], ['X', 'Optionen']]) + '</div>';
+  }
+  var selT = 0;
   function mxHomeBind() {
-    var list = apps.slice().sort(function (a, b) { return (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || b.last - a.last || (b.game ? 1 : 0) - (a.game ? 1 : 0) || a.label.localeCompare(b.label); }).slice(0, 8), bgs = document.getElementById('mx-bgs');
-    hidx = Math.max(0, Math.min(hidx, list.length - 1));
-    function paint(first) {
-      var a = list[hidx]; if (!a) return; select(a);
-      var old = bgs.lastElementChild, box = document.createElement('div'); box.innerHTML = mxBg(a); var bg = box.firstElementChild;
-      bgs.appendChild(bg); if (!first) { bg.style.opacity = '0'; bg.getBoundingClientRect(); bg.style.opacity = '1'; }
-      if (old) setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 900);
-      var ico = document.getElementById('mx-icon'); ico.parentNode.style.display = a.game && !a.cov ? 'none' : ''; ico.parentNode.className = a.game ? 'mx-ico cover' : 'mx-ico'; if (!a.game || a.cov) ico.src = img(a, 'icon');
-      document.getElementById('mx-label').textContent = (a.game ? a.sys.toUpperCase() : a.fav ? 'FAVORIT' : 'APP') + (a.last ? ' · ZULETZT ' + (a.game ? 'GESPIELT' : 'GEÖFFNET') : '');
-      var t = document.getElementById('mx-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 20 ? '34px' : a.label.length > 12 ? '44px' : '56px';
-      document.getElementById('mx-meta').textContent = a.last ? 'Zuletzt am ' + new Date(a.last).toLocaleDateString('de-DE') : 'Noch nicht geöffnet';
-      document.getElementById('mx-dots').innerHTML = list.map(function (x, i) { return '<i' + (i === hidx ? ' class="on"' : '') + '></i>'; }).join('');
-      var hero = root.querySelector('.mx-hero'); if (!first) { hero.style.animation = 'none'; hero.getBoundingClientRect(); hero.style.animation = 'mx-in .5s cubic-bezier(.2,.8,.2,1) both'; }
-    }
-    paint(true);
-    document.getElementById('mx-recent').innerHTML = list.filter(function (x, i) { return i !== hidx; }).slice(0, 3).map(function (b) {
-      return '<button type="button" class="mx-mini" data-act="launch:' + esc(b.key) + '" data-key="' + esc(b.key) + '"><span style="background:radial-gradient(circle at 30% 20%,hsl(' + hue(b) + ',55%,38%),hsl(' + (hue(b) + 40) % 360 + ',50%,18%))">' + (b.game && !b.cov ? '<b>' + esc(b.sysid.toUpperCase()) + '</b>' : '<img' + (b.game ? ' class="full"' : '') + ' src="' + img(b, 'icon') + '" alt="">') + '</span><em>' + esc(b.label) + '</em></button>';
-    }).join('');
-    root._switch = function (d) { if (list.length < 2) return; hidx = (hidx + d + list.length) % list.length; paint(false); snd('fokus'); };
+    var row = document.getElementById('h-row'), tiles = qa('.h-t', row);
+    tiles.forEach(function (el) {
+      var a = appByKey(el.dataset.key || '');
+      el._onfoc = function () {
+        document.getElementById('h-sys').textContent = a ? subOf(a).toUpperCase() : 'BIBLIOTHEK';
+        document.getElementById('h-title').textContent = a ? a.label : 'Alles anzeigen';
+        if (a && (!sel || sel.key !== a.key)) { select(a); clearTimeout(selT); selT = setTimeout(function () { J.sync(''); }, 160); }
+        var r = el.getBoundingClientRect(), R = row.getBoundingClientRect(), z = R.width / row.offsetWidth || 1;
+        row.scrollTo({ left: row.scrollLeft + ((r.left + r.width / 2) - (R.left + R.width / 2)) / z, behavior: root.classList.contains('pl-still') ? 'auto' : 'smooth' });
+      };
+    });
+    root._switch = function (d) { var i = tiles.indexOf(foc); if (i < 0) { setFocus(tiles[0]); return; } setFocus(tiles[Math.max(0, Math.min(tiles.length - 1, i + d))]); };
     root._switchOn = function () { return false; };
   }
   function mxLib() {
@@ -631,7 +635,7 @@
       + '<div class="mx-lhead"><div class="mx-find">' + mi('search', 20, 2.2) + '<span>' + (query ? esc(query) : '<em>Unten tippen …</em>') + '</span><i></i></div><div class="mx-s" style="margin-left:12px">' + list.length + ' Treffer</div></div><div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['B', 'Suche schließen']]) + '</div>';
     return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(null) + '</div>' + mxNav(favs ? 2 : gamesTab ? 1 : 3)
       + '<div class="mx-lhead"><div class="mx-count">' + list.length + (favs ? ' Favoriten' : gamesTab ? ' Spiele' : ' Apps') + '</div>' + chips + (favs ? '' : '<button type="button" class="mx-chip" data-act="sort">' + (pref('sort', 'last') === 'last' ? 'Zuletzt zuerst' : 'A bis Z') + '</button>') + '<button type="button" class="mx-chip" data-act="go:3.3">' + mi('search', 16, 2.2) + 'Suche</button></div>'
-      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['A', 'Starten'], ['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit'], ['L1 R1', 'Reiter']].concat(chips ? [['L2 R2', 'System']] : [])) + '</div>';
+      + '<div class="mx-grid">' + cards + '</div>' + mxKeys([['X', 'Details'], ['Y', 'Suche'], ['Start', 'Favorit']].concat(chips ? [['L2 R2', 'System']] : [])) + '</div>';
   }
   var rootSys = [''];
   function mxLibBind() {
@@ -640,31 +644,40 @@
     root._switchOn = function () { return false; };
   }
   function mxPanel() {
-    function vs(k, n, pct, col) { return '<div class="mx-vs" data-vs="' + k + '"><i style="height:' + pct + '%;background:' + col + '"></i><b>' + pct + '</b><span>' + mi(n, 26, 2.2) + '</span></div>'; }
-    function t(n, a, b, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:' + INK : '') + '">' + mi(n, 28, 2) + '<span><b>' + a + '</b><small>' + b + '</small></span></button>'; }
-    function r(n, a, act, on) { return '<button type="button" class="mx-pr' + (on ? ' on' : '') + '" data-act="' + act + '">' + mi(n, 20) + a + '</button>'; }
-    return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + hue(sel) + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
-      + '<div style="position:relative;display:flex;gap:12px;flex:1 1 0;min-height:0">' + vs('b', 'sun', st.brightness || 0, '#fff') + vs('v', 'vol', st.volume || 0, LIME)
-      + '<div style="flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;gap:12px">' + t('grid', 'Bibliothek', st.games ? st.games + ' Spiele' : (apps.length + ' Apps'), st.games ? 'go:3.1' : 'go:3.7') + t('wifi', 'WLAN', st.wifi ? 'An' : 'Aus', 'and:wifi', st.wifi ? LIME : '') + t('star', 'Favoriten', apps.filter(function (a) { return a.fav; }).length + ' Apps', 'go:3.4') + t('set', 'System', 'Einstellungen', 'go:5.1') + '</div></div>'
-      + '<div style="position:relative;display:flex;gap:10px">' + r('bt', 'Bluetooth', 'and:bt', st.bt) + r('plane', 'Flugmodus', 'and:airplane', st.airplane) + r('search', 'Suche', 'go:3.3') + '</div></div>';
+    var a = sel, g = a && a.game ? ginfo(a) : {}, others = homeRow().filter(function (x) { return !a || x.key !== a.key; }).slice(0, 4);
+    function hs(k, n, pct) { return '<div class="u-sl" data-hs="' + k + '">' + mi(n, 22) + '<div class="u-tr"><em style="width:' + pct + '%"></em></div><b>' + pct + '</b></div>'; }
+    function tg(n, t, act, on) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '">' + mi(n, 24) + '<i>' + t + '</i></button>'; }
+    function ch(t, act) { return '<button type="button" class="u-ch" data-act="' + act + '">' + t + '</button>'; }
+    var head = a
+      ? '<div class="u-hd"><div class="u-cv" style="' + tileBg(a) + '">' + tileIn(a) + '</div><div class="u-tx"><small>' + esc(subOf(a).toUpperCase()) + '</small><div>' + esc(a.label) + '</div></div><button type="button" class="u-go" data-act="launch">' + mi('play', 20) + (a.game ? 'Spielen' : 'Öffnen') + '</button></div>'
+        + '<div class="u-chs">' + ch(a.fav ? '★ Favorit' : '☆ Favorit', 'fav') + ch('Details', 'details')
+        + (a.game ? ((g.emus || []).length > 1 ? ch('Emulator', 'go:3.6') : '') : ch('App-Info', 'and:app:' + esc(a.key))) + '</div>'
+      : '<div class="u-hd"><div class="u-tx"><small>POLARLICHT</small><div>Noch nichts ausgewählt</div></div></div>';
+    return '<div class="mx" style="width:620px;height:540px">' + head
+      + '<div class="u-lb">Schnell starten</div><div class="u-mr">' + others.map(function (b) { return '<button type="button" class="u-m" data-act="launch:' + esc(b.key) + '" style="' + tileBg(b) + '">' + tileIn(b) + '<span>' + esc(b.label) + '</span></button>'; }).join('') + '</div>'
+      + '<div class="u-sls">' + hs('b', 'sun', st.brightness || 0) + hs('v', 'vol', st.volume || 0) + '</div>'
+      + '<div class="u-tgs">' + tg('wifi', 'WLAN', 'and:wifi', st.wifi) + tg('bt', 'Bluetooth', 'and:bt', st.bt) + tg('plane', 'Flugmodus', 'and:airplane', st.airplane) + tg('search', 'Suche', 'go:3.3') + tg('grid', st.games ? 'Spiele' : 'Apps', st.games ? 'go:3.1' : 'go:3.7') + tg('star', 'Favoriten', 'go:3.4') + tg('set', 'System', 'go:5.1') + '</div>'
+      + '<div class="u-ft"><span>Akku ' + esc(st.battery) + ' %' + (st.temp ? ' · ' + esc(st.temp) : '') + '</span><span>' + esc(st.free || '') + ' frei</span></div></div>';
   }
   function mxPanelBind() {
-    qa('.mx-vs', root).forEach(function (el) {
-      var k = el.dataset.vs;
+    qa('.u-sl', root).forEach(function (el) {
+      var k = el.dataset.hs, tr = el.children[1];
       var drag = function (e) {
-        var p = e.touches ? e.touches[0] : e, r = el.getBoundingClientRect(), pct = Math.round(Math.max(0, Math.min(1, (r.bottom - p.clientY) / r.height)) * 100);
-        el.firstElementChild.style.height = pct + '%'; el.children[1].textContent = pct;
+        var p = e.touches ? e.touches[0] : e, r = tr.getBoundingClientRect(), pct = Math.round(Math.max(0, Math.min(1, (p.clientX - r.left) / r.width)) * 100);
+        tr.firstElementChild.style.width = pct + '%'; el.lastElementChild.textContent = pct;
         if (k === 'b') J.setBrightness(pct); else J.setVolume(pct);
         e.preventDefault();
       };
       el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false }); el.addEventListener('mousedown', drag);
     });
   }
-  var ACCS = ['#C6FF3D', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#FFFFFF'];
-  function applyAcc() { document.documentElement.style.setProperty('--acc', pref('acc', '#C6FF3D')); }
+  var ACC0 = '#16161a';
+  var ACCS = ['#16161a', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
+  function accDark(c) { var m = /^#([0-9a-f]{6})$/i.exec(c); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 140; }
+  function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
   function setAcc(c) { J.setPref('acc', c); applyAcc(); J.sync(''); }
   function mxAcc() {
-    var now = pref('acc', '#C6FF3D'), hueNow = +pref('acch', '80');
+    var now = pref('acc', ACC0), hueNow = +pref('acch', '80');
     var sw = ACCS.map(function (c, i) { return '<button type="button" class="mx-sw" data-act="acc:' + c + '"' + (c === now || (i === 0 && ACCS.indexOf(now) < 0 && now.indexOf('hsl') < 0) ? ' data-first="1"' : '') + ' style="background:' + c + '" aria-label="Farbe ' + (i + 1) + '"></button>'; }).join('');
     if (!TOP) return '<div class="mx" style="width:620px;height:540px;padding:22px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px"><div class="mx-bg"></div><div class="mx-count" style="position:relative">Akzentfarbe</div><div class="mx-swg" style="position:relative;grid-template-columns:repeat(5,1fr)">' + sw + '</div><div class="mx-hue" data-hue="' + hueNow + '" style="position:relative;height:64px"><i style="left:' + hueNow / 3.6 + '%"></i></div><button type="button" class="mx-pr" data-act="go:back" style="position:relative;flex:none">Fertig</button></div>';
     return '<div class="mx" style="width:960px;height:540px"><div id="mx-bgs">' + mxBg(sel) + '</div><div style="position:absolute;left:28px;top:34px;right:28px"><div class="mx-s" style="letter-spacing:.08em">SYSTEM · ANZEIGE</div><div class="mx-title" style="font-size:44px;margin-top:6px">Akzentfarbe</div><div class="mx-meta" style="margin-top:8px">Gilt für Knöpfe, Fokus, Schalter und Regler. Die Farbe wechselt sofort.</div></div>'
@@ -697,7 +710,7 @@
     var a = sel; if (!a) return '<div class="mx" style="width:' + (TOP ? 960 : 620) + 'px;height:540px"></div>';
     var g = ginfo(a), h = hue(a), emu = emuNow(g), n = (g.emus || []).length;
     if (!TOP) {
-      var t = function (ic, x, y, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:' + INK : '') + '">' + mi(ic, 28, 2) + '<span><b>' + x + '</b><small>' + y + '</small></span></button>'; };
+      var t = function (ic, x, y, act, col) { return '<button type="button" class="mx-pt" data-act="' + act + '" style="' + (col ? 'background:' + col + ';color:var(--acct)' : '') + '">' + mi(ic, 28, 2) + '<span><b>' + x + '</b><small>' + y + '</small></span></button>'; };
       return '<div class="mx" style="width:620px;height:540px;padding:20px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px"><div class="mx-bg"><i class="b" style="right:-260px;top:-300px;background:radial-gradient(circle,hsla(' + h + ',60%,34%,.8) 0,transparent 68%)"></i></div>'
         + '<div style="position:relative;flex:1 1 0;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:12px">' + t('play', 'Starten', esc(a.label), 'launch', LIME)
         + t('star', a.fav ? 'Favorit entfernen' : 'Als Favorit', a.fav ? 'Steht oben auf der Startseite' : 'Kommt auf die Startseite', 'fav')
@@ -767,6 +780,7 @@
     html = mix ? mix[0]() : skin(html);
     stage.innerHTML = html; root = stage.firstElementChild; foc = null;
     if (mix) root.dataset.mix = '1';
+    if (!mix && !/^1\.([1-6]|18)$/.test(key)) { root.classList.add('pl-inv'); if (pref('acc', ACC0) === ACC0) root.style.setProperty('--acc', '#e9e9e6'); }
     if (mix && mix[1]) mix[1]();
     tag();
     if (mix) {
@@ -831,6 +845,7 @@
     if (!root) return;
     if (what === 'reload') { var keep = foc && foc._app ? foc._app.key : null; show(cur); if (keep) items.forEach(function (el) { if (el._app && el._app.key === keep) setFocus(el, true); }); return; }
     applyAcc();
+    if (!TOP && root.dataset.mix && pref('sel', '') !== (sel ? sel.key : '')) { show(cur); return; }
     try { st = JSON.parse(J.state()); } catch (e) { return; }
     applyStates();
   };
@@ -848,7 +863,7 @@
 
   /* Ohne Android (am PC im Browser): Beispieldaten, damit man die Ansichten prüfen kann. */
   function stub() {
-    var P = {}, stack = [], now = null;
+    var P = {}, stack = [], now = null, qa0 = /acc=([^&]+)/.exec(location.search); if (qa0) P.acc = decodeURIComponent(qa0[1]);
     var A = ['Dateien', 'Kamera', 'Dolphin', 'RetroArch', 'Steam Link', 'YouTube', 'Einstellungen', 'Browser', 'Galerie', 'Musik', 'Uhr', 'Rechner'].map(function (l, i) { return { label: l, key: 'p' + i + '/c', fav: i === 2 || i === 3, last: i < 4 ? 1795000000000 - i * 86400000 : 0, img: false }; });
     [['Pokémon SoulSilver', 'nds', 'Nintendo DS', 1], ['Emerald Rogue', 'gba', 'Nintendo Game Boy Advance', 0], ['Wind Waker', 'gc', 'Nintendo GameCube', 0], ['Tears of the Kingdom', 'switch', 'Nintendo Switch', 1]].forEach(function (g, i) { if (/nogames/.test(location.search)) return; A.push({ label: g[0], key: 'g:/roms/' + g[1] + '/' + i, fav: i === 0, last: g[3] ? 1795400000000 + i : 0, img: false, cov: false, game: true, sys: g[2], sysid: g[1] }); });
     function to(k) { if (k === 'home') { stack = []; k = '2.2'; } now = k; window.plShow(k); if (window.parent !== window) window.parent.postMessage({ pl: k }, '*'); }
