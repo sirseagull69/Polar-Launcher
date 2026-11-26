@@ -5,6 +5,9 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
+import android.view.KeyEvent;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebView;
@@ -41,6 +44,25 @@ final class PanelPresentation extends Presentation {
         }
         setContentView(root);
         showHome(host.homeShowing);
+    }
+
+    /**
+     * Wer unten tippt, holt sich bei Android den Tastaturfokus auf diesen Bildschirm. Der Controller
+     * soll trotzdem dort wirken, wo Ori es sagt (oben, oder unten nach R3), also alles an die Hauptansicht.
+     */
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+        int c = e.getKeyCode();
+        boolean pad = KeyEvent.isGamepadButton(c) || c == KeyEvent.KEYCODE_BACK || c == KeyEvent.KEYCODE_ESCAPE
+                || (c >= KeyEvent.KEYCODE_DPAD_UP && c <= KeyEvent.KEYCODE_DPAD_CENTER) || c == KeyEvent.KEYCODE_ENTER;
+        if (pad && host != null) return host.dispatchKeyEvent(e);
+        return super.dispatchKeyEvent(e);
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent e) {
+        if (host != null && (e.getSource() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) return host.onGenericMotionEvent(e);
+        return super.dispatchGenericMotionEvent(e);
     }
 
     /** Auf dem Startbildschirm liegt das neue Bedienfeld über der Web-Ansicht, sonst ist es weg. */
