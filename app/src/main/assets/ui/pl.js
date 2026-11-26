@@ -536,7 +536,47 @@
   /* Ori-Sperrbildschirm: kommt beim Aufwachen, A oder Tippen entsperrt und geht zurück, wo man war */
   var lockPrev = null, quietUntil = 0;
   window.plLock = function () { if (!TOP) return; if (!/^dc:Sperr:/.test(cur)) lockPrev = cur; J.go('dc:Sperr:UntenSperr'); };
-  window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } var a = Math.max(0, Math.min(100, Math.round(p.akku >= 0 ? p.akku : st.battery) || 0)); return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '', akkuZahl: a, ring: Math.round(402 * a / 100), ringFarbe: a <= 15 ? '#d6452f' : a <= 35 ? '#e08a2c' : '#3f9a63' }; };
+  window.plLockInfo = function () {
+    var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; }
+    var a = Math.max(0, Math.min(100, Math.round(p.akku >= 0 ? p.akku : st.battery) || 0));
+    var laedt = !!p.laedt, netz = !!p.strom;
+    var unter = laedt ? (a >= 100 ? 'Voll. Kannst abstecken.' : 'Lädt. Voll in ca. ' + Math.max(5, Math.round((100 - a) * 1.2)) + ' min')
+      : netz ? 'Am Strom, alles voll.' : p.minuten ? 'Reicht noch ca. ' + (p.minuten >= 60 ? Math.floor(p.minuten / 60) + ' h ' + (p.minuten % 60) + ' min' : p.minuten + ' min')
+      : a <= 15 ? 'Bitte bald ans Kabel.' : 'Alles da. Du fehlst noch.';
+    var g = null; (apps || []).forEach(function (x) { if (x.game && x.last && (!g || x.last > g.last)) g = x; });
+    lockGame = g;
+    return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '', akkuZahl: a, laedt: laedt ? '1' : '',
+      akkuWort: laedt ? 'Lädt' : netz ? 'Am Strom' : 'Akku', unterzeile: unter,
+      pegel: Math.round(188 - a / 100 * 176), ringFarbe: a <= 15 ? '#d6452f' : a <= 35 ? '#e08a2c' : '#3f9a63',
+      oriPose: laedt ? 'sammelt' : a <= 15 ? 'ratlos' : 'ruhezustand',
+      weiter: g ? g.label : '', weiterKopf: p.spiel ? 'LÄUFT GERADE' : 'WEITERSPIELEN', weiterBild: g && g.img ? img(g, 'image') : '' };
+  };
+  /* Sperrbildschirm unten: Flüssigkeit schwappt, beim Laden steigen Bläschen. Läuft nur, solange er zu sehen ist. */
+  var lockGame = null, lkT = 0, lkBubs = [];
+  function lkWave(y0, amp, len, ph) { var d = 'M0 ' + y0; for (var x = 0; x <= 620; x += 20) d += ' L' + x + ' ' + (y0 + Math.sin(x / len + ph) * amp).toFixed(1); return d + ' L620 540 L0 540 Z'; }
+  function lkLiq(y, amp, ph) { var d = 'M0 ' + y; for (var x = 0; x <= 200; x += 8) d += ' L' + x + ' ' + (y + Math.sin(x / 22 + ph) * amp).toFixed(1); return d + ' L200 200 L0 200 Z'; }
+  function lkFrame() {
+    var liq = document.getElementById('lk-liq');
+    if (!liq || document.hidden) { setTimeout(function () { requestAnimationFrame(lkFrame); }, 1000); return; }
+    lkT += 0.03;
+    var y = +(liq.getAttribute('d').split(' ')[2]) || 100, sub = document.getElementById('lk-sub'), laedt = sub && sub.getAttribute('data-laedt') === '1';
+    if (!liq._y) liq._y = y;
+    var w1 = document.getElementById('lk-w1'), w2 = document.getElementById('lk-w2');
+    if (w1) w1.setAttribute('d', lkWave(470, 10, 90, lkT * 0.6));
+    if (w2) w2.setAttribute('d', lkWave(500, 8, 70, -lkT * 0.8));
+    var base = liq._y;
+    liq.setAttribute('d', lkLiq(base, laedt ? 5 : 3, lkT * 2));
+    var l2 = document.getElementById('lk-liq2'); if (l2) l2.setAttribute('d', lkLiq(base, laedt ? 5 : 3, lkT * 2.6 + 1.7));
+    var g = document.getElementById('lk-bub');
+    if (g) {
+      if (laedt && Math.random() < 0.12) lkBubs.push({ x: 50 + Math.random() * 100, y: 192, r: 2 + Math.random() * 4, v: 0.6 + Math.random() * 0.8 });
+      lkBubs = lkBubs.filter(function (b) { b.y -= b.v; b.x += Math.sin(b.y / 9) * 0.3; return b.y > base + 4; });
+      g.innerHTML = lkBubs.map(function (b) { return '<circle cx="' + b.x.toFixed(1) + '" cy="' + b.y.toFixed(1) + '" r="' + b.r.toFixed(1) + '" fill="none" stroke="#fffdf8" stroke-width="1.5" opacity=".8"/>'; }).join('');
+    }
+    var o = document.getElementById('lk-ori'); if (o) o.style.transform = 'translateY(' + (Math.sin(lkT) * 3).toFixed(1) + 'px)';
+    requestAnimationFrame(lkFrame);
+  }
+  requestAnimationFrame(lkFrame);
   function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; if (J.unlock) J.unlock(); quietUntil = Date.now() + 700; setTimeout(function () { J.swap(back); }, 120); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false, botFocus = false;
@@ -982,6 +1022,7 @@
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
     if (name === 'lock:open') { if (TOP) unlock(); else J.lockOpen && J.lockOpen(); return; }
+    if (name === 'lock:play') { var lg = lockGame; if (TOP) unlock(); else J.lockOpen && J.lockOpen(); if (lg) setTimeout(function () { J.launch(lg.key); }, 700); return; }
     if (name.indexOf('upd:') === 0) { snd('ok'); window.plUpdAct(name.slice(4)); return; }
     if (name.indexOf('power:') === 0) { snd('ok'); if ((J.power ? J.power(name.slice(6)) : 'nein') !== 'ok') note('Geht erst, wenn Ori das System ist.'); return; }
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
