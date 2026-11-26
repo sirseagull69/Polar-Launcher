@@ -1238,7 +1238,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             case KeyEvent.KEYCODE_BUTTON_R2: return "R2";
             case KeyEvent.KEYCODE_BUTTON_START: case KeyEvent.KEYCODE_MENU: return "START";
             case KeyEvent.KEYCODE_BUTTON_SELECT: return "SELECT";
-            case KeyEvent.KEYCODE_F24: return "AYN";
+            case 337: return "AYN"; // AYN-Knopf (F24)
             default: return null;
         }
     }
