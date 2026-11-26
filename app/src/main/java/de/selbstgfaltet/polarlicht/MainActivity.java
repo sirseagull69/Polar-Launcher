@@ -98,6 +98,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     private View homeTop;
     volatile boolean homeShowing = false;
     private boolean started = false;
+    private boolean bottomFocus = false;
     private boolean lockOverGame = false;
     private final android.content.BroadcastReceiver screenOn = new android.content.BroadcastReceiver() {
         @Override
@@ -597,6 +598,10 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
         lastKey = name;
         lastKeyAt = now;
+        if (bottomFocus && panel != null && panel.web != null) {
+            panel.web.evaluateJavascript("window.plKey&&plKey('" + name + "')", null);
+            return;
+        }
         if (homeShowing && home != null) {
             home.press(name);
             return;
@@ -1324,6 +1329,18 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             /* Sticks reindrücken: das System meldet sie als DPAD_CENTER, Ori soll sie nicht für A halten */
             k = scan == 317 ? "L3" : "R3";
         }
+        if ("R3".equals(k)) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
+                /* Rechten Stick drücken: Controller steuert den unteren Bildschirm, nochmal drücken zurück nach oben */
+                bottomFocus = !bottomFocus && panel != null && panel.web != null;
+                if (panel != null) {
+                    panel.showHome(homeShowing && !bottomFocus);
+                    if (panel.web != null) panel.web.evaluateJavascript("window.plBotFocus&&plBotFocus(" + bottomFocus + ")", null);
+                }
+                if (top != null && topReady) top.evaluateJavascript("window.plSnd&&plSnd('" + (bottomFocus ? "an" : "aus") + "');window.plNote&&plNote('" + (bottomFocus ? "Controller steuert jetzt unten · rechter Stick zurück" : "Controller steuert wieder oben") + "')", null);
+            }
+            return true;
+        }
         if (k == null) {
             return super.dispatchKeyEvent(e);
         }
@@ -1413,6 +1430,10 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     }
 
     private void step(String dir) {
+        if (bottomFocus && panel != null && panel.web != null) {
+            panel.web.evaluateJavascript("window.plKey&&plKey('" + dir + "')", null);
+            return;
+        }
         if (homeShowing && home != null) {
             home.press(dir);
             return;

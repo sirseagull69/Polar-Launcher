@@ -539,9 +539,15 @@
   window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '' }; };
   function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; J.swap(back); if (J.unlock) J.unlock(); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
-  var aynOn = false;
+  var aynOn = false, botFocus = false;
+  /* Unten mit dem Controller bedienen (rechter Stick gedrückt): Rahmen zeigen, wo man ist */
+  window.plBotFocus = function (on) {
+    botFocus = !!on; if (TOP || !root) return;
+    if (botFocus) { show(cur); if (items.length) setFocus(items[0], true); }
+    else if (foc) { foc.classList.remove('mx-foc'); foc = null; }
+  };
   window.plKey = function (k) {
-    if (!TOP || !root) return;
+    if ((!TOP && !botFocus) || !root) return;
     if (k === 'INDEX') { toggleIndex(); return; }
     if (k === 'AYN') { aynOn = !aynOn; snd('ok'); var tk = /^dc:/.test(cur) ? cur.split(':')[1] : '@' + cur; J.swap(aynOn ? 'dc:' + tk + ':UntenLeistung' : cur); return; }
     if (idx) { indexKey(k); return; }
