@@ -940,6 +940,13 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public String bruecke(String zeile) {
+            // Nur bekannte Befehle an orid geben
+            if (zeile == null || !zeile.matches("(fx (fest|atmen|regenbogen|welle|aus) [0-9a-fA-F]{6} [0-9]{1,3}|ort (an|aus)|flug (an|aus)|layout (nintendo|xbox))")) return "nein";
+            return Leistung.anBruecke(MainActivity.this, zeile + "\n") ? "ok" : "fehler";
+        }
+
+        @JavascriptInterface
         public String rgb(String hex, int hell) {
             try {
                 int c = Integer.parseInt(hex.replace("#", ""), 16);
@@ -1055,14 +1062,14 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             if (sys == null) return "nein";
             switch (cmd) {
                 case "wlan": return sys.wlanSchalten("1".equals(a));
-                case "wlanSuchen": return sys.wlanSuchen();
+                case "wlanSuchen": Leistung.anBruecke(MainActivity.this, "ort an\n"); return sys.wlanSuchen();
                 case "wlanVerbinden": return sys.wlanVerbinden(a, b);
                 case "wlanVergessen": return sys.wlanVergessen(a);
                 case "bt": return sys.btSchalten("1".equals(a));
                 case "btSuchen": return sys.btSuchen();
                 case "btKoppeln": return sys.btKoppeln(a);
                 case "btEntkoppeln": return sys.btEntkoppeln(a);
-                case "flug": return sys.flug("1".equals(a));
+                case "flug": { String r = sys.flug("1".equals(a)); if (!"ok".equals(r) && Leistung.anBruecke(MainActivity.this, "flug " + ("1".equals(a) ? "an" : "aus") + "\n")) r = "ok"; return r; }
                 case "hz": try { return sys.hz(Integer.parseInt(a)); } catch (NumberFormatException e) { return "nein"; }
                 default: return "nein";
             }
