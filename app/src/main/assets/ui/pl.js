@@ -377,7 +377,7 @@
   var SETUP = ['1.7', '1.8', '1.9', '1.11', '1.12', '1.13', '1.14', '1.15'];
   function next() { var i = SETUP.indexOf(cur); snd('ok'); if (i >= SETUP.length - 1) return done(); J.go(i >= 0 ? SETUP[i + 1] : 'home'); }
   function done() { J.setPref('setup', '1'); J.go('home'); }
-  function afterBoot() { J.setPref('setup', '1'); J.swap('home'); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
+  function afterBoot() { J.setPref('setup', '1'); J.swap('home'); setTimeout(applyRgb, 3000); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
   function swap(k) { return function () { snd('ok'); J.swap(k); }; }
   function tab(d) { return function () { var T = ['3.1', '3.4', '3.7'], i = T.indexOf(cur); snd('ok'); J.swap(T[(Math.max(i, 0) + d + 3) % 3]); }; }
   function focApp() { return foc && foc._app ? foc._app : null; }
@@ -540,6 +540,11 @@
   function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; J.swap(back); if (J.unlock) J.unlock(); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false, botFocus = false;
+  /* RGB-Ringe an den Sticks: aus den Einstellungen über die Systembrücke setzen */
+  var RGBC = { Orange: '#ff6a1a', Pink: '#ff3c8c', Lila: '#8a4cff', Blau: '#2a5cff', 'Grün': '#22c060', Gold: '#ffb020', 'Weiß': '#ffffff' };
+  function applyRgb() { if (!J.rgb) return; var p = function (id, d) { var v = pref('e:rgb:' + id, null); return v === null ? d : v; }; var on = p('an', '1') === '1'; J.rgb(RGBC[p('farbe', 'Orange')] || '#ff6a1a', on ? +p('hell', 60) : 0); }
+  window.plRgb = applyRgb;
+  window.plFan = function (n) { var r = J.fan ? J.fan(n) : 'fehler'; note(r === 'ok' ? 'Lüfter: ' + n : 'Lüfter ließ sich nicht stellen.'); };
   window.plProfil = function (n) { var r = J.profil ? J.profil(n) : 'keine-bruecke'; note(r === 'ok' ? 'Profil ' + n + ' ist aktiv.' : r === 'keine-bruecke' ? 'Profil gemerkt. Wirkt ab dem nächsten OS-Update.' : 'Profil ließ sich nicht setzen.'); };
   /* Unten mit dem Controller bedienen (rechter Stick gedrückt): Rahmen zeigen, wo man ist */
   window.plBotFocus = function (on) {
@@ -929,7 +934,7 @@
         var v = Math.max(0, Math.min(100, (+el.dataset.v || 0) + d)), k = el.dataset.sl; el.dataset.v = v;
         el.querySelector('.o-tr i').style.width = v + '%'; el.querySelector('.o-sn').textContent = v;
         if (k === 'b') { J.setBrightness(v); qa('[data-sl="b"]', root).forEach(function (o) { if (o !== el) { o.dataset.v = v; o.querySelector('.o-tr i').style.width = v + '%'; o.querySelector('.o-sn').textContent = v; } }); }
-        else if (k === 'v') J.setVolume(v); else J.setPref(k, String(v));
+        else if (k === 'v') J.setVolume(v); else { J.setPref(k, String(v)); if (k === 'e:rgb:hell') applyRgb(); }
       };
       el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
     });
@@ -1055,7 +1060,7 @@
     else if (k === 'dc') dcGo(v);
     else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
     else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); J.sync('reload'); }
-    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later) note('Merkt sich Ori. Wirkt im eigenen OS.'); }
+    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); if (es === 'rgb') applyRgb(); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later && es !== 'rgb') note('Merkt sich Ori. Wirkt im eigenen OS.'); }
     else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
     else if (k === 'untenw') { J.setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }
     else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }

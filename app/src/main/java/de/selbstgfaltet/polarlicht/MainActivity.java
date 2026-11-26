@@ -862,6 +862,38 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public String rgb(String hex, int hell) {
+            try {
+                int c = Integer.parseInt(hex.replace("#", ""), 16);
+                int r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
+                int br = Math.max(0, Math.min(255, Math.round(hell * 2.55f)));
+                StringBuilder sb = new StringBuilder();
+                for (String side : new String[]{"left", "right"}) {
+                    for (int i = 0; i < 4; i++) {
+                        String led = "/sys/class/leds/" + side + ":stick:" + i;
+                        sb.append("w ").append(led).append("/multi_intensity ").append(r).append(' ').append(g).append(' ').append(b).append('\n');
+                        sb.append("w ").append(led).append("/brightness ").append(br).append('\n');
+                    }
+                }
+                return Leistung.anBruecke(MainActivity.this, sb.toString()) ? "ok" : "fehler";
+            } catch (Exception e) {
+                return "fehler";
+            }
+        }
+
+        @JavascriptInterface
+        public String fan(String stufe) {
+            prefs.edit().putString("fan", stufe).apply();
+            String z;
+            switch (stufe) {
+                case "Stark": z = "w /sys/class/hwmon/hwmon0/pwm1 255\n"; break;
+                case "Leise": z = "w /sys/class/hwmon/hwmon0/pwm1 65\n"; break;
+                default: z = "w /sys/class/thermal/cooling_device28/cur_state 0\n"; break;
+            }
+            return Leistung.anBruecke(MainActivity.this, z) ? "ok" : "fehler";
+        }
+
+        @JavascriptInterface
         public String profil(String name) {
             prefs.edit().putString("profil", name).apply();
             return Leistung.profil(MainActivity.this, name, null);
