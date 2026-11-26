@@ -885,7 +885,8 @@
   }
   function uHead(title, right) { return '<header class="u-head"><b>' + title + '</b><span>' + right + '</span></header>'; }
   function mxPanel() {
-    var feld = pref('unten', 'start') === 'feld', a = sel;
+    /* In den Einstellungen und auf den Systemseiten zeigt unten immer das Bedienfeld (Schalter und Regler), sonst die Wahl */
+    var feld = pref('unten', 'start') === 'feld' || /^(5\.|o\.(wlan|bt|speicher))/.test(cur || ''), a = sel;
     var NIC = { 'Suchen': 'such', 'Bibliothek': 'bib', 'Apps': 'apps', 'Favoriten': 'fav', 'Einstellungen': 'einst', 'Start': 'start', 'Medien': 'med' };
     function nav(t, act, on) { var ic = NIC[t] && DK[NIC[t]] ? '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[NIC[t]] + '"/></svg>' : ''; return '<button type="button" class="u-nav' + (ic ? ' u-ic' : '') + (on ? ' on' : '') + '" data-act="' + act + '">' + ic + '<span>' + t + '</span></button>'; }
     if (feld) {
