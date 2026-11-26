@@ -158,6 +158,16 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
         setContentView(root);
         registerReceiver(screenOn, new IntentFilter(Intent.ACTION_SCREEN_ON));
+        registerReceiver(new android.content.BroadcastReceiver() {
+            @Override
+            public void onReceive(android.content.Context c, Intent i) {
+                /* Nach dem Entsperren das untere Fenster neu aufbauen: sonst bleibt es hinter der Android-Sperre und nimmt keinen Touch an */
+                ui.postDelayed(() -> {
+                    hidePanel();
+                    if (started) showPanel();
+                }, 300);
+            }
+        }, new IntentFilter(Intent.ACTION_USER_PRESENT));
         if (!"0".equals(prefs.getString("ui:sw:Ori-Sperrbildschirm", "1"))) {
             setShowWhenLocked(true); // Ori zeigt seinen eigenen Sperrbildschirm über dem von Android
         }
