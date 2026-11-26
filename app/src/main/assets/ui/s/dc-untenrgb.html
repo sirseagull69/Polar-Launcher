@@ -37,7 +37,7 @@ renderVals() {
 var self = this, J = window.PL || {};
 /* Dieselben Werte wie oben in Einstellungen → RGB-Licht, damit beide Bildschirme dasselbe zeigen */
 function g(id, d) { var v = window.plPref ? window.plPref('e:rgb:' + id, null) : null; return v === null || v === undefined ? d : v; }
-function set(id, v) { if (J.setPref) J.setPref('e:rgb:' + id, v); if (window.plRgb) window.plRgb(); self.setState({ t: Date.now() }); if (J.sync) J.sync(''); }
+function set(id, v) { if (J.setPref) J.setPref('e:rgb:' + id, v); if (window.plRgb) window.plRgb(); self.setState({ t: Date.now() }); if (J.sync) J.sync('reload'); }
 var an = g('an', '1') === '1', eff = an ? g('effekt', 'Fest') : 'Aus', col = g('farbe', 'Orange');
 var cols = [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']];
 var hx = cols.filter(function (c) { return c[0] === col; }); var hex = hx.length ? hx[0][1] : '#ff8a4c';
