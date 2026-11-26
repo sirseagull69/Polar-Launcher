@@ -223,6 +223,11 @@
     }
     else if (el.scrollIntoView && el.dataset.scroll) el.scrollIntoView({ block: 'nearest' });
     if (el._onfoc) el._onfoc();
+    clearTimeout(window._catT);
+    if (el.classList && el.classList.contains('o-cat') && !el.classList.contains('on') && el.dataset.act) {
+      /* Bereich folgt dem Fokus: kurz auf einem Eintrag stehen bleiben reicht, A muss nicht sein */
+      var ca = el.dataset.act; window._catT = setTimeout(function () { if (foc === el) dcGo(ca); }, 260);
+    }
     if (cur === '5.3a' && WALLS[labelOf(el)]) wall(WALLS[labelOf(el)]);
     if (!quiet) snd('fokus');
   }
@@ -450,7 +455,7 @@
     '6.2': { l: { 'Jetzt laden': updInstall }, k: { A: updInstall } },
     '6.3': { l: { 'Pausieren': '!Pausieren geht noch nicht' }, k: { X: 'back' } },
     '6.4': { l: { 'Jetzt neu starten': OS }, k: { A: OS } }, '6.5': { lock: 1, auto: [3000, '6.6'] },
-    '6.6': { l: { 'Fertig': 'home', 'Was ist neu': '!Die Änderungsliste kommt noch' }, k: { A: 'home', X: '!Die Änderungsliste kommt noch' }, enter: 'erfolg' },
+    '6.6': { l: { 'Fertig': 'back', 'Was ist neu': '!Die Änderungsliste kommt noch' }, k: { A: 'back', X: '!Die Änderungsliste kommt noch' }, enter: 'erfolg' },
     '6.7': { l: { 'Wiederholen': '6.1', 'Details': function () { note((st.upd && st.upd.msg) || 'Keine Meldung'); } }, k: { A: '6.1' }, enter: 'fehler' },
     '7.1': { l: { 'Standby': OS, 'Neu starten': OS, 'Ausschalten': OS }, enter: 'dialog' },
     '7.2': { l: { 'Alle entfernen': 'back', 'Ori OS': '6.2' }, k: { START: 'back', SELECT: 'back' } },
@@ -791,7 +796,7 @@
     if (!list.some(function (a) { return a.key === at; })) at = list[0] ? list[0].key : '';
     return oriTop('start', 'A Starten · X Details · Y Bibliothek · L2/R2 blättern',
       '<div class="o-head"><div class="o-tt"><span class="o-kick" id="h-sys"></span><h1 class="o-h1" id="h-title"></h1><span class="o-quote" id="h-quote"></span></div>' + ori(greeted ? 'ruhezustand' : 'winkt', 92, false, 'o-ohome') + '<span style="flex:1"></span>'
-      + '<div class="o-btns"><button type="button" class="o-btn" data-act="details">Details</button><button type="button" class="o-go" data-act="launch"><i>A</i>Starten</button></div></div>'
+      + '<div class="o-btns"><button type="button" class="o-btn" data-act="details">Details</button><button type="button" class="o-go" data-act="launch"><i>A</i><span id="h-go">Starten</span></button></div></div>'
       + '<div class="o-row" id="h-row"><div class="o-track" id="h-track">' + list.map(function (a) { return '<button type="button" class="o-t" data-act="launch:' + esc(a.key) + '" data-key="' + esc(a.key) + '"' + (a.key === at ? ' data-first="1"' : '') + '><span class="o-frame">' + tileIn(a) + '</span><span class="o-tn">' + esc(a.label) + '</span></button>'; }).join('') + '</div></div>'
       + '<div class="o-chips"><span class="o-chip"><b>Zuletzt</b> · <span id="h-last"></span></span><span class="o-chip" id="h-ortc"><b>Liegt auf</b> · <span id="h-ort"></span></span><span style="flex:1"></span><button type="button" class="o-link" data-act="swap:' + (st.games ? '3.1' : '3.7') + '">Alle ' + (st.games ? 'Spiele' : 'Apps') + ' ansehen</button></div>');
   }
@@ -813,6 +818,7 @@
       document.getElementById('h-sys').textContent = kickOf(a).toUpperCase();
       var t = document.getElementById('h-title'); t.textContent = a.label; t.style.fontSize = a.label.length > 26 ? '30px' : a.label.length > 18 ? '38px' : '46px';
       document.getElementById('h-quote').textContent = quoteOf(a);
+      var go = document.getElementById('h-go'); if (go) go.textContent = a.game ? 'Starten' : 'Öffnen';
       document.getElementById('h-last').textContent = lastOf(a);
       document.getElementById('h-ort').textContent = placeOf(a); document.getElementById('h-ortc').style.display = a.game ? '' : 'none';
     }
@@ -1155,7 +1161,7 @@
   var DC_ALL = { Boot: 'Hochfahren', Sperr: 'Sperrbildschirm', Einrichtung: 'Ersteinrichtung', Emulatoren: 'Emulatoren', Medien: 'Medien', Schnell: 'Schnelleinstellungen', Schnellmenue: 'Im Spiel: Schnellmenü', Ausschalten: 'Ausschalten', Update: 'Systemupdate',
     Bedienfeld: 'Bedienfeld (Vorlage)', BedienfeldSpiel: 'Bedienfeld im Spiel', Tastatur: 'Tastatur', TastaturZahlen: 'Tastatur: Zahlen', Mitteilungen: 'Mitteilungen', UntenSperr: 'Sperrbildschirm unten', UntenStart: 'Start-Begleiter (Vorlage)', UntenLeistung: 'Leistungsmonitor', UntenRgb: 'RGB-Licht', UntenTasten: 'Tastenbelegung', UntenTouchpad: 'Touchpad', UntenDS: 'Zweiter Spielbildschirm (DS)', UntenAkku: 'Akku & Laden', UntenFoto: 'Bildschirmfoto gemacht' };
   var DC_TOP = ['Boot', 'Sperr', 'Einrichtung', 'Emulatoren', 'Medien', 'Schnell', 'Schnellmenue', 'Ausschalten', 'Update'];
-  var DC_PAIR = { Sperr: 'UntenSperr', Boot: 'UntenSperr', Einrichtung: 'Tastatur', Schnellmenue: 'BedienfeldSpiel', Medien: 'UntenTouchpad', Update: 'UntenAkku', Ausschalten: 'UntenAkku' };
+  var DC_PAIR = { Sperr: 'UntenSperr', Boot: 'UntenSperr', Einrichtung: 'Tastatur', Schnellmenue: 'BedienfeldSpiel', Update: 'UntenAkku', Ausschalten: 'UntenAkku' };
   var DC_CAT = { Einst: 'bildschirme', EinstNetzwerk: 'netzwerk', EinstController: 'controller', EinstRgb: 'rgb', EinstTon: 'ton', EinstLeistung: 'leistung', EinstSpeicher: 'speicher', EinstEmulatoren: 'emulatoren', EinstSystem: 'system' };
   var DC_DOCK = { start: 'start', bibliothek: 'bib', emulatoren: 'emu', apps: 'apps', medien: 'med', einstellungen: 'einst', aus: 'aus' };
   function dcKey(name) { return DC_TOP.indexOf(name) >= 0 ? 'dc:' + name + ':' + (DC_PAIR[name] || '') : 'dc:' + (cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '@' + cur) + ':' + name; }

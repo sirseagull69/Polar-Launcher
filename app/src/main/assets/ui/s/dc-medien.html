@@ -33,7 +33,7 @@ var fotos = all.filter(function (x) { return !x.clip; }), clips = all.filter(fun
 var list = reiter === 'clips' ? clips : fotos;
 var heute = new Date(); heute.setHours(0, 0, 0, 0);
 function wann(t) { var d = new Date(t), dd = new Date(t); dd.setHours(0, 0, 0, 0); var tage = Math.round((heute - dd) / 864e5); return tage <= 0 ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : tage === 1 ? 'gestern' : tage < 7 ? d.toLocaleDateString('de-DE', { weekday: 'long' }) : d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }); }
-function titel(n) { var b = n.replace(/\.[a-z0-9]+$/i, '').replace(/^(Screenshot|Screen_Recording|screenrecord|IMG|VID)[_ -]?/i, '').replace(/[_-]/g, ' ').replace(/\b\d{8}\b|\b\d{6,}\b/g, '').replace(/\s+/g, ' ').trim(); return b || (n.toLowerCase().indexOf('.mp4') > 0 ? 'Clip' : 'Bildschirmfoto'); }
+function titel(n) { var b = n.replace(/\.[a-z0-9]+$/i, '').replace(/^(Screenshot|Screen_Recording|screenrecord|IMG|VID)[_ -]?/i, '').replace(/[_-]/g, ' ').replace(/\b\d{8}\b|\b\d{6,}\b/g, '').replace(/\s+/g, ' ').trim(); var d = b.match(/display ?(\d)/i); if (d) b = b.replace(/display ?\d/i, '').trim(); var art = n.toLowerCase().indexOf('.mp4') > 0 ? 'Clip' : 'Bildschirmfoto'; if (d) return art + (d[1] === '0' ? ' · oben' : ' · unten') + (b ? ' · ' + b : ''); return b || (n.toLowerCase().indexOf('.mp4') > 0 ? 'Clip' : 'Bildschirmfoto'); }
 var on = '#141b31', off = '#fffdf8';
 return { bgFotos: reiter === 'fotos' ? on : off, fgFotos: reiter === 'fotos' ? '#ffffff' : '#1b2340', bgClips: reiter === 'clips' ? on : off, fgClips: reiter === 'clips' ? '#ffffff' : '#1b2340',
 nFotos: fotos.length, nClips: clips.length,
