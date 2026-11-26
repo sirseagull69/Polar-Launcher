@@ -127,6 +127,17 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        /* Ori gehört nach oben. Startet Android es auf dem unteren Bildschirm (weil zuletzt unten getippt wurde),
+           sind beide Ansichten vertauscht: dann oben neu öffnen. */
+        if (Build.VERSION.SDK_INT >= 30 && getDisplay() != null && getDisplay().getDisplayId() != Display.DEFAULT_DISPLAY) {
+            try {
+                Intent i = new Intent(getIntent()); i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                ActivityOptions o = ActivityOptions.makeBasic(); o.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
+                startActivity(i, o.toBundle());
+            } catch (RuntimeException ignored) { }
+            finish();
+            return;
+        }
         prefs = getSharedPreferences("polarlicht", MODE_PRIVATE);
         apps = new Apps(this);
         apps.reload(); appsCache = null;
