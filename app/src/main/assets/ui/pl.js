@@ -16,6 +16,7 @@
   function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
   function pref(k, d) { var v = J.pref(k); return v === null || v === undefined || v === '' ? d : v; }
   window.plPref = pref;
+  function perfNow() { try { return JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { return {}; } }
   function fit() {
     var s = Math.min(window.innerWidth / W, window.innerHeight / H);
     stage.style.width = W + 'px'; stage.style.height = H + 'px';
@@ -378,7 +379,7 @@
   var SETUP = ['1.7', '1.8', '1.9', '1.11', '1.12', '1.13', '1.14', '1.15'];
   function next() { var i = SETUP.indexOf(cur); snd('ok'); if (i >= SETUP.length - 1) return done(); J.go(i >= 0 ? SETUP[i + 1] : 'home'); }
   function done() { J.setPref('setup', '1'); J.go('home'); }
-  function afterBoot() { J.setPref('setup', '1'); J.swap('home'); setTimeout(applyRgb, 3000); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
+  function afterBoot() { J.setPref('setup', '1'); J.swap(pref('setup2', '') === '1' ? 'home' : 'o.setup1'); setTimeout(applyRgb, 3000); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
   function swap(k) { return function () { snd('ok'); J.swap(k); }; }
   function tab(d) { return function () { var T = ['3.1', '3.4', '3.7'], i = T.indexOf(cur); snd('ok'); J.swap(T[(Math.max(i, 0) + d + 3) % 3]); }; }
   function focApp() { return foc && foc._app ? foc._app : null; }
@@ -444,7 +445,7 @@
     '5.12': { l: { 'Hoher Kontrast': '@a11y' } },
     '5.13': { l: { 'Nach Updates suchen': '6.1', 'Android': '@about', 'Gerät': '@about', 'Lizenzen': '!Schriften: Space Grotesk und JetBrains Mono (OFL)', 'Auf Werkseinstellungen zurücksetzen': OS, 'Polarlicht': '6.1' } },
     '6.1': { enter0: function () { J.updateCheck(); } },
-    '7.1': { enter0: function () { sysMsg = ''; wlanZiel = ''; sysDo('wlanSuchen'); } }, '7.2': { enter0: function () { sysMsg = ''; } }, '7.3': { enter0: function () { sysMsg = ''; } },
+    'o.wlan': { enter0: function () { sysMsg = ''; wlanZiel = ''; sysDo('wlanSuchen'); } }, 'o.bt': { enter0: function () { sysMsg = ''; } }, 'o.speicher': { enter0: function () { sysMsg = ''; } }, 'o.emu': { enter0: function () { sysMsg = ''; } },
     '6.2': { l: { 'Jetzt laden': updInstall }, k: { A: updInstall } },
     '6.3': { l: { 'Pausieren': '!Pausieren geht noch nicht' }, k: { X: 'back' } },
     '6.4': { l: { 'Jetzt neu starten': OS }, k: { A: OS } }, '6.5': { lock: 1, auto: [3000, '6.6'] },
@@ -613,6 +614,12 @@
     d.addEventListener('click', medZu); document.body.appendChild(d); medOffen = d;
   }
   function medZu() { if (medOffen) { medOffen.remove(); medOffen = null; return true; } return false; }
+  /* Beim Wechsel mit L1/R1 kurz groß zeigen, wo man landet */
+  function ortZeig(name) {
+    if (!name || !TOP) return;
+    var n = document.getElementById('o-ort'); if (!n) { n = document.createElement('div'); n.id = 'o-ort'; document.body.appendChild(n); }
+    n.textContent = name; n.className = 'zeig'; clearTimeout(ortZeig.t); ortZeig.t = setTimeout(function () { n.className = ''; }, 900);
+  }
   window.plKey = function (k) {
     wach();
     if (medOffen) { if (k === 'B' || k === 'A') { medZu(); snd('back'); } return; }
@@ -642,7 +649,7 @@
       var T = ['home', '3.1', 'dc:Emulatoren:', '3.7', 'dc:Medien:' + DC_PAIR.Medien, '5.1', 'dc:Ausschalten:' + DC_PAIR.Ausschalten], at = cur[0] === '2' ? 0 : cur === '3.1' || cur === '3.2' || cur === '3.4' ? 1 : cur.indexOf('dc:Emulatoren') === 0 ? 2 : cur === '3.7' ? 3 : cur.indexOf('dc:Medien') === 0 ? 4 : /^5\./.test(cur) ? 5 : cur.indexOf('dc:Ausschalten') === 0 ? 6 : -1;
       if (at < 0) { snd('taste'); return; }
       var to = T[(at + (k === 'R1' ? 1 : T.length - 1)) % T.length];
-      snd('ok'); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
+      snd('ok'); ortZeig(['Start', 'Bibliothek', 'Emulatoren', 'Apps', 'Medien', 'Einstellungen', 'Aus'][T.indexOf(to)]); if (to === 'home') J.go('home'); else if (at === 0) J.go(to); else J.swap(to); return;
     }
     if (k === 'A' && root.dataset.mix) { act(foc); return; }
     if (k === 'A') { if (t !== undefined && t !== null) run(t); else act(foc); return; }
@@ -756,12 +763,19 @@
     start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', emu: 'M8 8h8v8H8zM5 5h14v14H5zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3', med: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01', aus: 'M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
     fav: 'M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z', einst: 'M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4', upd: 'M12 4v11M7 11l5 5 5-5M5 20h14'
   };
+  /* "A Auswählen · B Zurück" wird zu kleinen Tasten-Plättchen, damit man auf einen Blick sieht, was geht */
+  function hintChips(h) {
+    return String(h).split(' · ').slice(0, 3).map(function (p) {
+      var m = p.match(/^(A|B|X|Y|L1\/R1|L1|R1|L\/R|Start|Select|START|↑↓)\s+(.*)$/);
+      return m ? '<span class="o-hc"><i>' + m[1] + '</i>' + esc(m[2]) + '</span>' : '<span class="o-hc">' + esc(p) + '</span>';
+    }).join('');
+  }
   function oriDock(active, hint) {
     var items = [['start', 'Start', 'home'], ['bib', 'Bibliothek', 'swap:3.1'], ['emu', 'Emulatoren', 'dc:Emulatoren'], ['apps', 'Apps', 'swap:3.7'], ['med', 'Medien', 'dc:Medien'], ['einst', 'Einstellungen', 'go:5.1'], ['aus', 'Aus', 'dc:Ausschalten']];
     if (st.upd && st.upd.available) items.push(['upd', 'Update', 'go:6.2']);
     return '<nav class="o-dock" aria-label="Systemleiste"><span class="o-logo">' + ori('ruhezustand', 46) + '<b>Ori OS</b></span><div class="o-dki">'
       + items.map(function (i) { return '<button type="button" class="o-dk' + (i[0] === active ? ' on' : '') + '" data-act="' + i[2] + '"><svg aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[i[0]] + '"/></svg><span>' + i[1] + '</span></button>'; }).join('')
-      + '</div><span class="o-hint"></span></nav>';
+      + '</div><span class="o-hint">' + hintChips(hint || 'A Auswählen · B Zurück') + '</span></nav>';
   }
   var W_TOPB = '<svg class="welle2" aria-hidden="true" width="960" height="110" viewBox="0 0 960 110" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,110V40C70,20 150,12 240,22S400,52 500,46S660,14 760,16S900,40 960,34V110Z" fill="#fdd3b8"/></svg><svg class="welle" aria-hidden="true" width="960" height="70" viewBox="0 0 960 70" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0"><path d="M0,70V36C80,20 170,14 260,22S430,44 520,40S690,16 780,18S910,34 960,30V70Z" fill="#fbc19d"/></svg>';
   function oriTop(active, hint, main) { return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + W_TOPB + oriBar() + '<main class="o-main">' + main + '</main>' + oriDock(active, hint) + '</div>'; }
@@ -957,7 +971,7 @@
   function sysPage(titel, kick, spruch, pose, rows, hint) {
     var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + titel + '</h1><span class="o-kick">' + kick + '</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + spruch + '</span>' + ori(pose, 54) + '</span></div>'
       + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll">' + rows + '</div>';
-    return oriTop('einst', hint || 'A Auswählen · B Zurück', inner);
+    return oriTop('einst', hint || 'A Auswählen · B Zurück · L1/R1 Bereich wechseln', inner);
   }
   function balken(n) { var h = ''; for (var i = 0; i < 4; i++) h += '<i style="display:inline-block;width:5px;margin-left:2px;border-radius:2px;height:' + (5 + i * 4) + 'px;background:' + (i < n + 1 ? '#1b2340' : '#d9cdbd') + '"></i>'; return '<span style="display:inline-flex;align-items:flex-end;height:18px;margin-left:8px">' + h + '</span>'; }
   function mxWlan() {
@@ -1015,9 +1029,30 @@
     rows += sysRow('Zurück', '', 'go:back');
     return sysPage(e[1], e[0].toUpperCase(), 'Fehlt nur noch der Emulator.', 'sammelt', '<div class="o-rowb" style="min-height:0;padding:12px 14px"><span style="color:#1b2340;font-size:15px">' + esc(e[3]) + '</span></div>' + rows);
   }
-  function emuHol(id) { id = { wii: 'gc', windows: 'pc', steam: 'pc', '3ds': 'n3ds' }[id] || id; J.setPref('emuHol', id); run('7.4'); }
+  function emuHol(id) { id = { wii: 'gc', windows: 'pc', steam: 'pc', '3ds': 'n3ds' }[id] || id; J.setPref('emuHol', id); run('o.emu'); }
   window.plEmuFehlt = function (id) { if (TOP) emuHol(id); };
-  window.plSys = function () { if (/^7\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
+  /* ---------- Ori-Einrichtung (o.setup1 bis o.setup5): fünf kurze Schritte im Ori-Look ---------- */
+  function setupPage(n, titel, spruch, pose, body, weiter) {
+    var dots = ''; for (var i = 1; i <= 5; i++) dots += '<i style="display:inline-block;width:' + (i === n ? 22 : 8) + 'px;height:8px;border-radius:4px;margin-right:5px;background:' + (i <= n ? '#c2410c' : '#eadfce') + '"></i>';
+    return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + W_TOPB
+      + '<main class="o-main" style="padding:34px 60px 0;display:flex;gap:40px;align-items:flex-start"><div style="width:260px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:30px">' + ori(pose, 200) + '<span>' + dots + '</span><span class="o-kick">SCHRITT ' + n + ' VON 5</span></div>'
+      + '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px"><h1 class="o-h1" style="font-size:40px;margin:0">' + titel + '</h1><span class="o-quote" style="font-size:24px">' + spruch + '</span>'
+      + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll" style="max-height:300px">' + body + '</div>'
+      + '<div class="o-btns" style="margin-top:6px"><button type="button" class="o-go" data-act="setup:' + (n + 1) + '"' + (body.indexOf('data-first') < 0 ? ' data-first="1"' : '') + '><i>A</i>' + (weiter || 'Weiter') + '</button>' + (n > 1 ? '<button type="button" class="o-btn" data-act="setup:' + (n - 1) + '">Zurück</button>' : '') + '</div></div></main></div>';
+  }
+  function mxSetup() {
+    var n = +(cur || '').slice(7) || 1;
+    if (n === 1) return setupPage(1, 'Hallo, ich bin Ori.', 'Ich falte dir dein Thor zurecht.', 'aufwachen', sysRow('Was ich mache', 'Spiele finden, Emulatoren starten, alles an einem Ort', 'setup:2'), 'Los geht’s');
+    if (n === 2) { var w = sysJ('wlan'); return setupPage(2, 'WLAN', w.verbunden ? 'Verbunden mit ' + esc(w.verbunden) + '.' : 'Für Cover und Updates.', w.verbunden ? 'fertig' : 'denkt-nach', sysRow('WLAN', w.an ? 'An' : 'Aus', 'sys:wlan:' + (w.an ? '0' : '1'), true) + (w.an ? (w.netze || []).filter(function (x) { return !x.jetzt; }).slice(0, 6).map(function (x) { return sysRow(esc(x.name) + balken(x.balken), x.bekannt ? 'Gespeichert' : x.offen ? 'Offen' : 'Passwort', 'sys:wlanWahl:' + esc(x.name) + ':' + (x.bekannt || x.offen ? '1' : '0')); }).join('') : '') + (wlanZiel ? '<div class="o-rowb" style="gap:10px"><b style="flex:none">' + esc(wlanZiel) + '</b><input id="o-pw" type="password" placeholder="Passwort" style="flex:1;min-width:0;height:36px;border:1px solid #eadfce;border-radius:10px;padding:0 10px;font:inherit;background:#fff"><button type="button" class="o-go" data-act="sys:wlanPw" style="height:36px"><i>A</i>Verbinden</button></div>' : ''), w.verbunden ? 'Weiter' : 'Später'); }
+    if (n === 3) { var nG = (apps || []).filter(function (a) { return a.game; }).length; return setupPage(3, 'Deine Spiele', nG ? nG + ' Spiele gefunden.' : 'Leg sie in den Ordner „ROMs“.', nG ? 'sammelt' : 'sortiert', sysRow('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Jetzt erlauben', st.files ? 'rescan' : 'and:files', !st.files) + sysRow('Ordner neu durchsuchen', st.scanning ? 'Sucht …' : nG + ' Spiele', 'rescan') + '<div class="o-rowb" style="flex-direction:column;align-items:flex-start;min-height:0;padding:12px 14px;gap:4px"><b>So findet Ori deine Spiele</b><span>microSD-Karte → ROMs → ein Ordner je System, zum Beispiel „nds“, „n3ds“, „switch“, „wiiu“, „gc“.</span></div>'); }
+    if (n === 4) {
+      var have = function (pk) { return (apps || []).some(function (a) { return pk.some(function (p) { return String(a.key).indexOf(p + '/') === 0; }); }); };
+      var L = [['nds', 'DS', ['me.magnum.melondualds', 'me.magnum.melonds']], ['n3ds', '3DS', ['org.azahar_emu.azahar', 'io.github.lime3ds.android', 'org.citra.citra_emu']], ['switch', 'Switch', ['dev.eden.eden_emulator']], ['wiiu', 'Wii U', ['info.cemu.cemu']], ['gc', 'GameCube / Wii', ['org.dolphinemu.dolphinemu']], ['pc', 'PC', ['app.gamenative']]];
+      return setupPage(4, 'Emulatoren', 'Was fehlt, hol ich dir.', 'sammelt', L.map(function (e, i) { var h = have(e[2]); return sysRow(e[1], h ? 'Bereit · Ordner „ROMs“ einmal wählen' : 'Installieren', h ? 'setup:4' : 'emu:' + e[0], i === 0); }).join(''));
+    }
+    return setupPage(5, 'Fertig!', 'Viel Spaß. Ich bin da, wenn du mich brauchst.', 'triumph', sysRow('Tipp', 'L1/R1 wechselt die Bereiche, B geht zurück', 'setup:6') + sysRow('Tipp', 'Der AYN-Knopf zeigt unten die Leistung', 'setup:6'), 'Zum Start');
+  }
+  window.plSys = function () { if (/^o\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
   function sysAct(v) {
     var p = v.split(':'), c = p[0];
     sysMsg = '';
@@ -1048,14 +1083,14 @@
     var b = st.brightness || 0, upd = st.upd || {};
     var P = {
       bildschirme: ['Bildschirme', 'Zwei Bildschirme. Doppelt so viel zu putzen.', [S('oben', 'Helligkeit oben', 70, { val: b, hs: 'b' }), S('unten', 'Helligkeit unten', 55, { val: b, hs: 'b' }), C('hz', 'Bildwiederholrate', ['60 Hz', '120 Hz'], '', { cur: (st.hz || 120) + ' Hz', act: 'sys:hz:' }), C('farbe', 'Farbmodus', ['Natürlich', 'Kräftig', 'Warm'], 'Kräftig'), C('zweit', 'Unterer Bildschirm', ['Start', 'Bedienfeld'], '', { cur: pref('unten', 'start') === 'feld' ? 'Bedienfeld' : 'Start', act: 'untenw:' }), T('still', 'Bewegungen reduzieren', false, 'Wellen, Kacheln und Ori halten still', { on: pref('sw:Bewegungen reduzieren', '0') === '1', act: 'sw:Bewegungen reduzieren' }), T('nacht', 'Nachtlicht', false)]],
-      netzwerk: ['WLAN & Netzwerk', 'Ohne WLAN bin ich auch nur ein Gameboy.', [T('wlan', 'WLAN', true, '', { on: !!st.wifi, act: 'sys:wlan:' + (st.wifi ? '0' : '1') }), V('Netzwerke', st.wifi ? 'Verbunden' : 'Nicht verbunden', '', 'go:7.1'), T('flug', 'Flugmodus', false, '', { on: !!st.airplane, act: 'sys:flug:' + (st.airplane ? '0' : '1') }), T('hotspot', 'Hotspot', false), V('Streamen im Heimnetz', 'Noch nicht eingerichtet', 'PS5 und PC aufs Thor holen'), V('VPN', 'Aus')]],
-      controller: ['Controller & Bluetooth', 'Die Tasten sind unschuldig. Meistens.', [T('bt', 'Bluetooth', true, '', { on: !!st.bt, act: 'sys:bt:' + (st.bt ? '0' : '1') }), V('Geräte', 'Koppeln und verwalten', '', 'go:7.2'), V('Tastenbelegung', 'Standard'), T('trigger', 'Trigger tauschen', false, 'L2 und R2 vertauschen'), S('tot', 'Stick-Totzone', 10), S('vib', 'Vibration', 60), T('gyro', 'Bewegungssteuerung', true), V('Externer Controller', 'Koppeln', '', 'go:7.2')]],
+      netzwerk: ['WLAN & Netzwerk', 'Ohne WLAN bin ich auch nur ein Gameboy.', [T('wlan', 'WLAN', true, '', { on: !!st.wifi, act: 'sys:wlan:' + (st.wifi ? '0' : '1') }), V('Netzwerke', st.wifi ? 'Verbunden' : 'Nicht verbunden', '', 'go:o.wlan'), T('flug', 'Flugmodus', false, '', { on: !!st.airplane, act: 'sys:flug:' + (st.airplane ? '0' : '1') }), T('hotspot', 'Hotspot', false), V('Streamen im Heimnetz', 'Noch nicht eingerichtet', 'PS5 und PC aufs Thor holen'), V('VPN', 'Aus')]],
+      controller: ['Controller & Bluetooth', 'Die Tasten sind unschuldig. Meistens.', [T('bt', 'Bluetooth', true, '', { on: !!st.bt, act: 'sys:bt:' + (st.bt ? '0' : '1') }), V('Geräte', 'Koppeln und verwalten', '', 'go:o.bt'), V('Tastenbelegung', 'Standard'), T('trigger', 'Trigger tauschen', false, 'L2 und R2 vertauschen'), S('tot', 'Stick-Totzone', 10), S('vib', 'Vibration', 60), T('gyro', 'Bewegungssteuerung', true), V('Externer Controller', 'Koppeln', '', 'go:o.bt')]],
       rgb: ['RGB-Licht', 'Bunt macht schneller. Angeblich.', [T('an', 'Beleuchtung', true, 'Leuchtringe an den Sticks'), C('effekt', 'Effekt', ['Fest', 'Atmen', 'Regenbogen', 'Welle'], 'Atmen'), W('farbe', 'Farbe', [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']], 'Orange'), S('hell', 'Helligkeit', 60), S('tempo', 'Tempo', 40), T('spiel', 'Farbe vom Spiel übernehmen', true, 'Sticks leuchten in der Farbe des Spiels'), T('laden', 'Beim Laden pulsieren', false)]],
-      ton: ['Ton', 'Lauter geht. Aber muss das sein?', [S('laut', 'Lautstärke', 45, { val: st.volume || 0, hs: 'v' }), V('Ausgabe', st.kopfhoerer ? 'Kopfhörer' : 'Lautsprecher'), T('tasten', 'Tastentöne', true, '', { on: pref('sw:Tastentöne', '1') !== '0', act: 'sw:Tastentöne' }), C('klang', 'Systemklänge', ['Papier', 'Sanft', 'Aus'], 'Papier'), T('mikro', 'Mikrofon', false), V('Kopfhörer', 'Koppeln', '', 'go:7.2')]],
-      leistung: ['Leistung & Lüfter', 'Turbo klingt gut. Der Akku sieht das anders.', [C('profil', 'Leistungsprofil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), C('luefter', 'Lüfter', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'), T('anzeige', 'Leistungsanzeige', true, 'FPS, Temperatur, Watt und Akku im Spiel'), V('Position der Anzeige', 'Oben links'), V('Bildrate begrenzen', '60 FPS'), T('merken', 'Profil je Spiel merken', true), T('schonen', 'Akku schonen', true, 'Nur bis 80 % laden')]],
-      speicher: ['Speicher', 'Platz ist da. Noch.', [V('Interner Speicher', (st.free || '–') + ' frei von ' + (st.total || '–'), '', 'go:7.3'), V('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Fehlt noch', '', 'and:files'), C('ziel', 'Neue Spiele speichern auf', ['Intern', 'microSD'], 'microSD'), T('sichern', 'Speicherstände sichern', true, 'Kopie auf die microSD-Karte'), V('Spiele-Ordner', (st.games || 0) + ' Spiele gefunden', 'Ordner „ROMs“ mit einem Unterordner je System', 'rescan'), V('Apps verwalten', '', '', 'and:apps')]],
+      ton: ['Ton', 'Lauter geht. Aber muss das sein?', [S('laut', 'Lautstärke', 45, { val: st.volume || 0, hs: 'v' }), V('Ausgabe', st.kopfhoerer ? 'Kopfhörer' : 'Lautsprecher'), T('tasten', 'Tastentöne', true, '', { on: pref('sw:Tastentöne', '1') !== '0', act: 'sw:Tastentöne' }), C('klang', 'Systemklänge', ['Papier', 'Sanft', 'Aus'], 'Papier'), T('mikro', 'Mikrofon', false), V('Kopfhörer', 'Koppeln', '', 'go:o.bt')]],
+      leistung: ['Leistung & Lüfter', 'Turbo klingt gut. Der Akku sieht das anders.', [C('profil', 'Leistungsprofil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo', 'Eigene'], '', { cur: perfNow().profil || 'Ausgewogen', act: 'prof:' })].concat(perfNow().profil === 'Eigene' ? [S('k1', 'Kleine Kerne (bis 2,0 GHz)', 100), S('k2', 'Mittlere Kerne (bis 2,8 GHz)', 100), S('k3', 'Großer Kern (bis 3,2 GHz)', 100), S('gpu', 'Grafik (bis 680 MHz)', 100)] : []).concat([C('luefter', 'Lüfter', ['Leise', 'Automatisch', 'Stark'], '', { cur: perfNow().fanStufe || 'Automatisch', act: 'fan:' }), T('anzeige', 'Leistungsanzeige', true, 'FPS, Temperatur, Watt und Akku im Spiel'), V('Position der Anzeige', 'Oben links'), V('Bildrate begrenzen', '60 FPS'), T('merken', 'Profil je Spiel merken', true), T('schonen', 'Akku schonen', true, 'Nur bis 80 % laden')])],
+      speicher: ['Speicher', 'Platz ist da. Noch.', [V('Interner Speicher', (st.free || '–') + ' frei von ' + (st.total || '–'), '', 'go:o.speicher'), V('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Fehlt noch', '', 'and:files'), C('ziel', 'Neue Spiele speichern auf', ['Intern', 'microSD'], 'microSD'), T('sichern', 'Speicherstände sichern', true, 'Kopie auf die microSD-Karte'), V('Spiele-Ordner', (st.games || 0) + ' Spiele gefunden', 'Ordner „ROMs“ mit einem Unterordner je System', 'rescan'), V('Apps verwalten', '', '', 'and:apps')]],
       emulatoren: ['Emulatoren', 'Alte Spiele, neues Papier.', [V('Emulator je System', 'Auf der Spielseite wählen', 'Spiel öffnen, Details, Emulator wählen'), C('skala', 'Auflösung hochrechnen', ['Original', '2×', '3×'], '2×'), C('ds2', 'DS: zweiter Bildschirm', ['Unten', 'Nebeneinander'], 'Unten'), T('cover', 'Cover automatisch laden', true, 'Aus dem offenen libretro-Archiv', { on: pref('covers', '1') !== '0', act: 'pset:covers' }), V('Spiele-Ordner durchsuchen', st.scanning ? 'Sucht …' : 'Jetzt suchen', '', 'rescan')]],
-      system: ['System & Updates', upd.available ? 'Da liegt was Neues für dich.' : 'Alles aktuell. Ich hab nachgesehen.', [V('Version', 'Ori ' + (st.version || '')), V('Updates', upd.available ? 'Update verfügbar' : 'Jetzt suchen', '', upd.available ? 'go:6.2' : 'go:6.1'), V('Gerät', (st.model || '') + ' · ' + (st.android || '')), W('akzent', 'Akzentfarbe', [['Orange', '#c2410c'], ['Pink', '#b8327a'], ['Lila', '#6a4fc7'], ['Blau', '#2b4a8f'], ['Grün', '#2f7a4d'], ['Gold', '#9a6a12'], ['Tinte', '#141b31']], '', { cur: pref('acc', ACC0), act: 'acc:' }), C('design', 'Design', ['Hell', 'Dunkel', 'Automatisch'], 'Hell'), V('Datum, Sprache und mehr', 'Android-Einstellungen', '', 'and:settings')]]
+      system: ['System & Updates', upd.available ? 'Da liegt was Neues für dich.' : 'Alles aktuell. Ich hab nachgesehen.', [V('Version', 'Ori ' + (st.version || '')), V('Updates', upd.available ? 'Update verfügbar' : 'Jetzt suchen', '', upd.available ? 'go:6.2' : 'go:6.1'), V('Gerät', (st.model || '') + ' · ' + (st.android || '')), W('akzent', 'Akzentfarbe', [['Orange', '#c2410c'], ['Pink', '#b8327a'], ['Lila', '#6a4fc7'], ['Blau', '#2b4a8f'], ['Grün', '#2f7a4d'], ['Gold', '#9a6a12'], ['Tinte', '#141b31']], '', { cur: pref('acc', ACC0), act: 'acc:' }), C('design', 'Design', ['Hell', 'Dunkel', 'Automatisch'], 'Hell'), V('Einrichtung erneut starten', 'Fünf kurze Schritte', '', 'go:o.setup1'), V('Datum, Sprache und mehr', 'Android-Einstellungen', '', 'and:settings')]]
     };
     var p = P[seite], any = false, n = 0;
     /* Beim Neuzeichnen bleibt der Rahmen dort, wo er gerade steht, statt nach oben zu springen */
@@ -1083,7 +1118,7 @@
         var v = Math.max(0, Math.min(100, (+el.dataset.v || 0) + d)), k = el.dataset.sl; el.dataset.v = v;
         el.querySelector('.o-tr i').style.width = v + '%'; el.querySelector('.o-sn').textContent = v;
         if (k === 'b') { J.setBrightness(v); qa('[data-sl="b"]', root).forEach(function (o) { if (o !== el) { o.dataset.v = v; o.querySelector('.o-tr i').style.width = v + '%'; o.querySelector('.o-sn').textContent = v; } }); }
-        else if (k === 'v') J.setVolume(v); else { J.setPref(k, String(v)); if (k === 'e:rgb:hell') applyRgb(); }
+        else if (k === 'v') J.setVolume(v); else { J.setPref(k, String(v)); if (k === 'e:rgb:hell') applyRgb(); if (/^e:leistung:(k1|k2|k3|gpu)$/.test(k) && perfNow().profil === 'Eigene') J.profil('Eigene'); }
       };
       el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
     });
@@ -1200,7 +1235,8 @@
     if (key === 'acc') return [mxAcc, mxAccBind];
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
-    if (/^7\.[1234]$/.test(key)) return TOP ? [{ '7.1': mxWlan, '7.2': mxBt, '7.3': mxSpeicher, '7.4': mxEmuHol }[key], null] : [mxPanel, mxPanelBind];
+    if (/^o\.setup[1-5]$/.test(key)) return TOP ? [mxSetup, null] : [mxPanel, mxPanelBind];
+    if (/^o\.(wlan|bt|speicher|emu)$/.test(key)) return TOP ? [{ 'o.wlan': mxWlan, 'o.bt': mxBt, 'o.speicher': mxSpeicher, 'o.emu': mxEmuHol }[key], null] : [mxPanel, mxPanelBind];
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -1223,6 +1259,10 @@
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
     else if (k === 'sys') sysAct(v);
+    else if (k === 'setup') { var sn = +v; sysMsg = ''; if (sn >= 6) { J.setPref('setup2', '1'); snd('ok'); J.go('home'); } else { snd('ok'); if (sn === 2) sysDo('wlanSuchen'); J.swap('o.setup' + Math.max(1, sn)); } }
+    else if (k === 'emu') emuHol(v);
+    else if (k === 'prof') { if (window.plProfil) window.plProfil(v); else J.profil(v); snd('ok'); setKeep = foc ? foc.dataset.id || '' : ''; setTimeout(function () { show(cur); }, 300); }
+    else if (k === 'fan') { if (window.plFan) window.plFan(v); snd('ok'); setKeep = foc ? foc.dataset.id || '' : ''; setTimeout(function () { show(cur); }, 300); }
     else if (k === 'emuhol') { var ep = v.split(':'), ee = EMUS[ep[1]]; if (ee) { var r = J.oeffne ? J.oeffne(ep[0] === 'obt' ? 'obtainium://add/' + ee[2] : ee[2]) : 'nein'; snd(r === 'ok' ? 'ok' : 'fehler'); if (r !== 'ok') note('Ließ sich nicht öffnen.'); } }
     else if (k === 'acc') { snd('ok'); setAcc(v); if (/^5\./.test(cur)) { var an = ''; qa('.o-sws button', root).forEach(function (bn) { if (bn.dataset.act === 'acc:' + v) an = bn.dataset.id; }); setKeep = an; show(cur); } }
     else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }

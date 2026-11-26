@@ -974,7 +974,15 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @JavascriptInterface
         public String profil(String name) {
             prefs.edit().putString("profil", name).apply();
-            return Leistung.profil(MainActivity.this, name, null);
+            double[] eigene = null;
+            if ("Eigene".equals(name)) {
+                eigene = new double[4];
+                String[] k = {"k1", "k2", "k3", "gpu"};
+                for (int i = 0; i < 4; i++) {
+                    try { eigene[i] = Math.max(30, Math.min(100, Integer.parseInt(prefs.getString("ui:e:leistung:" + k[i], "100")))) / 100.0; } catch (NumberFormatException e) { eigene[i] = 1; }
+                }
+            }
+            return Leistung.profil(MainActivity.this, name, eigene);
         }
 
         /** Nur obtainium://-Links und Webseiten öffnen, damit Ori Emulatoren über Obtainium holen kann. */
