@@ -1071,6 +1071,11 @@
       + [['Version', i.version || '–'], ['Größe', mb(i.groesse)], ['Installiert', d(i.installiert)], ['Aktualisiert', d(i.aktualisiert)], ['Paket', i.pkg || '–']].map(function (r) { return '<div style="display:flex;justify-content:space-between;gap:12px"><b style="font-weight:600">' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>'; }).join('') + '</div>';
     return sysPage(esc(i.name || 'App'), 'APP', i.laeuft ? 'Läuft noch im Hintergrund.' : 'Alles, was man wissen muss.', 'liest', rows);
   }
+  window.plBotChip = function (on) {
+    var c = document.getElementById('o-botchip');
+    if (!c) { c = document.createElement('div'); c.id = 'o-botchip'; c.innerHTML = '<i>R3</i> Controller steuert unten · rechten Stick drücken für oben'; document.body.appendChild(c); }
+    c.className = on ? 'zeig' : '';
+  };
   window.plMit = function () { if (/Mitteilungen/.test(cur || '')) show(cur); };
   window.plSys = function () { if (/^o\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
   function sysAct(v) {

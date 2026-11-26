@@ -82,7 +82,7 @@ final class Covers {
     }
 
     static File miss(File dir, String sys, String path) {
-        return new File(dir, sys + "/" + base(path) + ".fehlt");
+        return new File(dir, sys + "/" + base(path) + ".fehlt2"); // neue Endung: alte Fehlversuche werden mit den neuen Namen nochmal probiert
     }
 
     /** Namen, unter denen das Bild im Archiv liegen kann. Erst genau der Dateiname, dann mit den üblichen Regionen. */
@@ -91,10 +91,15 @@ final class Covers {
         List<String> out = new ArrayList<>();
         out.add(b);
         String bare = b.replaceAll("\\s*[\\(\\[][^\\)\\]]*[\\)\\]]", "").trim();
-        if (!bare.isEmpty()) {
-            for (String region : new String[] {" (USA)", " (Europe)", " (USA, Europe)", " (World)", " (Germany)", " (Japan)"}) {
-                if (!out.contains(bare + region)) {
-                    out.add(bare + region);
+        List<String> bases = new ArrayList<>();
+        if (!bare.isEmpty()) bases.add(bare);
+        // Archiv schreibt Reihen mit Bindestrich: "Pokemon - Black Version 2", "Mario Kart - ..."
+        int sp = bare.indexOf(' ');
+        if (sp > 0 && !bare.contains(" - ")) bases.add(bare.substring(0, sp) + " -" + bare.substring(sp));
+        for (String base0 : bases) {
+            for (String region : new String[] {" (USA)", " (Europe)", " (USA, Europe)", " (World)", " (Germany)", " (Japan)", " (USA, Europe) (NDSi Enhanced)", " (Europe) (NDSi Enhanced)", " (USA) (NDSi Enhanced)"}) {
+                if (!out.contains(base0 + region)) {
+                    out.add(base0 + region);
                 }
             }
         }

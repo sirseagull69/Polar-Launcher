@@ -1632,15 +1632,12 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             /* Sticks reindrücken: das System meldet sie als DPAD_CENTER, Ori soll sie nicht für A halten */
             k = scan == 317 ? "L3" : "R3";
         }
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBL) k = "L3";
+        if (code == KeyEvent.KEYCODE_BUTTON_THUMBR) k = "R3";
         if ("R3".equals(k)) {
             if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
                 /* Rechten Stick drücken: Controller steuert den unteren Bildschirm, nochmal drücken zurück nach oben */
-                bottomFocus = !bottomFocus && panel != null && panel.web != null;
-                if (panel != null) {
-                    panel.showHome(homeShowing && !bottomFocus);
-                    if (panel.web != null) panel.web.evaluateJavascript("window.plBotFocus&&plBotFocus(" + bottomFocus + ")", null);
-                }
-                if (top != null && topReady) top.evaluateJavascript("window.plSnd&&plSnd('" + (bottomFocus ? "an" : "aus") + "');window.plNote&&plNote('" + (bottomFocus ? "Controller steuert jetzt unten · rechter Stick zurück" : "Controller steuert wieder oben") + "')", null);
+                setBottomFocus(!bottomFocus, true);
             }
             return true;
         }
@@ -1771,6 +1768,19 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
     }
 
+
+    /** Controller unten oder oben steuern lassen; oben zeigt ein Schildchen, solange unten aktiv ist. */
+    private void setBottomFocus(boolean on, boolean ansagen) {
+        on = on && panel != null && panel.web != null;
+        if (on == bottomFocus && !ansagen) return;
+        bottomFocus = on;
+        if (panel != null) {
+            panel.showHome(homeShowing && !bottomFocus);
+            if (panel.web != null) panel.web.evaluateJavascript("window.plBotFocus&&plBotFocus(" + bottomFocus + ")", null);
+        }
+        if (top != null && topReady) top.evaluateJavascript("window.plBotChip&&plBotChip(" + bottomFocus + ")" + (ansagen ? ";window.plSnd&&plSnd('" + (bottomFocus ? "an" : "aus") + "')" : ""), null);
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -1798,6 +1808,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         ui.removeCallbacks(holdRepeat);
         stickDir = "";
         holdDir = "";
+        bottomFocus = false;
         hidePanel();
     }
 
@@ -1833,6 +1844,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             return;
         }
         if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+            setBottomFocus(false, false);
             if (current.startsWith("1.")) {
                 /* Home-Taste während der Einrichtung: Einrichtung überspringen, nie festhängen */
                 prefs.edit().putString("ui:setup", "1").apply();
