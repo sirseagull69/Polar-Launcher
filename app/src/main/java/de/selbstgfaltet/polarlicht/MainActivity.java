@@ -1129,11 +1129,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             if (sys == null) return "nein";
             switch (cmd) {
                 case "wlan": return sys.wlanSchalten("1".equals(a));
-                case "wlanSuchen": Leistung.anBruecke(MainActivity.this, "ort an\n"); return sys.wlanSuchen();
+                case "wlanSuchen": rechteHolen(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION); Leistung.anBruecke(MainActivity.this, "ort an\n"); return sys.wlanSuchen();
                 case "wlanVerbinden": return sys.wlanVerbinden(a, b);
                 case "wlanVergessen": return sys.wlanVergessen(a);
                 case "bt": return sys.btSchalten("1".equals(a));
-                case "btSuchen": return sys.btSuchen();
+                case "btSuchen": if (Build.VERSION.SDK_INT >= 31) rechteHolen(android.Manifest.permission.BLUETOOTH_SCAN, android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.ACCESS_FINE_LOCATION); return sys.btSuchen();
                 case "btKoppeln": return sys.btKoppeln(a);
                 case "btEntkoppeln": return sys.btEntkoppeln(a);
                 case "flug": { String r = sys.flug("1".equals(a)); if (!"ok".equals(r) && Leistung.anBruecke(MainActivity.this, "flug " + ("1".equals(a) ? "an" : "aus") + "\n")) r = "ok"; return r; }
@@ -1768,6 +1768,15 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
     }
 
+
+
+    /** Fehlende Laufzeitrechte einmal erfragen. Im fertigen Ori OS sind sie vorab erteilt, das hier ist nur der Notnagel. */
+    private void rechteHolen(String... rechte) {
+        java.util.ArrayList<String> fehlt = new java.util.ArrayList<>();
+        for (String r : rechte) if (checkSelfPermission(r) != android.content.pm.PackageManager.PERMISSION_GRANTED) fehlt.add(r);
+        if (fehlt.isEmpty()) return;
+        runOnUiThread(() -> { try { requestPermissions(fehlt.toArray(new String[0]), 7); } catch (Exception ignored) { } });
+    }
 
     /** Controller unten oder oben steuern lassen; oben zeigt ein Schildchen, solange unten aktiv ist. */
     private void setBottomFocus(boolean on, boolean ansagen) {

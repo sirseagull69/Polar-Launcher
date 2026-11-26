@@ -1285,6 +1285,7 @@
     else if (k === 'fav') fav(sel);
     else if (k === 'dc') dcGo(v);
     else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
+    else if (k === 'ecat' && pref('einst', 'bildschirme') === v && foc && foc.classList.contains('o-cat')) { move('right'); }
     else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); J.sync('reload'); }
     else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); if (es === 'rgb') applyRgb(); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later && es !== 'rgb') note('Merkt sich Ori. Wirkt im eigenen OS.'); }
     else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
