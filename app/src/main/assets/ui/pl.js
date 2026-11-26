@@ -665,6 +665,10 @@
     }
     if (k === 'A' && root.dataset.mix) { act(foc); return; }
     if (k === 'A') { if (t !== undefined && t !== null) run(t); else act(foc); return; }
+    if (k === 'B' && foc && !foc.classList.contains('o-cat') && foc.closest && foc.closest('.o-set')) {
+      /* In den Einstellungen geht B erst zurück in die Bereichsliste, dann erst raus */
+      var cat = root.querySelector('.o-cat.on'); if (cat) { setFocus(cat); snd('back'); return; }
+    }
     if (k === 'B') { run(t === undefined ? 'back' : t); return; }
     if (t === undefined && k === 'SELECT') t = '7.2';
     run(t);
