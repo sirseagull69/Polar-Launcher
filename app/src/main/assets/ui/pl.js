@@ -540,6 +540,7 @@
   function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; J.swap(back); if (J.unlock) J.unlock(); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false, botFocus = false;
+  window.plProfil = function (n) { var r = J.profil ? J.profil(n) : 'keine-bruecke'; note(r === 'ok' ? 'Profil ' + n + ' ist aktiv.' : r === 'keine-bruecke' ? 'Profil gemerkt. Wirkt ab dem nächsten OS-Update.' : 'Profil ließ sich nicht setzen.'); };
   /* Unten mit dem Controller bedienen (rechter Stick gedrückt): Rahmen zeigen, wo man ist */
   window.plBotFocus = function (on) {
     botFocus = !!on; if (TOP || !root) return;

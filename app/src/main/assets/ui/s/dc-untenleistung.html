@@ -44,7 +44,7 @@
 class Component extends DCLogic {
 renderVals() {
 var self = this; var s = this.state || {};
-function seg(key, names, def) { var cur = s[key] || def; return names.map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : 'transparent', fg: on ? '#ffffff' : '#1b2340', pick: function () { var o = {}; o[key] = n; self.setState(o); } }; }); }
+function seg(key, names, def) { var cur = s[key] || def; return names.map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : 'transparent', fg: on ? '#ffffff' : '#1b2340', pick: function () { var o = {}; o[key] = n; self.setState(o); if (key === 'profil' && window.plProfil) window.plProfil(n); if (key === 'fan' && window.plNote) window.plNote('Lüfterstufen kommen mit dem nächsten OS-Update.'); } }; }); }
 var notes = { Sparsam: 'Hält am längsten.', Ausgewogen: 'Passt für fast alles.', Leistung: 'Mehr Bilder, mehr Lüfter.', Turbo: 'Alles, was geht.' };
 var P = window.plPerf ? window.plPerf() : { now: {}, hist: { cpu: [], temp: [], watt: [] } }, n = P.now || {}, h = P.hist;
 function bars(arr, max) { var out = []; for (var i = 0; i < 14; i++) { var v = arr[arr.length - 14 + i]; out.push(v == null || v < 0 ? '4px' : Math.max(4, Math.round(52 * Math.min(1, v / max))) + 'px'); } return out; }

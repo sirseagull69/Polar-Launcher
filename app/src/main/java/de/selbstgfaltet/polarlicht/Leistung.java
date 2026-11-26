@@ -46,7 +46,88 @@ final class Leistung {
         o.put("fan", rpm);
         o.put("fanPfad", fanPath == null ? "" : fanPath);
         o.put("spiel", running == null ? "" : running);
+        JSONObject b2 = brueckeStatus(c);
+        if (b2 != null) {
+            o.put("bruecke", true);
+            int g = num(b2.optString("gpu"));
+            if (g >= 0) o.put("gpu", g);
+            int clk = num(b2.optString("gpuclk"));
+            if (clk > 0) o.put("gpuMhz", Math.round(clk / 1e6));
+            int f = num(b2.optString("fan"));
+            if (f >= 0) { o.put("fan", f); o.put("fanPfad", b2.optString("fanPath")); }
+        }
         return o;
+    }
+
+    private static int num(String t) {
+        if (t == null || t.isEmpty()) return -1;
+        try {
+            return Integer.parseInt(t.trim());
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    /** Was die Systembrücke orid zuletzt gemeldet hat, wenn es frisch ist. */
+    static JSONObject brueckeStatus(Context c) {
+        File f = new File(c.getFilesDir(), "ori-status.json");
+        if (!f.exists() || System.currentTimeMillis() - f.lastModified() > 6000) return null;
+        try {
+            return new JSONObject(text(f.getPath()));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Wunsch an orid: Zeilen wie "w /sys/... wert". orid setzt sie innerhalb einer Sekunde um. */
+    static boolean anBruecke(Context c, String zeilen) {
+        try {
+            File tmp = new File(c.getFilesDir(), "ori-ctl.tmp");
+            Files.write(tmp.toPath(), zeilen.getBytes(StandardCharsets.UTF_8));
+            return tmp.renameTo(new File(c.getFilesDir(), "ori-ctl"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Leistungsprofil: Höchsttakt je CPU-Cluster und GPU als Anteil vom Maximum. */
+    static String profil(Context c, String name, double[] eigene) {
+        JSONObject b = brueckeStatus(c);
+        if (b == null) return "keine-bruecke";
+        double cpu, gpu;
+        switch (name) {
+            case "Sparsam": cpu = 0.55; gpu = 0.5; break;
+            case "Leistung": cpu = 1.0; gpu = 0.85; break;
+            case "Turbo": cpu = 1.0; gpu = 1.0; break;
+            case "Eigene": cpu = -1; gpu = eigene != null && eigene.length > 3 ? eigene[3] : 1; break;
+            default: cpu = 0.8; gpu = 0.7; break;
+        }
+        StringBuilder sb = new StringBuilder();
+        String[] pols = b.optString("policies").trim().split("\\s+");
+        int i = 0;
+        for (String p : pols) {
+            String[] a = p.split(":"); // policy0:0,1,2:min-max:cur
+            if (a.length < 3) continue;
+            String[] mm = a[2].split("-");
+            if (mm.length < 2) continue;
+            long max = Long.parseLong(mm[1].trim());
+            double share = cpu >= 0 ? cpu : (eigene != null && i < eigene.length ? eigene[i] : 1);
+            sb.append("w /sys/devices/system/cpu/cpufreq/").append(a[0]).append("/scaling_max_freq ").append(Math.round(max * share)).append('\n');
+            i++;
+        }
+        String[] gf = b.optString("gpuFreqs").trim().split("\\s+");
+        long gmax = 0;
+        for (String g : gf) {
+            try { gmax = Math.max(gmax, Long.parseLong(g)); } catch (Exception e) { /* leer */ }
+        }
+        if (gmax > 0) {
+            long want = Math.round(gmax * gpu), pick = gmax;
+            for (String g : gf) {
+                try { long v = Long.parseLong(g); if (v >= want && v < pick) pick = v; } catch (Exception e) { /* leer */ }
+            }
+            sb.append("w /sys/class/kgsl/kgsl-3d0/max_gpuclk ").append(pick).append('\n');
+        }
+        return anBruecke(c, sb.toString()) ? "ok" : "fehler";
     }
 
     private static String text(String p) {

@@ -862,6 +862,12 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public String profil(String name) {
+            prefs.edit().putString("profil", name).apply();
+            return Leistung.profil(MainActivity.this, name, null);
+        }
+
+        @JavascriptInterface
         public String perf() {
             try {
                 return Leistung.lesen(MainActivity.this, prefs.getString("running", "")).toString();
