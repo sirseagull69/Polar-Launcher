@@ -35,6 +35,7 @@ final class Leistung {
         int volt = b == null ? 0 : b.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0); // mV
         long ua = bm.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW); // µA, Vorzeichen je nach Gerät
         boolean laedt = b != null && b.getIntExtra(BatteryManager.EXTRA_STATUS, 0) == BatteryManager.BATTERY_STATUS_CHARGING;
+        o.put("strom", b != null && b.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
         double watt = Math.abs(ua) / 1e6 * volt / 1e3;
         if (Math.abs(ua) < 1000 && Math.abs(ua) > 0) watt = Math.abs(ua) / 1e3 * volt / 1e3; // manche melden mA
         o.put("watt", watt);

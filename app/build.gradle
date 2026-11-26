@@ -14,7 +14,7 @@ android {
         targetSdk 34
         // Die Build-Nummer von GitHub ist die Versionsnummer, an der die App Updates erkennt.
         versionCode((System.getenv("GITHUB_RUN_NUMBER") ?: "1") as Integer)
-        versionName "0.17.1"
+        versionName "0.17.2"
     }
 
     // Fester Schlüssel, damit sich neue Versionen über alte installieren lassen.

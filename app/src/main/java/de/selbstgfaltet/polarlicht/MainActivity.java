@@ -183,6 +183,16 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
         updater.check(false);
         scanGames();
+        /* Nach dem Start die gemerkten Einstellungen wieder setzen (das System vergisst Takt und Lüfter beim Neustart) */
+        Runnable wieder = () -> {
+            String pr = prefs.getString("profil", "");
+            if (!pr.isEmpty()) Leistung.profil(this, pr, null);
+            String fn = prefs.getString("fan", "");
+            if (!fn.isEmpty() && !"Automatisch".equals(fn)) bridge.fan(fn);
+            both("window.plRgb&&plRgb()");
+        };
+        ui.postDelayed(wieder, 8000);
+        ui.postDelayed(wieder, 25000);
     }
 
     /**
@@ -888,7 +898,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             switch (stufe) {
                 case "Stark": z = "w /sys/class/hwmon/hwmon0/pwm1 255\n"; break;
                 case "Leise": z = "w /sys/class/hwmon/hwmon0/pwm1 65\n"; break;
-                default: z = "w /sys/class/thermal/cooling_device28/cur_state 0\n"; break;
+                default: z = "w /sys/class/thermal/cooling_device28/cur_state 1\nw /sys/class/thermal/cooling_device28/cur_state 0\n"; break; // Temperatur regelt wieder
             }
             return Leistung.anBruecke(MainActivity.this, z) ? "ok" : "fehler";
         }
@@ -902,7 +912,10 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @JavascriptInterface
         public String perf() {
             try {
-                return Leistung.lesen(MainActivity.this, prefs.getString("running", "")).toString();
+                JSONObject o = Leistung.lesen(MainActivity.this, prefs.getString("running", ""));
+            o.put("profil", prefs.getString("profil", "Ausgewogen"));
+            o.put("fanStufe", prefs.getString("fan", "Automatisch"));
+            return o.toString();
             } catch (Exception e) {
                 return "{}";
             }
