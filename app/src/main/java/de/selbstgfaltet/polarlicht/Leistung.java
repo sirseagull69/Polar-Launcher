@@ -23,7 +23,9 @@ final class Leistung {
         JSONObject o = new JSONObject();
         o.put("temp", temperatur());
         o.put("gpu", gpuProzent());
-        o.put("cpu", cpuProzent());
+        int last = cpuLast();
+        o.put("cpu", last >= 0 ? last : cpuProzent());
+        o.put("cpuTakt", cpuProzent());
         o.put("cpuGhz", cpuGhz());
         int gclk = zahl("/sys/class/kgsl/kgsl-3d0/gpuclk");
         if (gclk <= 0) gclk = zahl("/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq");
@@ -166,6 +168,35 @@ final class Leistung {
             if (c > 10 && c < 130 && c > best) best = c;
         }
         return best;
+    }
+
+    private static long prevIdle = -1, prevWall = -1;
+    private static int lastLoad = -1;
+
+    /** Echte Auslastung: Leerlaufzeit aller Kerne (cpuidle) gegen die vergangene Zeit. */
+    private static int cpuLast() {
+        long idle = 0;
+        int n = 0;
+        for (int i = 0; i < 16; i++) {
+            File[] st = new File("/sys/devices/system/cpu/cpu" + i + "/cpuidle").listFiles();
+            if (st == null) continue;
+            boolean any = false;
+            for (File f : st) {
+                if (!f.getName().startsWith("state")) continue;
+                String t = text(f.getPath() + "/time");
+                if (t == null) continue;
+                try { idle += Long.parseLong(t.trim()); any = true; } catch (Exception e) { /* weiter */ }
+            }
+            if (any) n++;
+        }
+        if (n == 0) return -1;
+        long wall = System.nanoTime() / 1000;
+        if (prevIdle >= 0 && wall - prevWall > 300000) {
+            double busy = 1.0 - (idle - prevIdle) / (double) ((wall - prevWall) * n);
+            lastLoad = (int) Math.round(Math.max(0, Math.min(1, busy)) * 100);
+        }
+        if (prevIdle < 0 || wall - prevWall > 300000) { prevIdle = idle; prevWall = wall; }
+        return lastLoad;
     }
 
     /** Takt als Annäherung an die Last: aktueller Takt durch Höchsttakt, gemittelt über alle Kerne. */

@@ -48,6 +48,7 @@ function seg(key, names, def) { var cur = s[key] || (key === 'profil' ? n0.profi
 var notes = { Sparsam: 'Hält am längsten.', Ausgewogen: 'Passt für fast alles.', Leistung: 'Mehr Bilder, mehr Lüfter.', Turbo: 'Alles, was geht.' };
 var P = window.plPerf ? window.plPerf() : { now: {}, hist: { cpu: [], temp: [], watt: [] } }, n = P.now || {}, h = P.hist;
 function bars(arr, max) { var out = []; for (var i = 0; i < 14; i++) { var v = arr[arr.length - 14 + i]; out.push(v == null || v < 0 ? '4px' : Math.max(4, Math.round(52 * Math.min(1, v / max))) + 'px'); } return out; }
+function ampel(v, gelb, rot) { return !(v >= 0) ? '#ffffff' : v >= rot ? '#ff6b5e' : v >= gelb ? '#ffc37a' : '#7fe3a1'; }
 function de(x, d) { return x.toFixed(d).replace('.', ','); }
 var temp = n.temp > 0 ? Math.round(n.temp) + ' °C' : '–', watt = n.watt > 0.05 ? de(n.watt, 1) + ' W' : n.laedt ? 'Lädt' : n.strom ? 'Am Strom' : '–', cpu = n.cpu >= 0 ? n.cpu + ' %' : '–';
 var akku = (n.strom && !n.laedt) ? 'Am Strom · ' + n.akku + ' %' : n.laedt ? 'Lädt · ' + n.akku + ' %' : n.minuten ? (n.minuten >= 60 ? Math.floor(n.minuten / 60) + ' h ' + (n.minuten % 60) + ' min' : n.minuten + ' min') : (n.akku != null ? n.akku + ' %' : '–');
@@ -56,7 +57,7 @@ cpuTakt: n.cpuGhz > 0 ? de(n.cpuGhz, 1) : '–', cpuEinheit: n.cpuGhz > 0 ? 'GHz
 gpuTakt: n.gpuMhz > 0 ? String(n.gpuMhz) : '–', gpuEinheit: n.gpuMhz > 0 ? 'MHz · ' + (n.gpu >= 0 ? n.gpu + ' %' : '–') : (n.gpu >= 0 ? n.gpu + ' %' : '–'), gpuDeg: Math.round(Math.max(0, n.gpu || 0) * 3.6) + 'deg',
 lauf: n.spiel ? n.spiel + ' läuft' : 'Kein Spiel offen', cpu: cpu, gpu: n.gpu >= 0 ? n.gpu + ' %' : '–', akkuName: (n.laedt || n.strom) ? 'Akku' : 'Akku reicht noch', akku: akku,
 fanName: n.fan > 0 ? 'Lüfter · ' + n.fan + ' U/min' : n.fan === 0 ? 'Lüfter · steht' : 'Lüfter',
-graphs: [{ name: 'CPU-TAKT', val: n.cpuGhz > 0 ? de(n.cpuGhz, 1) + ' GHz' : cpu, color: '#7fe3a1', bars: bars(h.cpu, 100) }, { name: 'TEMPERATUR', val: temp, color: '#ffc37a', bars: bars(h.temp, 90) }, { name: 'VERBRAUCH', val: watt, color: '#ffffff', bars: bars(h.watt, 15) }] };
+graphs: [{ name: 'CPU', val: cpu, color: ampel(n.cpu, 50, 85), bars: bars(h.cpu, 100) }, { name: 'TEMPERATUR', val: temp, color: ampel(n.temp, 55, 75), bars: bars(h.temp, 90) }, { name: 'VERBRAUCH', val: watt, color: ampel(n.watt, 8, 14), bars: bars(h.watt, 15) }] };
 }
 }
 <!--dc-props-->
