@@ -2,7 +2,7 @@
 
 <header style="position: relative; height: 48px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 18px">
 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; color: #1b2340">Leistung</span>
-<span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #4d556e; padding-right: 12px">{{lauf}}<a href="Bedienfeld.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; color: #9a3a0c">Bedienfeld</a></span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; color: #4d556e; padding-right: 12px">{{lauf}}<sc-if value="{{spielAn}}"><a href="spiel:beenden" style="height: 34px; margin-left: 8px; padding: 0 12px; border-radius: 17px; background: #c2410c; color: #fff; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; text-decoration: none">Beenden</a></sc-if><a href="Bedienfeld.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12.5px; color: #9a3a0c">Bedienfeld</a></span>
 </header>
 <div style="position: relative; flex: 1; min-height: 0; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
@@ -55,7 +55,7 @@ var akku = (n.strom && !n.laedt) ? 'Am Strom · ' + n.akku + ' %' : n.laedt ? 'L
 return { note: notes[s.profil || n0.profil || 'Ausgewogen'], profiles: seg('profil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), fans: seg('fan', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'),
 cpuTakt: n.cpuGhz > 0 ? de(n.cpuGhz, 1) : '–', cpuEinheit: n.cpuGhz > 0 ? 'GHz · ' + cpu : cpu, cpuDeg: Math.round(Math.max(0, n.cpu || 0) * 3.6) + 'deg',
 gpuTakt: n.gpuMhz > 0 ? String(n.gpuMhz) : '–', gpuEinheit: n.gpuMhz > 0 ? 'MHz · ' + (n.gpu >= 0 ? n.gpu + ' %' : '–') : (n.gpu >= 0 ? n.gpu + ' %' : '–'), gpuDeg: Math.round(Math.max(0, n.gpu || 0) * 3.6) + 'deg',
-lauf: n.spiel ? n.spiel + ' läuft' : 'Kein Spiel offen', cpu: cpu, gpu: n.gpu >= 0 ? n.gpu + ' %' : '–', akkuName: (n.laedt || n.strom) ? 'Akku' : 'Akku reicht noch', akku: akku,
+lauf: n.spiel ? n.spiel + ' läuft' : n.hinten ? n.hinten + ' im Hintergrund' : 'Kein Spiel offen', spielAn: (n.spiel || n.hinten) ? '1' : '', cpu: cpu, gpu: n.gpu >= 0 ? n.gpu + ' %' : '–', akkuName: (n.laedt || n.strom) ? 'Akku' : 'Akku reicht noch', akku: akku,
 fanName: n.fan > 0 ? 'Lüfter · ' + n.fan + ' U/min' : n.fan === 0 ? 'Lüfter · steht' : 'Lüfter',
 graphs: [{ name: 'CPU', val: cpu, color: ampel(n.cpu, 50, 85), bars: bars(h.cpu, 100) }, { name: 'TEMPERATUR', val: temp, color: ampel(n.temp, 55, 75), bars: bars(h.temp, 90) }, { name: 'VERBRAUCH', val: watt, color: ampel(n.watt, 8, 14), bars: bars(h.watt, 15) }] };
 }

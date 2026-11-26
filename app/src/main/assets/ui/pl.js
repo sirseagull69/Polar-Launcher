@@ -556,12 +556,18 @@
   };
   /* Sperrbildschirm unten: Flüssigkeit schwappt, beim Laden steigen Bläschen. Läuft nur, solange er zu sehen ist. */
   var lockGame = null, lkT = 0, lkBubs = [];
-  function lkWave(y0, amp, len, ph) { var d = 'M0 ' + y0; for (var x = 0; x <= 620; x += 20) d += ' L' + x + ' ' + (y0 + Math.sin(x / len + ph) * amp).toFixed(1); return d + ' L620 540 L0 540 Z'; }
+  function lkWave(y0, amp, len, ph, w) { w = w || 620; var d = 'M0 ' + y0; for (var x = 0; x <= w; x += 20) d += ' L' + x + ' ' + (y0 + Math.sin(x / len + ph) * amp).toFixed(1); return d + ' L' + w + ' 540 L0 540 Z'; }
   function lkLiq(y, amp, ph) { var d = 'M0 ' + y; for (var x = 0; x <= 200; x += 8) d += ' L' + x + ' ' + (y + Math.sin(x / 22 + ph) * amp).toFixed(1); return d + ' L200 200 L0 200 Z'; }
   function lkFrame() {
-    var liq = document.getElementById('lk-liq');
-    if (!liq || document.hidden) { setTimeout(function () { requestAnimationFrame(lkFrame); }, 1000); return; }
+    var liq = document.getElementById('lk-liq'), tw1 = document.getElementById('lkt-w1');
+    if ((!liq && !tw1) || document.hidden) { setTimeout(function () { requestAnimationFrame(lkFrame); }, 1000); return; }
     lkT += 0.03;
+    if (tw1) {
+      tw1.setAttribute('d', lkWave(470, 10, 140, lkT * 0.6, 960));
+      var tw2 = document.getElementById('lkt-w2'); if (tw2) tw2.setAttribute('d', lkWave(500, 8, 110, -lkT * 0.8, 960));
+      var to = document.getElementById('lkt-ori'); if (to) to.style.transform = 'translateY(' + (Math.sin(lkT) * 3).toFixed(1) + 'px)';
+      if (!liq) { requestAnimationFrame(lkFrame); return; }
+    }
     var y = +(liq.getAttribute('d').split(' ')[1]) || 100, sub = document.getElementById('lk-sub'), laedt = sub && sub.getAttribute('data-laedt') === '1';
     if (!liq._y) liq._y = y;
     var w1 = document.getElementById('lk-w1'), w2 = document.getElementById('lk-w2');
@@ -1157,6 +1163,7 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name === 'spiel:beenden') { var rb = J.beenden ? J.beenden() : 'nein'; snd(rb === 'ok' ? 'aus' : 'fehler'); note(rb === 'ok' ? 'Spiel beendet.' : 'Ließ sich nicht beenden.'); setTimeout(function () { show(cur); }, 400); return; }
     if (name.indexOf('emu:auf:') === 0) { snd('start'); J.launch(name.slice(8)); return; }
     if (name.indexOf('emu:hol:') === 0) { emuHol(name.slice(8)); return; }
     if (name.indexOf('swap:') === 0) { snd('ok'); J.swap(name.slice(5)); return; }

@@ -998,6 +998,25 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             return "ok";
         }
 
+        /** Das zuletzt gestartete Spiel beenden (läuft im Hintergrund, sobald Ori vorne ist). */
+        @JavascriptInterface
+        public String beenden() {
+            String pkg = prefs.getString("runningPkg", "");
+            if (pkg.isEmpty() || pkg.equals(getPackageName())) return "nein";
+            try {
+                android.app.ActivityManager am = (android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE);
+                try {
+                    am.getClass().getMethod("forceStopPackage", String.class).invoke(am, pkg);
+                } catch (Exception e) {
+                    am.killBackgroundProcesses(pkg);
+                }
+                prefs.edit().remove("running").remove("runningPkg").remove("runningLabel").apply();
+                return "ok";
+            } catch (RuntimeException e) {
+                return "nein";
+            }
+        }
+
         @JavascriptInterface
         public String medien() {
             JSONArray a = new JSONArray();
@@ -1053,6 +1072,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         public String perf() {
             try {
                 JSONObject o = Leistung.lesen(MainActivity.this, prefs.getString("running", ""));
+                o.put("hinten", prefs.getString("runningLabel", ""));
             o.put("profil", prefs.getString("profil", "Ausgewogen"));
             o.put("fanStufe", prefs.getString("fan", "Automatisch"));
             return o.toString();
@@ -1396,7 +1416,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             } else {
                 startActivity(intent);
             }
-            prefs.edit().putLong("last:" + g.key(), System.currentTimeMillis()).putString("running", g.label).putLong("runningAt", System.currentTimeMillis()).apply();
+            prefs.edit().putLong("last:" + g.key(), System.currentTimeMillis()).putString("running", g.label).putString("runningPkg", pkg).putString("runningLabel", g.label).putLong("runningAt", System.currentTimeMillis()).apply();
         } catch (RuntimeException e) {
             Log.w(TAG, "Start " + pick.component + ": " + e);
             Toast.makeText(this, pick.label + " ließ sich nicht starten.", Toast.LENGTH_LONG).show();
@@ -1667,6 +1687,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
+        if (hasFocus && started) {
+            ui.postDelayed(this::showPanel, 300); // unterer Bildschirm kommt zurück, sobald Ori wieder vorne ist
+        }
         if (hasFocus) {
             getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                     | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -1789,6 +1812,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             panel.close();
             panel = null;
         }
+        // Falls der Start nicht klappt oder Ori vorne bleibt: unteren Bildschirm nach kurzer Zeit wieder zeigen
+        ui.postDelayed(() -> { if (started && hasWindowFocus() && panel == null) showPanel(); }, 4000);
     }
 
     @Override
