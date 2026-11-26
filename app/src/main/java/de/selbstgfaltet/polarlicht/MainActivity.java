@@ -100,6 +100,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     volatile boolean homeShowing = false;
     private boolean started = false;
     private boolean bottomFocus = false;
+    volatile String appsCache = null, stateCache = null;
+    volatile long appsAt = 0, stateAt = 0;
     private volatile long keysQuietUntil = 0;
     private boolean lockOverGame = false;
     private final android.content.BroadcastReceiver screenOn = new android.content.BroadcastReceiver() {
@@ -127,7 +129,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         super.onCreate(state);
         prefs = getSharedPreferences("polarlicht", MODE_PRIVATE);
         apps = new Apps(this);
-        apps.reload();
+        apps.reload(); appsCache = null;
         updater = new Updater(this, this);
         sys = new Systemseiten(this);
         sys.beiAenderung(() -> ui.post(() -> both("window.plSys&&plSys()")));
@@ -738,8 +740,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public String state() {
+            String c = stateCache;
+            if (c != null && SystemClock.uptimeMillis() - stateAt < 250) return c;
             try {
-                return MainActivity.this.state().toString();
+                stateCache = MainActivity.this.state().toString(); stateAt = SystemClock.uptimeMillis();
+                return stateCache;
             } catch (Exception e) {
                 return "{}";
             }
@@ -747,6 +752,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public String apps() {
+            /* Zwischenspeicher: die Liste zu bauen kostet ~25 ms (Dateizugriffe), beim Seitenwechsel spürbar */
+            String c = appsCache;
+            if (c != null && SystemClock.uptimeMillis() - appsAt < 3000) return c;
             JSONArray out = new JSONArray();
             try {
                 synchronized (apps) {
@@ -777,7 +785,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             } catch (Exception ignored) {
                 // leere Liste
             }
-            return out.toString();
+            appsCache = out.toString(); appsAt = SystemClock.uptimeMillis();
+            return appsCache;
         }
 
         @JavascriptInterface
@@ -785,8 +794,21 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             return prefs.getString("ui:" + k, "");
         }
 
+        /** Alle Ori-Einstellungen auf einmal: ein Aufruf statt Dutzende beim Zeichnen einer Seite. */
+        @JavascriptInterface
+        public String prefsAll() {
+            org.json.JSONObject o = new org.json.JSONObject();
+            try {
+                for (java.util.Map.Entry<String, ?> e : prefs.getAll().entrySet()) {
+                    if (e.getKey().startsWith("ui:") && e.getValue() instanceof String) o.put(e.getKey().substring(3), e.getValue());
+                }
+            } catch (org.json.JSONException ignored) { }
+            return o.toString();
+        }
+
         @JavascriptInterface
         public void setPref(String k, String v) {
+            appsCache = null; stateCache = null;
             prefs.edit().putString("ui:" + k, v).apply();
         }
 
@@ -845,6 +867,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public void launch(final String key) {
+            appsCache = null; stateCache = null;
             ui.post(() -> {
                 Roms.Game g = game(key);
                 if (g != null) {
@@ -860,6 +883,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public void fav(final String key) {
+            appsCache = null; stateCache = null;
             if (game(key) != null) {
                 Set<String> favs = new HashSet<>(prefs.getStringSet("gfavs", new HashSet<String>()));
                 if (!favs.remove(key)) {
@@ -1055,6 +1079,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public String appTun(String was, String key) {
+            appsCache = null; stateCache = null;
             String pkg = key.contains("/") ? key.substring(0, key.indexOf('/')) : key;
             if (pkg.equals(getPackageName())) return "nein";
             try {
@@ -1188,11 +1213,13 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public void sync(final String what) {
+            appsCache = null; stateCache = null;
             ui.post(() -> both("window.plSync&&plSync('" + ("reload".equals(what) ? "reload" : "") + "')"));
         }
 
         @JavascriptInterface
         public void rescan() {
+            appsCache = null; stateCache = null;
             ui.post(() -> {
                 lastScan = 0L;
                 scanGames();
@@ -1356,7 +1383,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             loadCovers(result);
             ui.post(() -> {
                 boolean changed = result.size() != games.size();
-                games = result;
+                games = result; appsCache = null;
                 scanning = false;
                 if (changed) {
                     if (current.startsWith("2.")) {
@@ -1798,7 +1825,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             prefs.edit().remove("running").apply(); // zurück in Ori: kein Spiel mehr im Vordergrund
         }
         synchronized (apps) {
-            apps.reload();
+            apps.reload(); appsCache = null;
         }
         displayManager.registerDisplayListener(this, ui);
         showPanel();

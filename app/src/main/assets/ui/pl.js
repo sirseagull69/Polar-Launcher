@@ -14,7 +14,13 @@
   function sty(el) { return (el.getAttribute && el.getAttribute('style')) || ''; }
   function qa(s, el) { return Array.prototype.slice.call((el || stage).querySelectorAll(s)); }
   function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
-  function pref(k, d) { var v = J.pref(k); return v === null || v === undefined || v === '' ? d : v; }
+  /* Einstellungen gesammelt holen und bis zum Ende der laufenden Aufgabe merken: jeder Brückenaufruf kostet Zeit */
+  var PC = null;
+  function pref(k, d) {
+    if (!PC) { try { PC = J.prefsAll ? JSON.parse(J.prefsAll()) : null; } catch (e) { PC = null; } if (PC) setTimeout(function () { PC = null; }, 0); }
+    var v = PC ? PC[k] : J.pref(k); return v === null || v === undefined || v === '' ? d : v;
+  }
+  function setPref(k, v) { J.setPref(k, v); if (PC) PC[k] = String(v); }
   window.plPref = pref;
   function perfNow() { try { return JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { return {}; } }
   function fit() {
@@ -95,7 +101,7 @@
     setSlider(sl, pct);
     if (!fromUser) return;
     var L = labelOf(row), k = sliderKind(L);
-    if (k === 'b') J.setBrightness(+sl.dataset.v); else if (k === 'v') J.setVolume(+sl.dataset.v); else J.setPref('sl:' + L, sl.dataset.v);
+    if (k === 'b') J.setBrightness(+sl.dataset.v); else if (k === 'v') J.setVolume(+sl.dataset.v); else setPref('sl:' + L, sl.dataset.v);
   }
   function applyStates() {
     qa('div,button', root).filter(isRow).forEach(function (row) {
@@ -275,7 +281,7 @@
     l.sort(function (a, b) { return b.last - a.last || a.label.localeCompare(b.label); });
     return l;
   }
-  function select(a) { sel = a; if (a) J.setPref('sel', a.key); }
+  function select(a) { sel = a; if (a) setPref('sel', a.key); }
   function launch(a) { if (!a) return; if (a.game && TOP) { var gi0 = ginfo(a); if (gi0.sys && !(gi0.emus || []).length) { emuHol(gi0.sys); return; } } snd('start'); select(a); setTimeout(function () { J.launch(a.key); }, 380); }
   function fav(a) { if (!a) return; J.fav(a.key); snd(a.fav ? 'aus' : 'an'); J.sync('reload'); }
   function img(a, kind) { return 'https://polarlicht.local/' + kind + '?k=' + encodeURIComponent(a.key); }
@@ -383,9 +389,9 @@
   /* ---------- Wege zwischen den Ansichten (Notizen im Canvas) ---------- */
   var SETUP = ['1.7', '1.8', '1.9', '1.11', '1.12', '1.13', '1.14', '1.15'];
   function next() { var i = SETUP.indexOf(cur); snd('ok'); if (i >= SETUP.length - 1) return done(); J.go(i >= 0 ? SETUP[i + 1] : 'home'); }
-  function done() { J.setPref('setup', '1'); J.go('home'); }
+  function done() { setPref('setup', '1'); J.go('home'); }
   if (TOP) setTimeout(function () { if (J.bruecke && pref('aleiste', '0') !== '1') J.bruecke('sb statusbar-expansion'); }, 4000);
-  function afterBoot() { J.setPref('setup', '1'); J.swap(pref('setup2', '') === '1' ? 'home' : 'o.setup1'); setTimeout(applyRgb, 3000); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
+  function afterBoot() { setPref('setup', '1'); J.swap(pref('setup2', '') === '1' ? 'home' : 'o.setup1'); setTimeout(applyRgb, 3000); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
   function swap(k) { return function () { snd('ok'); J.swap(k); }; }
   function tab(d) { return function () { var T = ['3.1', '3.4', '3.7'], i = T.indexOf(cur); snd('ok'); J.swap(T[(Math.max(i, 0) + d + 3) % 3]); }; }
   function focApp() { return foc && foc._app ? foc._app : null; }
@@ -400,8 +406,8 @@
     '1': { k: { START: next } },
     '2': { l: { 'Starten': function () { launch(sel); }, 'Details': details, 'Ordner wählen': '1.13', 'Alle Apps': '3.7', 'WLAN': '@wifi', 'Bluetooth': '@bt', 'Flugmodus': '@airplane', 'Leistung': '5.6', 'Update verfügbar': '6.2' },
            k: { A: function () { launch(sel); }, X: details, Y: '3.1', START: '5.1', B: null } },
-    '3': { l: { 'Alle Spiele': swap('3.1'), 'Favoriten': swap('3.4'), 'Alle Apps': swap('3.7'), 'Alle Systeme': swap('3.1'), 'Zuletzt gespielt': function () { J.setPref('sort', 'last'); swap('3.1')(); },
-                'Sortieren': function () { J.setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }, 'Bilder laden': '3.8',
+    '3': { l: { 'Alle Spiele': swap('3.1'), 'Favoriten': swap('3.4'), 'Alle Apps': swap('3.7'), 'Alle Systeme': swap('3.1'), 'Zuletzt gespielt': function () { setPref('sort', 'last'); swap('3.1')(); },
+                'Sortieren': function () { setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }, 'Bilder laden': '3.8',
                 'Alle': null, 'Spiele': null, 'Emulatoren': null, 'System': null },
            k: { X: details, Y: '3.3', L1: tab(-1), R1: tab(1), START: function () { fav(focApp()); } } },
     '5': { k: { START: '@settings' } }
@@ -436,7 +442,7 @@
                   'Emulatoren': '5.10', 'Datum und Sprache': '5.11', 'Bedienungshilfen': '5.12', 'Über das Gerät': '5.13' }, k: { B: 'home' } },
     '5.2a': { l: { 'WLAN': '@wifi', 'WLAN-Liste öffnen': '@wifi', 'Netzwerk hinzufügen': '@wifi', 'Erweitert': '@wifisettings' }, k: { R1: swap('5.2b'), X: '@wifi' } },
     '5.2b': { l: { 'Bluetooth': '@bt', 'Sichtbar als': '@bt', 'Neues Gerät koppeln': '@bt' }, k: { L1: swap('5.2a'), X: '@bt' } },
-    '5.3a': { bind: function () { addRow('Polarlicht', 'Farbflächen', true); qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { J.setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
+    '5.3a': { bind: function () { addRow('Polarlicht', 'Farbflächen', true); qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
     '5.3': { bind: function () { addRow('Hintergrund', 'Akzentfarbe', false); }, l: { 'Akzentfarbe': 'acc', 'Hintergrund': '5.3a', 'Oben · Hintergrund': '5.3a', 'Oben · Farbe': '@display', 'Oben · Abschaltzeit': '@display', 'Unten · Farbe': '@display', 'Unten · Abschaltzeit': '@display' } },
     '5.4': { l: { 'Ausgabe': '@sound' } },
     '5.5': { l: { 'Tastenbelegung': '5.5a', 'Stick-Beleuchtung': '5.5b', 'Stick-Kalibrierung': '5.5c', 'Controller-Test': '1.12' } },
@@ -502,7 +508,7 @@
     if (isKey && L === '') { snd('taste'); if (!el.nextElementSibling || labelOf(el.nextElementSibling) !== 'y') J.type('\b'); return; }
     var sw = findSwitch(el);
     if (t === undefined && sw) {
-      var on = sw.dataset.on !== '1'; setSwitch(sw, on); snd(on ? 'an' : 'aus'); J.setPref('sw:' + L, on ? '1' : '0'); J.sync('');
+      var on = sw.dataset.on !== '1'; setSwitch(sw, on); snd(on ? 'an' : 'aus'); setPref('sw:' + L, on ? '1' : '0'); J.sync('');
       return;
     }
     if (t === undefined) { snd('ok'); return; }
@@ -600,7 +606,7 @@
   function applyRgb() { if (!J.rgb) return; var p = function (id, d) { var v = pref('e:rgb:' + id, null); return v === null ? d : v; }; var on = p('an', '1') === '1'; var fx = { Atmen: 'atmen', Regenbogen: 'regenbogen', Welle: 'welle' }[p('effekt', 'Fest')], hex = (RGBC[p('farbe', 'Orange')] || '#ff6a1a').replace('#', ''), hl = Math.round((on ? +p('hell', 60) : 0) * 2.55); if (J.bruecke && J.bruecke('fx ' + (on ? fx || 'fest' : 'aus') + ' ' + hex + ' ' + hl) === 'ok' && fx) return; J.rgb(RGBC[p('farbe', 'Orange')] || '#ff6a1a', on ? +p('hell', 60) : 0); }
   window.plRgb = applyRgb;
   /* Regler im RGB-Feld unten: Wert merken und gleich anwenden */
-  document.addEventListener('change', function (e) { var t = e.target; if (!t || !t.id || !/^rgb-(hell|tempo)$/.test(t.id)) return; J.setPref('e:rgb:' + t.id.slice(4), String(t.value)); applyRgb(); J.sync('reload'); });
+  document.addEventListener('change', function (e) { var t = e.target; if (!t || !t.id || !/^rgb-(hell|tempo)$/.test(t.id)) return; setPref('e:rgb:' + t.id.slice(4), String(t.value)); applyRgb(); J.sync('reload'); });
   window.plFan = function (n) { var r = J.fan ? J.fan(n) : 'fehler'; note(r === 'ok' ? 'Lüfter: ' + n : 'Lüfter ließ sich nicht stellen.'); };
   window.plProfil = function (n) { var r = J.profil ? J.profil(n) : 'keine-bruecke'; note(r === 'ok' ? 'Profil ' + n + ' ist aktiv.' : r === 'keine-bruecke' ? 'Profil gemerkt. Wirkt ab dem nächsten OS-Update.' : 'Profil ließ sich nicht setzen.'); };
   /* Unten mit dem Controller bedienen (rechter Stick gedrückt): Rahmen zeigen, wo man ist */
@@ -840,7 +846,7 @@
         place(i);
         /* Titel, Spruch und der untere Bildschirm ziehen erst nach, wenn das Blättern kurz steht */
         clearTimeout(txtT); txtT = setTimeout(function () { text(a); }, 70);
-        if (!sel || sel.key !== a.key) { sel = a; clearTimeout(selT); selT = setTimeout(function () { J.setPref('sel', a.key); J.sync(''); }, 260); }
+        if (!sel || sel.key !== a.key) { sel = a; clearTimeout(selT); selT = setTimeout(function () { setPref('sel', a.key); J.sync(''); }, 260); }
       };
     });
     if (!tiles.length) { document.getElementById('h-title').textContent = 'Noch nichts da'; }
@@ -882,7 +888,7 @@
   var rootSys = [''];
   function mxLibBind() {
     if (cur !== '3.1' && cur !== '3.2') return;
-    root._switch = function (d) { if (rootSys.length < 2) return; var i = Math.max(0, rootSys.indexOf(pref('sysf', ''))); J.setPref('sysf', rootSys[(i + d + rootSys.length) % rootSys.length]); snd('ok'); show(cur); };
+    root._switch = function (d) { if (rootSys.length < 2) return; var i = Math.max(0, rootSys.indexOf(pref('sysf', ''))); setPref('sysf', rootSys[(i + d + rootSys.length) % rootSys.length]); snd('ok'); show(cur); };
     root._switchOn = function () { return false; };
   }
   function uHead(title, right) { return '<header class="u-head"><b>' + title + '</b><span>' + right + '</span></header>'; }
@@ -918,7 +924,7 @@
   var ACCS = ['#c2410c', '#5CF2C0', '#4DE8FF', '#6FB2FF', '#B58CFF', '#FF7AC3', '#FF6B5E', '#FF9A3D', '#FFE14D', '#C6FF3D'];
   function accDark(c) { var m = /^#([0-9a-f]{6})$/i.exec(c); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 140; }
   function applyAcc() { var c = pref('acc', ACC0), e = document.documentElement.style; if (c === OLD0 || c === '#5CF2C0') c = ACC0; e.setProperty('--acc', c); e.setProperty('--acct', accDark(c) ? '#fff' : '#16161a'); }
-  function setAcc(c) { J.setPref('acc', c); applyAcc(); J.sync(''); }
+  function setAcc(c) { setPref('acc', c); applyAcc(); J.sync(''); }
   function mxAcc() {
     var now = pref('acc', ACC0), hueNow = +pref('acch', '80');
     var sw = ACCS.map(function (c, i) { return '<button type="button" class="mx-sw" data-act="acc:' + c + '"' + (c === now || (i === 0 && ACCS.indexOf(now) < 0 && now.indexOf('hsl') < 0) ? ' data-first="1"' : '') + ' style="background:' + c + '" aria-label="Farbe ' + (i + 1) + '"></button>'; }).join('');
@@ -931,7 +937,7 @@
   }
   function mxAccBind() {
     qa('.mx-hue', root).forEach(function (el) {
-      el._hue = function (h) { h = (Math.round(h) + 360) % 360; el.dataset.hue = h; el.firstElementChild.style.left = h / 3.6 + '%'; J.setPref('acch', String(h)); setAcc('hsl(' + h + ',95%,62%)'); };
+      el._hue = function (h) { h = (Math.round(h) + 360) % 360; el.dataset.hue = h; el.firstElementChild.style.left = h / 3.6 + '%'; setPref('acch', String(h)); setAcc('hsl(' + h + ',95%,62%)'); };
       var drag = function (e) { var p = e.touches ? e.touches[0] : e, r = el.getBoundingClientRect(); el._hue(Math.max(0, Math.min(359, (p.clientX - r.left) / r.width * 360))); e.preventDefault(); };
       el.addEventListener('touchstart', drag, { passive: false }); el.addEventListener('touchmove', drag, { passive: false });
     });
@@ -1049,7 +1055,7 @@
     rows += sysRow('Zurück', '', 'go:back');
     return sysPage(e[1], e[0].toUpperCase(), 'Fehlt nur noch der Emulator.', 'sammelt', '<div class="o-rowb" style="min-height:0;padding:12px 14px"><span style="color:#1b2340;font-size:15px">' + esc(e[3]) + '</span></div>' + rows);
   }
-  function emuHol(id) { id = { wii: 'gc', windows: 'pc', steam: 'pc', '3ds': 'n3ds' }[id] || id; J.setPref('emuHol', id); run('o.emu'); }
+  function emuHol(id) { id = { wii: 'gc', windows: 'pc', steam: 'pc', '3ds': 'n3ds' }[id] || id; setPref('emuHol', id); run('o.emu'); }
   window.plEmuFehlt = function (id) { if (TOP) emuHol(id); };
   /* ---------- Ori-Einrichtung (o.setup1 bis o.setup5): fünf kurze Schritte im Ori-Look ---------- */
   function setupPage(n, titel, spruch, pose, body, weiter) {
@@ -1094,8 +1100,8 @@
   function sysAct(v) {
     var p = v.split(':'), c = p[0];
     sysMsg = '';
-    if (c === 'aleiste') { J.setPref('aleiste', p[1]); var ar = J.bruecke ? J.bruecke(p[1] === '1' ? 'sb none' : 'sb statusbar-expansion') : 'nein'; snd(p[1] === '1' ? 'an' : 'aus'); if (ar !== 'ok') note('Kommt mit dem nächsten OS-Update.'); setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
-    if (c === 'layout') { J.setPref('layout', p[1]); var lr = J.bruecke ? J.bruecke('layout ' + p[1].toLowerCase()) : 'nein'; snd('ok'); note(lr === 'ok' ? 'Tastenlayout ' + p[1] + ': gilt nach dem nächsten Neustart.' : 'Kommt mit dem nächsten OS-Update.'); setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
+    if (c === 'aleiste') { setPref('aleiste', p[1]); var ar = J.bruecke ? J.bruecke(p[1] === '1' ? 'sb none' : 'sb statusbar-expansion') : 'nein'; snd(p[1] === '1' ? 'an' : 'aus'); if (ar !== 'ok') note('Kommt mit dem nächsten OS-Update.'); setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
+    if (c === 'layout') { setPref('layout', p[1]); var lr = J.bruecke ? J.bruecke('layout ' + p[1].toLowerCase()) : 'nein'; snd('ok'); note(lr === 'ok' ? 'Tastenlayout ' + p[1] + ': gilt nach dem nächsten Neustart.' : 'Kommt mit dem nächsten OS-Update.'); setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
     if (c === 'hz') { snd('ok'); if (sysDo('hz', p[1].split(' ')[0]) !== 'ok') sysMsg = 'Ließ sich nicht umstellen.'; setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
     if (c === 'wlan' || c === 'bt' || c === 'flug') { var r = sysDo(c, p[1]); if (r !== 'ok') sysMsg = 'Das darf Ori noch nicht selbst. Kommt mit dem nächsten OS-Update.'; snd(p[1] === '1' ? 'an' : 'aus'); if (c === 'wlan' && p[1] === '1') setTimeout(function () { sysDo('wlanSuchen'); }, 1500); }
     else if (c === 'wlanSuchen' || c === 'btSuchen') { snd('ok'); if (sysDo(c) !== 'ok') sysMsg = 'Suche ließ sich nicht starten.'; }
@@ -1158,7 +1164,7 @@
         var v = Math.max(0, Math.min(100, (+el.dataset.v || 0) + d)), k = el.dataset.sl; el.dataset.v = v;
         el.querySelector('.o-tr i').style.width = v + '%'; el.querySelector('.o-sn').textContent = v;
         if (k === 'b') { J.setBrightness(v); qa('[data-sl="b"]', root).forEach(function (o) { if (o !== el) { o.dataset.v = v; o.querySelector('.o-tr i').style.width = v + '%'; o.querySelector('.o-sn').textContent = v; } }); }
-        else if (k === 'v') J.setVolume(v); else { J.setPref(k, String(v)); if (k === 'e:rgb:hell') applyRgb(); if (/^e:leistung:(k1|k2|k3|gpu)$/.test(k) && perfNow().profil === 'Eigene') J.profil('Eigene'); }
+        else if (k === 'v') J.setVolume(v); else { setPref(k, String(v)); if (k === 'e:rgb:hell') applyRgb(); if (/^e:leistung:(k1|k2|k3|gpu)$/.test(k) && perfNow().profil === 'Eigene') J.profil('Eigene'); }
       };
       el._act = function () { el._adj(+el.dataset.v >= 100 ? -100 : 10); snd('taste'); };
     });
@@ -1202,7 +1208,7 @@
     if (name.indexOf('emu:auf:') === 0) { snd('start'); J.launch(name.slice(8)); return; }
     if (name.indexOf('emu:hol:') === 0) { emuHol(name.slice(8)); return; }
     if (name.indexOf('swap:') === 0) { snd('ok'); J.swap(name.slice(5)); return; }
-    if (name.indexOf('med:') === 0) { var mv = name.slice(4); if (mv === 'fotos' || mv === 'clips') { J.setPref('medien', mv); snd('ok'); show(cur); } else if (mv.indexOf('zeig:') === 0) medZeig(mv.slice(5)); return; }
+    if (name.indexOf('med:') === 0) { var mv = name.slice(4); if (mv === 'fotos' || mv === 'clips') { setPref('medien', mv); snd('ok'); show(cur); } else if (mv.indexOf('zeig:') === 0) medZeig(mv.slice(5)); return; }
     if (name === 'lock:open') { if (TOP) unlock(); else J.lockOpen && J.lockOpen(); return; }
     if (name === 'lock:play') { var lg = lockGame; if (TOP) unlock(); else J.lockOpen && J.lockOpen(); if (lg) setTimeout(function () { J.launch(lg.key); }, 700); return; }
     if (name.indexOf('upd:') === 0) { snd('ok'); window.plUpdAct(name.slice(4)); return; }
@@ -1210,8 +1216,8 @@
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
     if (nat[name]) { run(nat[name]); return; }
     /* Unten zurück zum echten Bedienfeld bzw. Start-Begleiter statt zur Vorlage aus dem Canvas */
-    if (!TOP && (name === 'Bedienfeld' || name === 'UntenStart')) { J.setPref('unten', name === 'Bedienfeld' ? 'feld' : 'start'); snd('ok'); var tk = cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '@' + cur; J.swap(tk && tk !== '@' ? 'dc:' + tk + ':' : 'home'); return; }
-    if (DC_CAT[name]) { J.setPref('einst', DC_CAT[name]); setKeep = ''; run('5.1'); return; }
+    if (!TOP && (name === 'Bedienfeld' || name === 'UntenStart')) { setPref('unten', name === 'Bedienfeld' ? 'feld' : 'start'); snd('ok'); var tk = cur.indexOf('dc:') === 0 ? cur.split(':')[1] : '@' + cur; J.swap(tk && tk !== '@' ? 'dc:' + tk + ':' : 'home'); return; }
+    if (DC_CAT[name]) { setPref('einst', DC_CAT[name]); setKeep = ''; run('5.1'); return; }
     if (!DC_ALL[name]) { note('Diese Ansicht gibt es noch nicht.'); return; }
     snd('ok'); var k = dcKey(name);
     if (cur.indexOf('dc:') === 0 && DC_TOP.indexOf(name) < 0) J.swap(k); else J.go(k);
@@ -1291,29 +1297,29 @@
     else if (k === 'details') details();
     else if (k === 'fav') fav(sel);
     else if (k === 'dc') dcGo(v);
-    else if (k === 'unten') { J.setPref('unten', v); snd('ok'); show(cur); }
+    else if (k === 'unten') { setPref('unten', v); snd('ok'); show(cur); }
     else if (k === 'ecat' && pref('einst', 'bildschirme') === v && foc && foc.classList.contains('o-cat')) { move('right'); }
-    else if (k === 'ecat') { setKeep = 'cat:' + v; J.setPref('einst', v); snd('ok'); J.sync('reload'); }
-    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); J.setPref('e:' + es + ':' + eid, ev); if (es === 'rgb') applyRgb(); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later && es !== 'rgb') note('Merkt sich Ori. Wirkt im eigenen OS.'); }
-    else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; J.setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
-    else if (k === 'untenw') { J.setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }
-    else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
+    else if (k === 'ecat') { setKeep = 'cat:' + v; setPref('einst', v); snd('ok'); J.sync('reload'); }
+    else if (k === 'eset') { var q = v.indexOf(':'), eid = v.slice(0, q), ev = v.slice(q + 1), es = pref('einst', 'bildschirme'); setPref('e:' + es + ':' + eid, ev); if (es === 'rgb') applyRgb(); setKeep = foc && foc.dataset.id ? (foc.parentNode.className === 'o-seg' || foc.parentNode.className === 'o-sws' ? es + ':' + eid + ':' + ev : foc.dataset.id) : ''; snd(ev === '0' ? 'aus' : 'an'); var later = foc && foc.closest && foc.closest('[data-later]'); show(cur); if (later && es !== 'rgb') note('Merkt sich Ori. Wirkt im eigenen OS.'); }
+    else if (k === 'sw' || k === 'pset') { var pk = k === 'sw' ? 'sw:' + v : v, was = pref(pk, k === 'sw' && v === 'Bewegungen reduzieren' ? '0' : '1') !== '0'; setPref(pk, was ? '0' : '1'); setKeep = foc ? foc.dataset.id || '' : ''; snd(was ? 'aus' : 'an'); show(cur); J.sync(''); }
+    else if (k === 'untenw') { setPref('unten', v === 'Bedienfeld' ? 'feld' : 'start'); setKeep = pref('einst', '') + ':zweit:' + v; snd('ok'); show(cur); J.sync('reload'); }
+    else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') { sysMsg = ''; run(v); }
     else if (k === 'sys') sysAct(v);
-    else if (k === 'appinfo') { J.setPref('appInfo', v); sysMsg = ''; run('o.app'); }
+    else if (k === 'appinfo') { setPref('appInfo', v); sysMsg = ''; run('o.app'); }
     else if (k === 'appdo') { var ak = pref('appInfo', ''), ar2 = J.appTun ? J.appTun(v, ak) : 'nein'; snd(ar2 === 'ok' ? 'ok' : 'fehler'); sysMsg = v === 'beenden' ? (ar2 === 'ok' ? 'Beendet.' : 'Ließ sich nicht beenden.') : ''; if (v === 'beenden') show(cur); }
-    else if (k === 'setup') { var sn = +v; sysMsg = ''; if (sn >= 6) { J.setPref('setup2', '1'); snd('ok'); J.go('home'); } else { snd('ok'); if (sn === 2) sysDo('wlanSuchen'); J.swap('o.setup' + Math.max(1, sn)); } }
+    else if (k === 'setup') { var sn = +v; sysMsg = ''; if (sn >= 6) { setPref('setup2', '1'); snd('ok'); J.go('home'); } else { snd('ok'); if (sn === 2) sysDo('wlanSuchen'); J.swap('o.setup' + Math.max(1, sn)); } }
     else if (k === 'emu') emuHol(v);
     else if (k === 'prof') { if (window.plProfil) window.plProfil(v); else J.profil(v); snd('ok'); setKeep = foc ? foc.dataset.id || '' : ''; setTimeout(function () { show(cur); }, 300); }
     else if (k === 'fan') { if (window.plFan) window.plFan(v); snd('ok'); setKeep = foc ? foc.dataset.id || '' : ''; setTimeout(function () { show(cur); }, 300); }
     else if (k === 'emuhol') { var ep = v.split(':'), ee = EMUS[ep[1]]; if (ee) { var r = J.oeffne ? J.oeffne(ep[0] === 'obt' ? 'obtainium://add/' + ee[2] : ee[2]) : 'nein'; snd(r === 'ok' ? 'ok' : 'fehler'); if (r !== 'ok') note('Ließ sich nicht öffnen.'); } }
     else if (k === 'acc') { snd('ok'); setAcc(v); if (/^5\./.test(cur)) { var an = ''; qa('.o-sws button', root).forEach(function (bn) { if (bn.dataset.act === 'acc:' + v) an = bn.dataset.id; }); setKeep = an; show(cur); } }
-    else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }
+    else if (k === 'sys') { setPref('sysf', v); snd('ok'); J.sync('reload'); }
     else if (k === 'rescan') { snd('ok'); J.rescan(); note('Suche läuft …'); }
     else if (k === 'and') run('@' + v);
-    else if (k === 'sort') { J.setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
+    else if (k === 'sort') { setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
   }
 
   /* ---------- Anzeigen ---------- */
