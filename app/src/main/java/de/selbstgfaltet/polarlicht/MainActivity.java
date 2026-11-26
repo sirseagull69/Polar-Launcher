@@ -1236,6 +1236,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             for (String k : pick.arrays.keySet()) {
                 intent.putExtra(k, pick.arrays.get(k));
             }
+            // Den unteren Bildschirm freigeben, bevor der Emulator startet: Dual-Screen-Emulatoren
+            // (WatermelonDS, Azahar, Cemu) legen dort ihre eigene Presentation an und stürzen sonst ab.
+            hidePanel();
             int display = apps.launchDisplay();
             if (display >= 0 && displayManager.getDisplay(display) != null) {
                 ActivityOptions o = ActivityOptions.makeBasic();
@@ -1271,6 +1274,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         intent.setComponent(e.component());
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         int display = apps.launchDisplay();
+        hidePanel(); // auch Apps (Emulatoren direkt, Spiele) dürfen den unteren Bildschirm nutzen
         try {
             if (display >= 0 && displayManager.getDisplay(display) != null) {
                 ActivityOptions options = ActivityOptions.makeBasic();

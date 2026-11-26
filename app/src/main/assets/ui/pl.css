@@ -372,3 +372,6 @@ img{display:block}
 .u-nav.u-ic{height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px}
 .u-navs.s .u-nav.u-ic{height:40px;flex-direction:row;gap:6px}
 .u-navs.s .u-nav.u-ic svg{width:16px;height:16px}
+
+/* 0.17.5 Ruhemodus */
+.ruhig *,.ruhig *::before,.ruhig *::after{animation-play-state:paused!important}

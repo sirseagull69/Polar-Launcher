@@ -23,8 +23,9 @@ final class Leistung {
         JSONObject o = new JSONObject();
         o.put("temp", temperatur());
         o.put("gpu", gpuProzent());
-        int last = cpuLast();
-        o.put("cpu", last >= 0 ? last : cpuProzent());
+        // Echte Last kann nur das System (/proc/stat) messen, das liefert orid ab dem nächsten OS-Bild.
+        // cpuidle zählt laufende Leerlaufphasen nicht mit und zeigt viel zu hohe Werte, deshalb lieber "–".
+        o.put("cpu", -1);
         o.put("cpuTakt", cpuProzent());
         o.put("cpuGhz", cpuGhz());
         int gclk = zahl("/sys/class/kgsl/kgsl-3d0/gpuclk");
@@ -52,6 +53,8 @@ final class Leistung {
         JSONObject b2 = brueckeStatus(c);
         if (b2 != null) {
             o.put("bruecke", true);
+            int cl = num(b2.optString("cpu"));
+            if (cl >= 0) o.put("cpu", cl);
             int g = num(b2.optString("gpu"));
             if (g >= 0) o.put("gpu", g);
             int clk = num(b2.optString("gpuclk"));

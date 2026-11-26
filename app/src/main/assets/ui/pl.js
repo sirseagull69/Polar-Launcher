@@ -552,7 +552,14 @@
     if (botFocus) { show(cur); if (items.length) setFocus(items[0], true); }
     else if (foc) { foc.classList.remove('mx-foc'); foc = null; }
   };
+
+  /* Ruhemodus: nach 20 s ohne Eingabe stehen die Wellen still, das spart GPU und Akku */
+  var lastInput = Date.now();
+  function wach() { lastInput = Date.now(); document.documentElement.classList.remove('ruhig'); }
+  ['pointerdown', 'keydown', 'wheel'].forEach(function (ev) { document.addEventListener(ev, wach, true); });
+  setInterval(function () { if (Date.now() - lastInput > 20000) document.documentElement.classList.add('ruhig'); }, 5000);
   window.plKey = function (k) {
+    wach();
     if ((!TOP && !botFocus) || !root) return;
     if (Date.now() < quietUntil) return;
     if (k === 'INDEX') { toggleIndex(); return; }
