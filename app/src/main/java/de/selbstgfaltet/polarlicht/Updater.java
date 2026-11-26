@@ -189,7 +189,7 @@ final class Updater {
         c.setReadTimeout(20000);
         c.setInstanceFollowRedirects(true);
         c.setRequestProperty("Accept", "application/vnd.github+json");
-        c.setRequestProperty("User-Agent", "Polarlicht-Launcher");
+        c.setRequestProperty("User-Agent", "Ori-OS");
         if (c.getResponseCode() != 200) {
             throw new IllegalStateException("HTTP " + c.getResponseCode());
         }

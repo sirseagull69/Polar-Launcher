@@ -254,6 +254,18 @@ final class Leistung {
         return best <= 0 ? -1 : Math.round(best / 1e5) / 10.0;
     }
 
+    /** Stellgröße des Lüfters: liegt im selben hwmon-Ordner wie die Drehzahl. Sonst der bekannte Pfad vom Thor. */
+    static String pwmPfad(Context c) {
+        luefter();
+        String p = fanPath;
+        JSONObject b = brueckeStatus(c);
+        if (b != null && !b.optString("fanPath").isEmpty()) p = b.optString("fanPath");
+        if (p != null && p.matches("/sys/class/hwmon/hwmon\\d+/fan\\d+_input")) {
+            return p.substring(0, p.lastIndexOf('/')) + "/pwm1";
+        }
+        return "/sys/class/hwmon/hwmon0/pwm1";
+    }
+
     /** Lüfter-Drehzahl. Sucht einmal, wo das System sie meldet. */
     private static int luefter() {
         if (!fanSearched) {

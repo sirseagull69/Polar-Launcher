@@ -83,6 +83,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     private Updater updater;
     private WebView top;
     private PanelPresentation panel;
+    /** Die untere Web-Ansicht bleibt geladen, auch wenn das untere Fenster für ein Spiel freigegeben ist. */
+    private WebView panelWeb;
+    private int panelWebDisplay = -1;
     private Systemseiten sys;
     private String current = "";
     private String query = "";
@@ -1008,11 +1011,14 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @JavascriptInterface
         public String fan(String stufe) {
             prefs.edit().putString("fan", stufe).apply();
+            /* Die hwmon-Nummer kann sich mit einem neuen Kernel verschieben: dort schreiben, wo auch die Drehzahl gelesen wird.
+               Offen: cooling_device28 ist noch fest, das am Gerät gegenprüfen (Typ des Reglers), bevor es gesucht wird. */
+            String pwm = Leistung.pwmPfad(MainActivity.this), kuehl = "/sys/class/thermal/cooling_device28/cur_state";
             String z;
             switch (stufe) {
-                case "Stark": z = "w /sys/class/hwmon/hwmon0/pwm1 255\n"; break;
-                case "Leise": z = "w /sys/class/hwmon/hwmon0/pwm1 65\n"; break;
-                default: z = "w /sys/class/thermal/cooling_device28/cur_state 1\nw /sys/class/thermal/cooling_device28/cur_state 0\n"; break; // Temperatur regelt wieder
+                case "Stark": z = "w " + pwm + " 255\n"; break;
+                case "Leise": z = "w " + pwm + " 65\n"; break;
+                default: z = "w " + kuehl + " 1\nw " + kuehl + " 0\n"; break; // Temperatur regelt wieder
             }
             return Leistung.anBruecke(MainActivity.this, z) ? "ok" : "fehler";
         }
@@ -1862,6 +1868,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     protected void onDestroy() {
         hidePanel();
+        ui.removeCallbacks(panelZurueck);
+        if (panelWeb != null) {
+            panelWeb.destroy();
+            panelWeb = null;
+        }
         if (top != null) {
             top.destroy();
             top = null;
@@ -1932,22 +1943,40 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             return;
         }
         hidePanel();
+        if (panelWeb != null && panelWebDisplay != other.getDisplayId()) {
+            panelWeb.destroy(); // anderer Bildschirm: Ansicht passend neu anlegen
+            panelWeb = null;
+        }
+        boolean wieder = panelWeb != null;
         try {
-            panel = new PanelPresentation(this, other, this);
+            panel = new PanelPresentation(this, other, this, panelWeb);
+            panelWeb = null;
+            panelWebDisplay = other.getDisplayId();
             panel.show();
+            if (wieder && panel.web != null) {
+                /* Die Seite ist schon geladen und meldet sich nicht mehr von selbst: aktuellen Stand hineingeben */
+                panel.web.evaluateJavascript("window.plBotFocus&&plBotFocus(" + bottomFocus + ");window.plShow&&plShow('" + current + "')", null);
+            }
         } catch (RuntimeException ex) {
+            if (panel != null) {
+                WebView w = panel.close();
+                if (w != null) w.destroy();
+            }
             panel = null;
         }
     }
 
     private void hidePanel() {
         if (panel != null) {
-            panel.close();
+            panelWeb = panel.close();
             panel = null;
         }
         // Falls der Start nicht klappt oder Ori vorne bleibt: unteren Bildschirm nach kurzer Zeit wieder zeigen
-        ui.postDelayed(() -> { if (started && hasWindowFocus() && panel == null) showPanel(); }, 4000);
+        ui.removeCallbacks(panelZurueck);
+        ui.postDelayed(panelZurueck, 4000);
     }
+
+    private final Runnable panelZurueck = () -> { if (started && hasWindowFocus() && panel == null) showPanel(); };
 
     @Override
     public void onDisplayAdded(int id) {

@@ -1,7 +1,7 @@
-# Polarlicht OS
+# Ori OS: Bau des Betriebssystems
 
-Eigenes Android fürs AYN Thor auf Basis von LineageOS 24.0 (Gerätename `odin2thor`).
-Stand: Bauumgebung eingerichtet, Quellcode wird geladen. Gebaut wurde noch nichts.
+**Veraltet.** Dieser Ordner ist der erste Entwurf vom 24.11.2026. Das OS ist seit dem 26.11. gebaut und läuft auf dem Thor,
+der echte Stand (Baum, `orid`, Rechteliste, Aufspiel-Skripte) liegt aber noch auf dem Bau-PC und muss hierher übernommen werden.
 
 ## Was hier liegt
 

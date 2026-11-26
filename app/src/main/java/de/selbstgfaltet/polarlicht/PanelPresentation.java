@@ -19,9 +19,11 @@ final class PanelPresentation extends Presentation {
     WebView web;
     private View home;
 
-    PanelPresentation(Context outer, Display display, MainActivity host) {
+    /** web: die untere Web-Ansicht von vorher, damit sie nicht bei jeder Rückkehr neu laden muss; null beim ersten Mal. */
+    PanelPresentation(Context outer, Display display, MainActivity host, WebView web) {
         super(outer, display);
         this.host = host;
+        this.web = web;
     }
 
     @Override
@@ -30,7 +32,12 @@ final class PanelPresentation extends Presentation {
         if (getWindow() != null) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         }
-        web = host.makeWeb(getContext(), "unten");
+        if (web == null) {
+            web = host.makeWeb(getContext(), "unten");
+        } else if (web.getParent() instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) web.getParent()).removeView(web);
+        }
+        web.onResume();
         FrameLayout root = new FrameLayout(getContext());
         root.addView(web, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         if (host.home != null && getWindow() != null) {
@@ -75,15 +82,24 @@ final class PanelPresentation extends Presentation {
         }
     }
 
-    void close() {
+    /**
+     * Fenster schließen, die Web-Ansicht aber behalten: sie wird beim nächsten Öffnen wieder eingehängt.
+     * Früher wurde sie jedes Mal weggeworfen und neu geladen, das machte den unteren Bildschirm träge.
+     */
+    WebView close() {
         try {
             dismiss();
         } catch (RuntimeException ignored) {
             // Bildschirm ist schon weg
         }
-        if (web != null) {
-            web.destroy();
-            web = null;
+        WebView w = web;
+        web = null;
+        if (w != null) {
+            if (w.getParent() instanceof android.view.ViewGroup) {
+                ((android.view.ViewGroup) w.getParent()).removeView(w);
+            }
+            w.onPause();
         }
+        return w;
     }
 }

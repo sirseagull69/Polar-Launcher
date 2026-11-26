@@ -179,7 +179,7 @@
   setInterval(tick, 20000);
 
   /* ---------- Hintergrund (Canvas 0.7, wählbar in 5.3a) ---------- */
-  var WALLS = { 'Farbflächen': 'farben', 'Polarlicht': 'polarlicht', 'Sterne': 'sterne', 'Wellen': 'wellen', 'Streifen': 'streifen', 'Bild des gewählten Spiels': 'bild', 'Aus': 'aus' };
+  var WALLS = { 'Farbflächen': 'farben', 'Nordlicht': 'polarlicht', 'Sterne': 'sterne', 'Wellen': 'wellen', 'Streifen': 'streifen', 'Bild des gewählten Spiels': 'bild', 'Aus': 'aus' };
   function wall(name) {
     var el = document.getElementById('pl-wall'); if (!el) return;
     name = name || pref('bg', 'farben');
@@ -443,7 +443,7 @@
                   'Emulatoren': '5.10', 'Datum und Sprache': '5.11', 'Bedienungshilfen': '5.12', 'Über das Gerät': '5.13' }, k: { B: 'home' } },
     '5.2a': { l: { 'WLAN': '@wifi', 'WLAN-Liste öffnen': '@wifi', 'Netzwerk hinzufügen': '@wifi', 'Erweitert': '@wifisettings' }, k: { R1: swap('5.2b'), X: '@wifi' } },
     '5.2b': { l: { 'Bluetooth': '@bt', 'Sichtbar als': '@bt', 'Neues Gerät koppeln': '@bt' }, k: { L1: swap('5.2a'), X: '@bt' } },
-    '5.3a': { bind: function () { addRow('Polarlicht', 'Farbflächen', true); qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
+    '5.3a': { bind: function () { addRow('Nordlicht', 'Farbflächen', true); qa('div,button', root).filter(isRow).forEach(function (r) { var w = WALLS[labelOf(r)]; if (w) r._act = function () { setPref('bg', w); snd('ok'); if (TOP) J.back(); else J.sync('reload'); }; }); } },
     '5.3': { bind: function () { addRow('Hintergrund', 'Akzentfarbe', false); }, l: { 'Akzentfarbe': 'acc', 'Hintergrund': '5.3a', 'Oben · Hintergrund': '5.3a', 'Oben · Farbe': '@display', 'Oben · Abschaltzeit': '@display', 'Unten · Farbe': '@display', 'Unten · Abschaltzeit': '@display' } },
     '5.4': { l: { 'Ausgabe': '@sound' } },
     '5.5': { l: { 'Tastenbelegung': '5.5a', 'Stick-Beleuchtung': '5.5b', 'Stick-Kalibrierung': '5.5c', 'Controller-Test': '1.12' } },
@@ -456,7 +456,7 @@
     '5.10': { l: { 'Neu suchen': '!Emulator-Suche kommt mit der Spiele-Bibliothek' } },
     '5.11': { l: { 'Sprache': '@locale', 'Region': '@locale', 'Automatische Zeit': '@date', 'Zeitzone': '@date', '24-Stunden-Format': '@date', 'Tastatur': '@ime' } },
     '5.12': { l: { 'Hoher Kontrast': '@a11y' } },
-    '5.13': { l: { 'Nach Updates suchen': '6.1', 'Android': '@about', 'Gerät': '@about', 'Lizenzen': '!Schriften: Space Grotesk und JetBrains Mono (OFL)', 'Auf Werkseinstellungen zurücksetzen': OS, 'Polarlicht': '6.1' } },
+    '5.13': { l: { 'Nach Updates suchen': '6.1', 'Android': '@about', 'Gerät': '@about', 'Lizenzen': '!Schriften: Space Grotesk und JetBrains Mono (OFL)', 'Auf Werkseinstellungen zurücksetzen': OS, 'Ori OS': '6.1' } },
     '6.1': { enter0: function () { J.updateCheck(); } },
     'o.wlan': { enter0: function () { sysMsg = ''; wlanZiel = ''; sysDo('wlanSuchen'); } }, 'o.bt': { enter0: function () { sysMsg = ''; } }, 'o.speicher': { enter0: function () { sysMsg = ''; } }, 'o.emu': { enter0: function () { sysMsg = ''; } },
     '6.2': { l: { 'Jetzt laden': updInstall }, k: { A: updInstall } },
