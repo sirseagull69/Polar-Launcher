@@ -599,6 +599,8 @@
   var RGBC = { Orange: '#ff6a1a', Pink: '#ff3c8c', Lila: '#8a4cff', Blau: '#2a5cff', 'Grün': '#22c060', Gold: '#ffb020', 'Weiß': '#ffffff' };
   function applyRgb() { if (!J.rgb) return; var p = function (id, d) { var v = pref('e:rgb:' + id, null); return v === null ? d : v; }; var on = p('an', '1') === '1'; var fx = { Atmen: 'atmen', Regenbogen: 'regenbogen', Welle: 'welle' }[p('effekt', 'Fest')], hex = (RGBC[p('farbe', 'Orange')] || '#ff6a1a').replace('#', ''), hl = Math.round((on ? +p('hell', 60) : 0) * 2.55); if (J.bruecke && J.bruecke('fx ' + (on ? fx || 'fest' : 'aus') + ' ' + hex + ' ' + hl) === 'ok' && fx) return; J.rgb(RGBC[p('farbe', 'Orange')] || '#ff6a1a', on ? +p('hell', 60) : 0); }
   window.plRgb = applyRgb;
+  /* Regler im RGB-Feld unten: Wert merken und gleich anwenden */
+  document.addEventListener('change', function (e) { var t = e.target; if (!t || !t.id || !/^rgb-(hell|tempo)$/.test(t.id)) return; J.setPref('e:rgb:' + t.id.slice(4), String(t.value)); applyRgb(); J.sync(''); });
   window.plFan = function (n) { var r = J.fan ? J.fan(n) : 'fehler'; note(r === 'ok' ? 'Lüfter: ' + n : 'Lüfter ließ sich nicht stellen.'); };
   window.plProfil = function (n) { var r = J.profil ? J.profil(n) : 'keine-bruecke'; note(r === 'ok' ? 'Profil ' + n + ' ist aktiv.' : r === 'keine-bruecke' ? 'Profil gemerkt. Wirkt ab dem nächsten OS-Update.' : 'Profil ließ sich nicht setzen.'); };
   /* Unten mit dem Controller bedienen (rechter Stick gedrückt): Rahmen zeigen, wo man ist */

@@ -34,14 +34,17 @@
 <!--dc-script-->
 class Component extends DCLogic {
 renderVals() {
-var self = this; var s = this.state || {};
-function seg(key, names, def) { var cur = s[key] || def; return names.map(function (n) { var on = n === cur; return { name: n, on: on, bg: on ? '#141b31' : 'transparent', fg: on ? '#ffffff' : '#1b2340', pick: function () { var u = {}; u[key] = n; self.setState(u); } }; }); }
-var col = s.farbe || 'Orange', eff = s.effekt || 'Atmen';
-var cols = [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#5b8cff'], ['Türkis', '#4ac9c0'], ['Grün', '#5fd08a'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']];
-var hex = cols.filter(function (c) { return c[0] === col; })[0][1];
-return { color: eff === 'Aus' ? '#343d5c' : hex, glow: eff === 'Aus' ? 0.6 : 1, anim: eff === 'Atmen' || eff === 'Welle' ? 'atmen' : '',
-effects: seg('effekt', ['Fest', 'Atmen', 'Welle', 'Spielfarbe', 'Aus'], 'Atmen'),
-colors: cols.map(function (c) { var on = c[0] === col; return { name: c[0], color: c[1], on: on, ring: on ? '0 0 0 3px #fffdf8, 0 0 0 5px #141b31' : 'inset 0 0 0 1px rgba(20,27,49,0.25)', pick: function () { self.setState({ farbe: c[0] }); } }; }) };
+var self = this, J = window.PL || {};
+/* Dieselben Werte wie oben in Einstellungen → RGB-Licht, damit beide Bildschirme dasselbe zeigen */
+function g(id, d) { var v = window.plPref ? window.plPref('e:rgb:' + id, null) : null; return v === null || v === undefined ? d : v; }
+function set(id, v) { if (J.setPref) J.setPref('e:rgb:' + id, v); if (window.plRgb) window.plRgb(); self.setState({ t: Date.now() }); if (J.sync) J.sync(''); }
+var an = g('an', '1') === '1', eff = an ? g('effekt', 'Fest') : 'Aus', col = g('farbe', 'Orange');
+var cols = [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']];
+var hx = cols.filter(function (c) { return c[0] === col; }); var hex = hx.length ? hx[0][1] : '#ff8a4c';
+setTimeout(function () { var h = document.getElementById('rgb-hell'), t = document.getElementById('rgb-tempo'); if (h) h.value = g('hell', '60'); if (t) t.value = g('tempo', '40'); }, 0);
+return { color: eff === 'Aus' ? '#343d5c' : hex, glow: eff === 'Aus' ? 0.6 : 1, anim: eff === 'Atmen' || eff === 'Welle' || eff === 'Regenbogen' ? 'atmen' : '',
+effects: ['Fest', 'Atmen', 'Regenbogen', 'Welle', 'Aus'].map(function (n) { var on = n === eff; return { name: n, on: on, bg: on ? '#141b31' : 'transparent', fg: on ? '#ffffff' : '#1b2340', pick: function () { if (n === 'Aus') set('an', '0'); else { if (J.setPref) J.setPref('e:rgb:an', '1'); set('effekt', n); } } }; }),
+colors: cols.map(function (c) { var on = c[0] === col; return { name: c[0], color: c[1], on: on, ring: on ? '0 0 0 3px #fffdf8, 0 0 0 5px #141b31' : 'inset 0 0 0 1px rgba(20,27,49,0.25)', pick: function () { set('farbe', c[0]); } }; }) };
 }
 }
 <!--dc-props-->
