@@ -1040,11 +1040,12 @@
   /* ---------- Ori-Einrichtung (o.setup1 bis o.setup5): fünf kurze Schritte im Ori-Look ---------- */
   function setupPage(n, titel, spruch, pose, body, weiter) {
     var dots = ''; for (var i = 1; i <= 5; i++) dots += '<i style="display:inline-block;width:' + (i === n ? 22 : 8) + 'px;height:8px;border-radius:4px;margin-right:5px;background:' + (i <= n ? '#c2410c' : '#eadfce') + '"></i>';
-    return '<div class="mx ori" style="width:960px;height:540px">' + W_TOP + W_TOPB
-      + '<main class="o-main" style="padding:34px 60px 0;display:flex;gap:40px;align-items:flex-start"><div style="width:260px;flex:none;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:30px">' + ori(pose, 200) + '<span>' + dots + '</span><span class="o-kick">SCHRITT ' + n + ' VON 5</span></div>'
+    return '<div class="mx ori" style="width:960px;height:540px;position:relative;overflow:hidden">' + W_TOP + W_TOPB
+      + '<div style="position:absolute;inset:0;box-sizing:border-box;padding:40px 56px 0;display:flex;flex-direction:row;gap:36px;align-items:flex-start;z-index:2">'
+      + '<div style="width:230px;flex:none;display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:40px">' + ori(pose, 170) + '<span>' + dots + '</span><span class="o-kick">SCHRITT ' + n + ' VON 5</span></div>'
       + '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px"><h1 class="o-h1" style="font-size:40px;margin:0">' + titel + '</h1><span class="o-quote" style="font-size:24px">' + spruch + '</span>'
-      + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll" style="max-height:300px">' + body + '</div>'
-      + '<div class="o-btns" style="margin-top:6px"><button type="button" class="o-go" data-act="setup:' + (n + 1) + '"' + (body.indexOf('data-first') < 0 ? ' data-first="1"' : '') + '><i>A</i>' + (weiter || 'Weiter') + '</button>' + (n > 1 ? '<button type="button" class="o-btn" data-act="setup:' + (n - 1) + '">Zurück</button>' : '') + '</div></div></main></div>';
+      + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll" style="max-height:290px">' + body + '</div>'
+      + '<div class="o-btns" style="margin-top:6px"><button type="button" class="o-go" data-act="setup:' + (n + 1) + '"' + (body.indexOf('data-first') < 0 ? ' data-first="1"' : '') + '><i>A</i>' + (weiter || 'Weiter') + '</button>' + (n > 1 ? '<button type="button" class="o-btn" data-act="setup:' + (n - 1) + '">Zurück</button>' : '') + '</div></div></div></div>';
   }
   function mxSetup() {
     var n = +(cur || '').slice(7) || 1;
