@@ -8,7 +8,7 @@
 <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
 <sc-for list="{{graphs}}" as="g" hint-placeholder-count="3">
 <div style="background: #141b31; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px">
-<span style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.1em; color: #c9d0e6">{{g.name}}</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; color: {{g.color}}">{{g.val}}</span></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; gap: 6px; white-space: nowrap"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.1em; color: #c9d0e6">{{g.name}}</span><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; color: {{g.color}}">{{g.val}}</span></span>
 <div aria-hidden="true" style="height: 52px; display: flex; align-items: flex-end; gap: 3px">
 <sc-for list="{{g.bars}}" as="b" hint-placeholder-count="14">
 <span style="flex: 1; height: {{b}}; border-radius: 2px; background: {{g.color}}; opacity: 0.85"></span>
@@ -50,10 +50,10 @@ var P = window.plPerf ? window.plPerf() : { now: {}, hist: { cpu: [], temp: [], 
 function bars(arr, max) { var out = []; for (var i = 0; i < 14; i++) { var v = arr[arr.length - 14 + i]; out.push(v == null || v < 0 ? '4px' : Math.max(4, Math.round(52 * Math.min(1, v / max))) + 'px'); } return out; }
 function ampel(v, gelb, rot) { return !(v >= 0) ? '#ffffff' : v >= rot ? '#ff6b5e' : v >= gelb ? '#ffc37a' : '#7fe3a1'; }
 function de(x, d) { return x.toFixed(d).replace('.', ','); }
-var temp = n.temp > 0 ? Math.round(n.temp) + ' °C' : '–', watt = n.watt > 0.05 ? de(n.watt, 1) + ' W' : n.laedt ? 'Lädt' : n.strom ? 'Am Strom' : '–', cpu = n.cpu >= 0 ? n.cpu + ' %' : '–';
+var temp = n.temp > 0 ? Math.round(n.temp) + ' °C' : '–', watt = n.watt > 0.05 ? de(n.watt, 1) + ' W' : n.laedt ? 'Lädt' : n.strom ? 'Netz' : '–', cpu = n.cpu >= 0 ? n.cpu + ' %' : '–';
 var akku = (n.strom && !n.laedt) ? 'Am Strom · ' + n.akku + ' %' : n.laedt ? 'Lädt · ' + n.akku + ' %' : n.minuten ? (n.minuten >= 60 ? Math.floor(n.minuten / 60) + ' h ' + (n.minuten % 60) + ' min' : n.minuten + ' min') : (n.akku != null ? n.akku + ' %' : '–');
 return { note: notes[s.profil || n0.profil || 'Ausgewogen'], profiles: seg('profil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), fans: seg('fan', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'),
-cpuTakt: n.cpuGhz > 0 ? de(n.cpuGhz, 1) : '–', cpuEinheit: n.cpuGhz > 0 ? 'GHz' : cpu, cpuDeg: Math.round(Math.max(0, n.cpu || 0) * 3.6) + 'deg',
+cpuTakt: n.cpuGhz > 0 ? de(n.cpuGhz, 1) : '–', cpuEinheit: n.cpuGhz > 0 ? 'GHz · ' + cpu : cpu, cpuDeg: Math.round(Math.max(0, n.cpu || 0) * 3.6) + 'deg',
 gpuTakt: n.gpuMhz > 0 ? String(n.gpuMhz) : '–', gpuEinheit: n.gpuMhz > 0 ? 'MHz · ' + (n.gpu >= 0 ? n.gpu + ' %' : '–') : (n.gpu >= 0 ? n.gpu + ' %' : '–'), gpuDeg: Math.round(Math.max(0, n.gpu || 0) * 3.6) + 'deg',
 lauf: n.spiel ? n.spiel + ' läuft' : 'Kein Spiel offen', cpu: cpu, gpu: n.gpu >= 0 ? n.gpu + ' %' : '–', akkuName: (n.laedt || n.strom) ? 'Akku' : 'Akku reicht noch', akku: akku,
 fanName: n.fan > 0 ? 'Lüfter · ' + n.fan + ' U/min' : n.fan === 0 ? 'Lüfter · steht' : 'Lüfter',
