@@ -1028,6 +1028,51 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             }
         }
 
+        /** App-Infos für die Ori-Seite statt der Android-App-Info. */
+        @JavascriptInterface
+        public String appInfo(String key) {
+            JSONObject o = new JSONObject();
+            try {
+                String pkg = key.contains("/") ? key.substring(0, key.indexOf('/')) : key;
+                PackageManager pm = getPackageManager();
+                PackageInfo pi = pm.getPackageInfo(pkg, 0);
+                o.put("pkg", pkg);
+                o.put("name", pm.getApplicationLabel(pi.applicationInfo).toString());
+                o.put("version", pi.versionName == null ? "" : pi.versionName);
+                o.put("installiert", pi.firstInstallTime);
+                o.put("aktualisiert", pi.lastUpdateTime);
+                o.put("system", (pi.applicationInfo.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0);
+                long groesse = 0;
+                try { groesse = new File(pi.applicationInfo.sourceDir).length(); } catch (Exception e) { /* egal */ }
+                if (pi.applicationInfo.splitSourceDirs != null) for (String sp : pi.applicationInfo.splitSourceDirs) groesse += new File(sp).length();
+                o.put("groesse", groesse);
+                o.put("laeuft", pkg.equals(prefs.getString("runningPkg", "")));
+            } catch (Exception e) {
+                Log.w(TAG, "appInfo: " + e);
+            }
+            return o.toString();
+        }
+
+        @JavascriptInterface
+        public String appTun(String was, String key) {
+            String pkg = key.contains("/") ? key.substring(0, key.indexOf('/')) : key;
+            if (pkg.equals(getPackageName())) return "nein";
+            try {
+                if ("beenden".equals(was)) {
+                    ((android.app.ActivityManager) getSystemService(ACTIVITY_SERVICE)).killBackgroundProcesses(pkg);
+                    return "ok";
+                }
+                if ("entfernen".equals(was)) {
+                    Intent i = new Intent(Intent.ACTION_DELETE, Uri.parse("package:" + pkg)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ui.post(() -> { try { startActivity(i); } catch (RuntimeException e) { Log.w(TAG, "entfernen: " + e); } });
+                    return "ok";
+                }
+            } catch (RuntimeException e) {
+                return "nein";
+            }
+            return "nein";
+        }
+
         @JavascriptInterface
         public String mitteilungen() {
             return OriMitteilungen.liste(MainActivity.this);

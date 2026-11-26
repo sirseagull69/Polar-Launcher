@@ -944,7 +944,7 @@
       return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead(esc(a.label), esc(kickOf(a))) + W_BOT
         + '<div class="u-body"><div class="u-bigs">' + t(a.game ? 'Spielen' : 'Öffnen', 'Startet auf dem oberen Bildschirm', 'launch', true)
         + t(a.fav ? 'Favorit entfernen' : 'Als Favorit', a.fav ? 'Steht vorn auf der Startseite' : 'Kommt vorn auf die Startseite', 'fav')
-        + (a.game ? t('Emulator', emu ? esc(emu) : 'Keiner installiert', n ? 'go:3.6' : 'go:!Für ' + esc(g.sysFull || a.sys) + ' ist kein passender Emulator installiert.') : t('App-Info', 'Android-Einstellungen', 'and:app:' + esc(a.key)))
+        + (a.game ? t('Emulator', emu ? esc(emu) : 'Keiner installiert', n ? 'go:3.6' : 'go:!Für ' + esc(g.sysFull || a.sys) + ' ist kein passender Emulator installiert.') : t('App-Info', 'Android-Einstellungen', 'appinfo:' + esc(a.key)))
         + t('Zurück', 'Zur Bibliothek', 'go:back') + '</div></div></div>';
     }
     var facts = a.game
@@ -1059,6 +1059,17 @@
       return setupPage(4, 'Emulatoren', 'Was fehlt, hol ich dir.', 'sammelt', L.map(function (e, i) { var h = have(e[2]); return sysRow(e[1], h ? 'Bereit · Ordner „ROMs“ einmal wählen' : 'Installieren', h ? 'setup:4' : 'emu:' + e[0], i === 0); }).join(''));
     }
     return setupPage(5, 'Fertig!', 'Viel Spaß. Ich bin da, wenn du mich brauchst.', 'triumph', sysRow('Tipp', 'L1/R1 wechselt die Bereiche, B geht zurück', 'setup:6') + sysRow('Tipp', 'Der AYN-Knopf zeigt unten die Leistung', 'setup:6'), 'Zum Start');
+  }
+  /* App-Info in Ori (o.app) statt der Android-Seite */
+  function mxApp() {
+    var k = pref('appInfo', ''), i = {}; try { i = JSON.parse(J.appInfo ? J.appInfo(k) : '{}'); } catch (e) { i = {}; }
+    var d = function (t) { return t ? new Date(t).toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '–'; };
+    var rows = sysRow('Öffnen', '', 'launch:' + esc(k), true)
+      + sysRow('Beenden', i.laeuft ? 'Läuft gerade' : 'Falls sie hängt', 'appdo:beenden')
+      + (i.system ? '' : sysRow('Deinstallieren', 'Android fragt noch einmal nach', 'appdo:entfernen'))
+      + '<div class="o-rowb" style="flex-direction:column;align-items:stretch;min-height:0;padding:12px 14px;gap:6px">'
+      + [['Version', i.version || '–'], ['Größe', mb(i.groesse)], ['Installiert', d(i.installiert)], ['Aktualisiert', d(i.aktualisiert)], ['Paket', i.pkg || '–']].map(function (r) { return '<div style="display:flex;justify-content:space-between;gap:12px"><b style="font-weight:600">' + r[0] + '</b><span>' + esc(r[1]) + '</span></div>'; }).join('') + '</div>';
+    return sysPage(esc(i.name || 'App'), 'APP', i.laeuft ? 'Läuft noch im Hintergrund.' : 'Alles, was man wissen muss.', 'liest', rows);
   }
   window.plMit = function () { if (/Mitteilungen/.test(cur || '')) show(cur); };
   window.plSys = function () { if (/^o\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
@@ -1249,7 +1260,7 @@
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
     if (/^o\.setup[1-5]$/.test(key)) return TOP ? [mxSetup, null] : [mxPanel, mxPanelBind];
-    if (/^o\.(wlan|bt|speicher|emu)$/.test(key)) return TOP ? [{ 'o.wlan': mxWlan, 'o.bt': mxBt, 'o.speicher': mxSpeicher, 'o.emu': mxEmuHol }[key], null] : [mxPanel, mxPanelBind];
+    if (/^o\.(wlan|bt|speicher|emu|app)$/.test(key)) return TOP ? [{ 'o.wlan': mxWlan, 'o.bt': mxBt, 'o.speicher': mxSpeicher, 'o.emu': mxEmuHol, 'o.app': mxApp }[key], null] : [mxPanel, mxPanelBind];
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -1272,6 +1283,8 @@
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') { sysMsg = ''; run(v); }
     else if (k === 'sys') sysAct(v);
+    else if (k === 'appinfo') { J.setPref('appInfo', v); sysMsg = ''; run('o.app'); }
+    else if (k === 'appdo') { var ak = pref('appInfo', ''), ar2 = J.appTun ? J.appTun(v, ak) : 'nein'; snd(ar2 === 'ok' ? 'ok' : 'fehler'); sysMsg = v === 'beenden' ? (ar2 === 'ok' ? 'Beendet.' : 'Ließ sich nicht beenden.') : ''; if (v === 'beenden') show(cur); }
     else if (k === 'setup') { var sn = +v; sysMsg = ''; if (sn >= 6) { J.setPref('setup2', '1'); snd('ok'); J.go('home'); } else { snd('ok'); if (sn === 2) sysDo('wlanSuchen'); J.swap('o.setup' + Math.max(1, sn)); } }
     else if (k === 'emu') emuHol(v);
     else if (k === 'prof') { if (window.plProfil) window.plProfil(v); else J.profil(v); snd('ok'); setKeep = foc ? foc.dataset.id || '' : ''; setTimeout(function () { show(cur); }, 300); }
