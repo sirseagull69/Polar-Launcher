@@ -1323,6 +1323,19 @@
     else if (k === 'sort') { setPref('sort', pref('sort', 'last') === 'last' ? 'name' : 'last'); snd('ok'); J.sync('reload'); }
   }
 
+  /* Jedes Neuzeichnen legt den Hintergrund neu an, seine Bewegung fing dadurch immer wieder von vorn an (sichtbarer Ruck,
+     auf der Leistungsseite alle 2 s). Dauer-Animationen des Hintergrunds laufen deshalb nach einer gemeinsamen Uhr weiter. */
+  function takt() {
+    if (!document.getAnimations) return;
+    try {
+      document.getAnimations().forEach(function (a) {
+        if (!a.animationName || !/^(welle2?|mx-d[123]|mx-pan|pl-drift|wippen)$/.test(a.animationName) || !a.effect) return;
+        var t = a.effect.getComputedTiming(), d = Number(t.duration);
+        if (t.iterations === Infinity && d > 0) a.currentTime = performance.now() % (d * 2);
+      });
+    } catch (e) { /* dann eben von vorn */ }
+  }
+
   /* ---------- Anzeigen ---------- */
   function show(key) {
     /* "dc:@3.1:UntenRgb": unten wechselt, oben bleibt die Ansicht 3.1 stehen, wie sie ist */
@@ -1362,7 +1375,7 @@
     }
     qa('[aria-label="Farbstreifen"] > div', root).forEach(function (d) { d.style.background = 'var(--acc)'; });
     var oldNote = document.getElementById('pl-note'); if (oldNote) oldNote.style.display = 'none';
-    wall(); collect(); applyStates(); fit();
+    wall(); collect(); applyStates(); fit(); takt();
     if (!TOP) { bindTouch(); return; }
     items.forEach(function (el) { el.addEventListener('click', function () { setFocus(el, true); act(el); }); });
     if (n.enter) snd(n.enter);
