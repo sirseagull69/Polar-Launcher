@@ -49,7 +49,7 @@ var notes = { Sparsam: 'Hält am längsten.', Ausgewogen: 'Passt für fast alles
 var P = window.plPerf ? window.plPerf() : { now: {}, hist: { cpu: [], temp: [], watt: [] } }, n = P.now || {}, h = P.hist;
 function bars(arr, max) { var out = []; for (var i = 0; i < 14; i++) { var v = arr[arr.length - 14 + i]; out.push(v == null || v < 0 ? '4px' : Math.max(4, Math.round(52 * Math.min(1, v / max))) + 'px'); } return out; }
 function de(x, d) { return x.toFixed(d).replace('.', ','); }
-var temp = n.temp > 0 ? Math.round(n.temp) + ' °C' : '–', watt = n.watt > 0.05 ? de(n.watt, 1) + ' W' : '–', cpu = n.cpu >= 0 ? n.cpu + ' %' : '–';
+var temp = n.temp > 0 ? Math.round(n.temp) + ' °C' : '–', watt = n.watt > 0.05 ? de(n.watt, 1) + ' W' : n.laedt ? 'Lädt' : '–', cpu = n.cpu >= 0 ? n.cpu + ' %' : '–';
 var akku = n.laedt ? 'Lädt · ' + n.akku + ' %' : n.minuten ? (n.minuten >= 60 ? Math.floor(n.minuten / 60) + ' h ' + (n.minuten % 60) + ' min' : n.minuten + ' min') : (n.akku != null ? n.akku + ' %' : '–');
 return { note: notes[s.profil || 'Ausgewogen'], profiles: seg('profil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), fans: seg('fan', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'),
 cpuTakt: n.cpuGhz > 0 ? de(n.cpuGhz, 1) : '–', cpuEinheit: n.cpuGhz > 0 ? 'GHz · ' + cpu : cpu, cpuDeg: Math.round(Math.max(0, n.cpu || 0) * 3.6) + 'deg',

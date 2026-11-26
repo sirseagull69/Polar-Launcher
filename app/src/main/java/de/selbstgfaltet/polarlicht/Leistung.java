@@ -22,12 +22,14 @@ final class Leistung {
     static JSONObject lesen(Context c, String running) throws Exception {
         JSONObject o = new JSONObject();
         o.put("temp", temperatur());
-        o.put("gpu", zahl("/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage"));
+        o.put("gpu", gpuProzent());
         o.put("cpu", cpuProzent());
         o.put("cpuGhz", cpuGhz());
         int gclk = zahl("/sys/class/kgsl/kgsl-3d0/gpuclk");
         if (gclk <= 0) gclk = zahl("/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq");
-        o.put("gpuMhz", gclk > 0 ? Math.round(gclk / 1e6) : -1);
+        if (gclk <= 0) gclk = devfreqKgsl();
+        int mhz = zahl("/sys/class/kgsl/kgsl-3d0/clock_mhz");
+        o.put("gpuMhz", gclk > 0 ? Math.round(gclk / 1e6) : mhz > 0 ? mhz : -1);
         BatteryManager bm = (BatteryManager) c.getSystemService(Context.BATTERY_SERVICE);
         Intent b = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int volt = b == null ? 0 : b.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0); // mV
@@ -96,6 +98,34 @@ final class Leistung {
             n++;
         }
         return n == 0 ? -1 : (int) Math.round(sum / n * 100);
+    }
+
+    private static int gpuProzent() {
+        int p = zahl("/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage");
+        if (p >= 0) return p;
+        String t = text("/sys/class/kgsl/kgsl-3d0/gpubusy"); // "busy total"
+        if (t != null) {
+            try {
+                String[] a = t.trim().split("\\s+");
+                long busy = Long.parseLong(a[0]), total = Long.parseLong(a[1]);
+                if (total > 0) return (int) Math.round(busy * 100.0 / total);
+            } catch (Exception e) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    private static int devfreqKgsl() {
+        File[] d = new File("/sys/class/devfreq").listFiles();
+        if (d == null) return -1;
+        for (File f : d) {
+            if (f.getName().contains("kgsl") || f.getName().contains("gpu")) {
+                int v = zahl(f.getPath() + "/cur_freq");
+                if (v > 0) return v;
+            }
+        }
+        return -1;
     }
 
     /** Höchster aktueller Takt aller Kerne, in GHz. */

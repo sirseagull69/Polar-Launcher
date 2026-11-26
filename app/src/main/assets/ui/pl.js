@@ -510,7 +510,8 @@
     }
     return PERF;
   };
-  setInterval(function () { if (!TOP && root && /UntenLeistung/.test(cur || '') && !document.hidden) { try { show(cur); } catch (e) { /* weiter */ } } }, 2000);
+  var lastTouch = 0; document.addEventListener('pointerdown', function () { lastTouch = Date.now(); }, true);
+  setInterval(function () { if (!TOP && root && /UntenLeistung/.test(cur || '') && !document.hidden && Date.now() - lastTouch > 2500) { try { show(cur); } catch (e) { /* weiter */ } } }, 2000);
   /* Update-Bildschirm im Ori-Look: dieselben Schritte 6.x, nur neu gezeichnet */
   window.plUpd = function () {
     var u = st.upd || {}, v = st.version || '', r = u.remote ? 'Build ' + u.remote : 'Neue Version';
@@ -1028,6 +1029,7 @@
   }
   function mixFor(key) {
     if (TOP && /^6\.[1-7]$/.test(key) && dcLoad('Update')) return dcView('Update');
+    if (!TOP && /^6\.[1-7]$/.test(key)) return [mxPanel, mxPanelBind];
     if (key === 'acc') return [mxAcc, mxAccBind];
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
