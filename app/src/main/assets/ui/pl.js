@@ -15,6 +15,7 @@
   function qa(s, el) { return Array.prototype.slice.call((el || stage).querySelectorAll(s)); }
   function later(ms, fn) { timers.push(setTimeout(fn, ms)); }
   function pref(k, d) { var v = J.pref(k); return v === null || v === undefined || v === '' ? d : v; }
+  window.plPref = pref;
   function fit() {
     var s = Math.min(window.innerWidth / W, window.innerHeight / H);
     stage.style.width = W + 'px'; stage.style.height = H + 'px';
@@ -269,7 +270,7 @@
     return l;
   }
   function select(a) { sel = a; if (a) J.setPref('sel', a.key); }
-  function launch(a) { if (!a) return; snd('start'); select(a); setTimeout(function () { J.launch(a.key); }, 380); }
+  function launch(a) { if (!a) return; if (a.game && TOP) { var gi0 = ginfo(a); if (gi0.sys && !(gi0.emus || []).length) { emuHol(gi0.sys); return; } } snd('start'); select(a); setTimeout(function () { J.launch(a.key); }, 380); }
   function fav(a) { if (!a) return; J.fav(a.key); snd(a.fav ? 'aus' : 'an'); J.sync('reload'); }
   function img(a, kind) { return 'https://polarlicht.local/' + kind + '?k=' + encodeURIComponent(a.key); }
 
@@ -599,8 +600,22 @@
   function wach() { lastInput = Date.now(); document.documentElement.classList.remove('ruhig'); }
   ['pointerdown', 'keydown', 'wheel'].forEach(function (ev) { document.addEventListener(ev, wach, true); });
   setInterval(function () { if (Date.now() - lastInput > 20000) document.documentElement.classList.add('ruhig'); }, 5000);
+  /* Foto- und Clip-Ansicht in Ori, statt die Android-Galerie zu öffnen */
+  var medOffen = null;
+  function medZeig(k) {
+    if (!TOP) return;
+    var all = []; try { all = JSON.parse(J.medien ? J.medien() : '[]'); } catch (e) { all = []; }
+    var x = all.filter(function (m) { return String(m.k) === String(k); })[0]; if (!x) return;
+    medZu(); snd('ok');
+    var d = document.createElement('div'); d.className = 'o-medview';
+    d.innerHTML = (x.clip ? '<video src="https://polarlicht.local/fotogross?k=' + x.k + '" autoplay controls style="max-width:100%;max-height:100%"></video>' : '<img src="https://polarlicht.local/fotogross?k=' + x.k + '" alt="">')
+      + '<span class="o-medhint">' + esc(x.name) + ' · B Schließen</span>';
+    d.addEventListener('click', medZu); document.body.appendChild(d); medOffen = d;
+  }
+  function medZu() { if (medOffen) { medOffen.remove(); medOffen = null; return true; } return false; }
   window.plKey = function (k) {
     wach();
+    if (medOffen) { if (k === 'B' || k === 'A') { medZu(); snd('back'); } return; }
     if ((!TOP && !botFocus) || !root) return;
     if (Date.now() < quietUntil) return;
     if (k === 'INDEX') { toggleIndex(); return; }
@@ -981,6 +996,27 @@
     rows += sysRow('Spiele-Ordner neu durchsuchen', st.scanning ? 'Sucht …' : '', 'rescan', true) + sysRow('Apps verwalten', '', 'go:3.7');
     return sysPage('Speicher', 'PLATZ', f / (g || 1) < 0.1 ? 'Wird eng. Ehrlich.' : 'Platz ist da. Noch.', f / (g || 1) < 0.1 ? 'ratlos' : 'sortiert', rows);
   }
+  var EMUS = {
+    nds: ['Nintendo DS', 'WatermelonDS', 'https://github.com/SapphireRhodonite/WatermelonDS', 'Nutzt beide Bildschirme wie ein echter DS.'],
+    n3ds: ['Nintendo 3DS', 'Azahar (Dual-Screen)', 'https://github.com/SapphireRhodonite/azahar', 'Oberer und unterer Bildschirm wie beim 3DS.'],
+    switch: ['Nintendo Switch', 'Eden', '', 'Für Eden gibt es gerade keinen sicheren Link, den Ori kennt. Hol ihn über den Browser von der offiziellen Seite.'],
+    wiiu: ['Wii U', 'Cemu', 'https://github.com/SSimco/Cemu', 'Das Gamepad-Bild kommt nach unten.'],
+    gc: ['GameCube und Wii', 'Dolphin', 'https://dolphin-emu.org/download/', 'Dolphin gibt es auf der eigenen Seite, Ori öffnet sie.'],
+    pc: ['PC-Spiele', 'GameNative', 'https://github.com/utkarshdalal/GameNative', 'Steam-Spiele direkt auf dem Thor.'],
+    ps5: ['PS5', 'chiaki-ng', 'https://github.com/streetpea/chiaki-ng', 'Streamt deine PS5 aus dem Heimnetz aufs Thor.']
+  };
+  function mxEmuHol() {
+    var id = pref('emuHol', 'n3ds'), e = EMUS[id] || EMUS.n3ds, obt = (apps || []).some(function (a) { return String(a.key).indexOf('dev.imranr.obtainium/') === 0; });
+    var gh = e[2].indexOf('https://github.com/') === 0, rows = '';
+    if (gh && obt) rows += sysRow('Über Obtainium installieren', 'Hält ' + e[1] + ' auch aktuell', 'emuhol:obt:' + id, true);
+    if (e[2]) rows += sysRow(gh ? 'Download-Seite öffnen' : 'Seite öffnen', e[2].replace('https://', ''), 'emuhol:web:' + id, !(gh && obt));
+    if (gh && !obt) rows += '<div class="o-sysmsg">Tipp: Mit Obtainium bleibt ' + e[1] + ' von selbst aktuell.</div>';
+    rows += '<div class="o-rowb" style="flex-direction:column;align-items:flex-start;padding:12px 14px;min-height:0;gap:4px"><b>Danach einmal einrichten</b><span>' + e[1] + ' fragt beim ersten Start nach einem Ordner. Wähl die microSD-Karte und dann den Ordner „ROMs“. Danach startet Ori deine Spiele direkt.</span></div>';
+    rows += sysRow('Zurück', '', 'go:back');
+    return sysPage(e[1], e[0].toUpperCase(), 'Fehlt nur noch der Emulator.', 'sammelt', '<div class="o-rowb" style="min-height:0;padding:12px 14px"><span style="color:#1b2340;font-size:15px">' + esc(e[3]) + '</span></div>' + rows);
+  }
+  function emuHol(id) { id = { wii: 'gc', windows: 'pc', steam: 'pc', '3ds': 'n3ds' }[id] || id; J.setPref('emuHol', id); run('7.4'); }
+  window.plEmuFehlt = function (id) { if (TOP) emuHol(id); };
   window.plSys = function () { if (/^7\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
   function sysAct(v) {
     var p = v.split(':'), c = p[0];
@@ -1086,6 +1122,10 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name.indexOf('emu:auf:') === 0) { snd('start'); J.launch(name.slice(8)); return; }
+    if (name.indexOf('emu:hol:') === 0) { emuHol(name.slice(8)); return; }
+    if (name.indexOf('swap:') === 0) { snd('ok'); J.swap(name.slice(5)); return; }
+    if (name.indexOf('med:') === 0) { var mv = name.slice(4); if (mv === 'fotos' || mv === 'clips') { J.setPref('medien', mv); snd('ok'); show(cur); } else if (mv.indexOf('zeig:') === 0) medZeig(mv.slice(5)); return; }
     if (name === 'lock:open') { if (TOP) unlock(); else J.lockOpen && J.lockOpen(); return; }
     if (name === 'lock:play') { var lg = lockGame; if (TOP) unlock(); else J.lockOpen && J.lockOpen(); if (lg) setTimeout(function () { J.launch(lg.key); }, 700); return; }
     if (name.indexOf('upd:') === 0) { snd('ok'); window.plUpdAct(name.slice(4)); return; }
@@ -1160,7 +1200,7 @@
     if (key === 'acc') return [mxAcc, mxAccBind];
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
-    if (/^7\.[123]$/.test(key)) return TOP ? [{ '7.1': mxWlan, '7.2': mxBt, '7.3': mxSpeicher }[key], null] : [mxPanel, mxPanelBind];
+    if (/^7\.[1234]$/.test(key)) return TOP ? [{ '7.1': mxWlan, '7.2': mxBt, '7.3': mxSpeicher, '7.4': mxEmuHol }[key], null] : [mxPanel, mxPanelBind];
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -1183,6 +1223,7 @@
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
     else if (k === 'sys') sysAct(v);
+    else if (k === 'emuhol') { var ep = v.split(':'), ee = EMUS[ep[1]]; if (ee) { var r = J.oeffne ? J.oeffne(ep[0] === 'obt' ? 'obtainium://add/' + ee[2] : ee[2]) : 'nein'; snd(r === 'ok' ? 'ok' : 'fehler'); if (r !== 'ok') note('Ließ sich nicht öffnen.'); } }
     else if (k === 'acc') { snd('ok'); setAcc(v); if (/^5\./.test(cur)) { var an = ''; qa('.o-sws button', root).forEach(function (bn) { if (bn.dataset.act === 'acc:' + v) an = bn.dataset.id; }); setKeep = an; show(cur); } }
     else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }
     else if (k === 'rescan') { snd('ok'); J.rescan(); note('Suche läuft …'); }

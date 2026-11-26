@@ -7,29 +7,40 @@
 <span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 21px; color: #9a3a0c">Beweisfotos. Für später.</span>
 </div>
 <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0">
-<button type="button" aria-pressed="true" style="height: 40px; padding: 0 15px; border: 0; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(20,27,49,0.1); background: #141b31; color: #ffffff">Bildschirmfotos</button>
-<button type="button" aria-pressed="false" style="height: 40px; padding: 0 15px; border: 0; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(20,27,49,0.1); background: #fffdf8; color: #1b2340">Clips</button>
-<button type="button" aria-pressed="false" style="height: 40px; padding: 0 15px; border: 0; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(20,27,49,0.1); background: #fffdf8; color: #1b2340">Nach Spiel</button>
+<a href="med:fotos" style="height: 40px; padding: 0 15px; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; box-shadow: 0 2px 6px rgba(20,27,49,0.1); background: {{bgFotos}}; color: {{fgFotos}}; display: flex; align-items: center; text-decoration: none">Bildschirmfotos · {{nFotos}}</a>
+<a href="med:clips" style="height: 40px; padding: 0 15px; border-radius: 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; box-shadow: 0 2px 6px rgba(20,27,49,0.1); background: {{bgClips}}; color: {{fgClips}}; display: flex; align-items: center; text-decoration: none">Clips · {{nClips}}</a>
 <span style="flex: 1"></span>
-<span style="font-size: 12.5px; color: #4d556e">8 Bildschirmfotos · liegen auf der microSD-Karte</span>
+<span style="font-size: 12.5px; color: #4d556e">{{info}}</span>
 </div>
-<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+<sc-if value="{{leer}}"><div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; padding-bottom: 40px"><img src="ori/liest-abendrot.svg" alt="" aria-hidden="true" width="110" height="110"><b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">{{leerTitel}}</b><span style="font-size: 14px; color: #4d556e; max-width: 460px">{{leerText}}</span></div></sc-if>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; overflow: hidden">
 <sc-for list="{{shots}}" as="g" hint-placeholder-count="8">
-<a href="Medien.dc.html" style="background: #fffdf8; border-radius: 14px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); box-shadow: {{g.shadow}}; padding: 7px; display: flex; flex-direction: column; gap: 5px">
-<span style="height: 108px; border-radius: 9px; background: {{g.tint}}; display: block; overflow: hidden"><svg aria-hidden="true" width="100%" height="100%" viewBox="0 0 200 110" preserveAspectRatio="none"><polygon points="0,110 0,66 52,36 100,72 100,110" fill="{{g.main}}"/><polygon points="100,110 100,72 148,26 200,62 200,110" fill="{{g.mid}}"/><polygon points="52,36 100,72 74,78" fill="{{g.dark}}"/><polygon points="148,26 200,62 166,68" fill="{{g.dark}}"/></svg></span>
-<span style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 2px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px">{{g.game}}</span><span style="font-size: 11.5px; color: #4d556e">{{g.when}}</span></span>
+<a href="med:zeig:{{g.k}}" style="background: #fffdf8; border-radius: 14px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); padding: 7px; display: flex; flex-direction: column; gap: 5px; text-decoration: none; color: #1b2340">
+<span style="height: 108px; border-radius: 9px; background: #eadfce center / cover no-repeat; background-image: url('https://polarlicht.local/foto?k={{g.k}}'); display: block; position: relative"><sc-if value="{{g.clip}}"><span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center"><span style="width: 36px; height: 36px; border-radius: 50%; background: rgba(20,27,49,0.6); display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1 L13 7 L3 13 Z" fill="#fff"/></svg></span></span></sc-if></span>
+<span style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 2px; gap: 6px"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{g.titel}}</span><span style="font-size: 11.5px; color: #4d556e; white-space: nowrap">{{g.when}}</span></span>
 </a>
 </sc-for>
 </div>
 </main>
-<dc-import name="Dock" active="medien" hinweis="A Ansehen · X Teilen · Y Löschen · L/R Reiter" hint-size="960px,64px"></dc-import>
+<dc-import name="Dock" active="medien" hinweis="A Ansehen · B Zurück" hint-size="960px,64px"></dc-import>
 </div>
 <!--dc-script-->
 class Component extends DCLogic {
 renderVals() {
-var P = ['#fbdbe9', '#b8327a', '#e2609a', '#8f1f55'], R = ['#f8dcd6', '#b23a28', '#d1604e', '#7c2418'], G = ['#d9efe0', '#2f7a4d', '#4c9c6c', '#1f5a37'];
-var s = [['Neonhausen', 'gestern', P], ['Neonhausen', 'gestern', P], ['Arena Clash', 'Montag', R], ['Letzter Versuch', 'Sonntag', G], ['Arena Clash', 'Sonntag', R], ['Neonhausen', 'letzte Woche', P], ['Letzter Versuch', 'letzte Woche', G], ['Arena Clash', 'letzte Woche', R]];
-return { shots: s.map(function (x, n) { return { game: x[0], when: x[1], tint: x[2][0], main: x[2][1], mid: x[2][2], dark: x[2][3], shadow: n === 0 ? '0 0 0 3px #c2410c, 0 8px 16px rgba(194,65,12,0.22)' : '0 2px 8px rgba(20,27,49,0.1)' }; }) };
+var all = []; try { all = JSON.parse(window.PL && PL.medien ? PL.medien() : '[]'); } catch (e) { all = []; }
+var reiter = (window.plPref ? window.plPref('medien', 'fotos') : 'fotos') === 'clips' ? 'clips' : 'fotos';
+var fotos = all.filter(function (x) { return !x.clip; }), clips = all.filter(function (x) { return x.clip; });
+var list = reiter === 'clips' ? clips : fotos;
+var heute = new Date(); heute.setHours(0, 0, 0, 0);
+function wann(t) { var d = new Date(t), dd = new Date(t); dd.setHours(0, 0, 0, 0); var tage = Math.round((heute - dd) / 864e5); return tage <= 0 ? d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : tage === 1 ? 'gestern' : tage < 7 ? d.toLocaleDateString('de-DE', { weekday: 'long' }) : d.toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }); }
+function titel(n) { var b = n.replace(/\.[a-z0-9]+$/i, '').replace(/^(Screenshot|Screen_Recording|screenrecord|IMG|VID)[_ -]?/i, '').replace(/[_-]/g, ' ').replace(/\b\d{8}\b|\b\d{6,}\b/g, '').replace(/\s+/g, ' ').trim(); return b || (n.toLowerCase().indexOf('.mp4') > 0 ? 'Clip' : 'Bildschirmfoto'); }
+var on = '#141b31', off = '#fffdf8';
+return { bgFotos: reiter === 'fotos' ? on : off, fgFotos: reiter === 'fotos' ? '#ffffff' : '#1b2340', bgClips: reiter === 'clips' ? on : off, fgClips: reiter === 'clips' ? '#ffffff' : '#1b2340',
+nFotos: fotos.length, nClips: clips.length,
+info: list.length ? (list.some(function (x) { return x.sd; }) ? 'intern und auf der microSD-Karte' : 'im internen Speicher') : '',
+leer: list.length ? '' : '1', leerTitel: reiter === 'clips' ? 'Noch keine Clips' : 'Noch keine Bildschirmfotos',
+leerText: reiter === 'clips' ? 'Bildschirmaufnahmen landen hier, sobald du welche machst.' : 'Bildschirmfotos aus deinen Spielen landen hier, sobald du welche machst.',
+shots: list.slice(0, 8).map(function (x) { return { k: x.k, clip: x.clip ? '1' : '', titel: titel(x.name), when: wann(x.zeit) }; }) };
 }
 }
 <!--dc-props-->

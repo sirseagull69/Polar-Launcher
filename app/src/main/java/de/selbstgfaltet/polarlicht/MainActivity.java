@@ -398,9 +398,68 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         return web;
     }
 
+
+    private List<File> medienCache = null;
+    private long medienCacheAt = 0;
+
+    /** Bildschirmfotos und Clips: Screenshot-Ordner intern und auf der microSD-Karte, neueste zuerst. */
+    private synchronized List<File> medienDateien() {
+        if (medienCache != null && System.currentTimeMillis() - medienCacheAt < 10000) return medienCache;
+        List<File> roots = new ArrayList<>();
+        roots.add(Environment.getExternalStorageDirectory());
+        File[] ext = getExternalFilesDirs(null);
+        if (ext != null) for (File e : ext) {
+            if (e == null) continue;
+            String p = e.getPath();
+            int a = p.indexOf("/Android/");
+            if (a > 0) {
+                File r = new File(p.substring(0, a));
+                if (!roots.contains(r)) roots.add(r);
+            }
+        }
+        List<File> out = new ArrayList<>();
+        String[] dirs = {"Pictures/Screenshots", "DCIM/Screenshots", "Pictures", "DCIM/Camera", "Movies", "DCIM/ScreenRecorder", "Movies/Screenrecords", "Pictures/Ori"};
+        Set<String> seen = new HashSet<>();
+        for (File r : roots) for (String d : dirs) {
+            File[] fs = new File(r, d).listFiles();
+            if (fs == null) continue;
+            for (File f : fs) {
+                String n = f.getName().toLowerCase(Locale.ROOT);
+                if (!f.isFile() || n.startsWith(".")) continue;
+                if (!(n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".webp") || n.endsWith(".mp4"))) continue;
+                if (seen.add(f.getAbsolutePath())) out.add(f);
+            }
+        }
+        out.sort((a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+        if (out.size() > 200) out = new ArrayList<>(out.subList(0, 200));
+        medienCache = out;
+        medienCacheAt = System.currentTimeMillis();
+        return out;
+    }
+
     /** App-Symbol oder Hintergrundbild für die Oberfläche. */
     private WebResourceResponse picture(String path, String key) {
         try {
+            if ("/foto".equals(path) || "/fotogross".equals(path)) {
+                List<File> f = medienDateien();
+                int i = Integer.parseInt(key);
+                if (i < 0 || i >= f.size()) return null;
+                File x = f.get(i);
+                Bitmap b;
+                if (x.getName().toLowerCase(Locale.ROOT).endsWith(".mp4") && "/fotogross".equals(path)) {
+                    return new WebResourceResponse("video/mp4", null, new FileInputStream(x));
+                } else if (x.getName().toLowerCase(Locale.ROOT).endsWith(".mp4")) {
+                    b = android.media.ThumbnailUtils.createVideoThumbnail(x, new android.util.Size(480, 270), null);
+                } else if ("/foto".equals(path)) {
+                    b = decodeSmall(x.getPath());
+                } else {
+                    return new WebResourceResponse(x.getName().toLowerCase(Locale.ROOT).endsWith(".png") ? "image/png" : "image/jpeg", null, new FileInputStream(x));
+                }
+                if (b == null) return null;
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                b.compress(Bitmap.CompressFormat.JPEG, 85, out);
+                return new WebResourceResponse("image/jpeg", null, new ByteArrayInputStream(out.toByteArray()));
+            }
             Roms.Game g = game(key);
             if (g != null) {
                 String p = "/image".equals(path) ? (g.art != null ? g.art : g.cover) : (g.cover != null ? g.cover : g.art);
@@ -918,6 +977,40 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             return Leistung.profil(MainActivity.this, name, null);
         }
 
+        /** Nur obtainium://-Links und Webseiten öffnen, damit Ori Emulatoren über Obtainium holen kann. */
+        @JavascriptInterface
+        public String oeffne(String url) {
+            if (url == null || !(url.startsWith("obtainium://") || url.startsWith("https://"))) return "nein";
+            final Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (i.resolveActivity(getPackageManager()) == null) return "nein";
+            ui.post(() -> {
+                hidePanel();
+                try { startActivity(i); } catch (RuntimeException e) { Log.w(TAG, "oeffne: " + e); }
+            });
+            return "ok";
+        }
+
+        @JavascriptInterface
+        public String medien() {
+            JSONArray a = new JSONArray();
+            try {
+                List<File> f = medienDateien();
+                for (int i = 0; i < f.size(); i++) {
+                    File x = f.get(i);
+                    JSONObject o = new JSONObject();
+                    o.put("k", i);
+                    o.put("name", x.getName());
+                    o.put("zeit", x.lastModified());
+                    o.put("clip", x.getName().toLowerCase(Locale.ROOT).endsWith(".mp4"));
+                    o.put("sd", !x.getPath().startsWith("/storage/emulated"));
+                    a.put(o);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "medien: " + e);
+            }
+            return a.toString();
+        }
+
         @JavascriptInterface
         public String sysGet(String what) {
             if (sys == null) return "{}";
@@ -1231,7 +1324,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     private void launchGame(Roms.Game g) {
         List<Roms.Launch> options = emulators(g);
         if (options.isEmpty()) {
-            Toast.makeText(this, "Für " + g.sysFull + " ist kein passender Emulator installiert.", Toast.LENGTH_LONG).show();
+            if (top != null && topReady && g.sys.matches("[a-z0-9]{1,16}")) {
+                top.evaluateJavascript("window.plEmuFehlt&&plEmuFehlt('" + g.sys + "')", null);
+            } else {
+                Toast.makeText(this, "Für " + g.sysFull + " ist kein passender Emulator installiert.", Toast.LENGTH_LONG).show();
+            }
             return;
         }
         String wanted = prefs.getString("ui:emu:" + g.sys, "");

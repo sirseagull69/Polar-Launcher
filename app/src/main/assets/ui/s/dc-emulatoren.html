@@ -6,35 +6,43 @@
 <div style="display: flex; align-items: baseline; gap: 12px"><h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 30px; line-height: 1.1; letter-spacing: -0.02em">Emulatoren</h1><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #9a3a0c">SYSTEME &amp; KERNE</span></div>
 <span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 21px; color: #9a3a0c">Alte Spiele, neues Papier.</span>
 </div>
-<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
-<sc-for list="{{systems}}" as="s" hint-placeholder-count="6">
-<a href="EinstEmulatoren.dc.html" style="background: #fffdf8; border-radius: 14px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 150px; box-sizing: border-box">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{systems}}" as="s" hint-placeholder-count="8">
+<a href="{{s.href}}" style="background: #fffdf8; border-radius: 14px; box-shadow: 0 2px 8px rgba(20,27,49,0.1); padding: 12px; display: flex; flex-direction: column; gap: 6px; min-height: 140px; box-sizing: border-box; text-decoration: none; color: #1b2340">
 <span style="display: flex; align-items: center; justify-content: space-between">
 <span style="width: 48px; height: 48px; border-radius: 13px; background: {{s.tint}}; color: {{s.dark}}; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{s.d}}"/></svg></span>
 <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 11.5px; padding: 6px 10px; border-radius: 10px; background: {{s.chipBg}}; color: {{s.chipFg}}">{{s.status}}</span>
 </span>
-<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; line-height: 1.1">{{s.name}}</span>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px; line-height: 1.1">{{s.name}}</span>
 <span style="display: flex; flex-direction: column"><span style="font-size: 13px; color: #1b2340">{{s.emu}}</span><span style="font-size: 12px; color: #4d556e">{{s.note}}</span></span>
 </a>
 </sc-for>
 </div>
 </main>
-<dc-import name="Dock" active="emulatoren" hinweis="A Öffnen · X Einstellen · Y Ordner neu durchsuchen" hint-size="960px,64px"></dc-import>
+<dc-import name="Dock" active="emulatoren" hinweis="A Öffnen oder installieren · B Zurück" hint-size="960px,64px"></dc-import>
 </div>
 <!--dc-script-->
 class Component extends DCLogic {
 renderVals() {
-var ok = ['#d9efe0', '#1f5a37'], todo = ['#ffe1cc', '#8a3408'];
-var pad = 'M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.5 1.7L15 14H9l-1.5 1.7A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4zM7 11.5v2M6 12.5h2M16.5 12.5h.01', two = 'M5 3h14v8H5zM5 13h14v8H5z', pc = 'M3 4h18v12H3zM8 20h8M12 16v4', cast = 'M3 17a4 4 0 0 1 4 4M3 13a8 8 0 0 1 8 8M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-5', droid = 'M6 10h12v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zM7 7a5 5 0 0 1 10 0zM8 3l1.5 2M16 3l-1.5 2', plus = 'M12 5v14M5 12h14';
-function sys(name, emu, note, status, c, tint, dark, d) { return { name: name, emu: emu, note: note, status: status, chipBg: c[0], chipFg: c[1], tint: tint, dark: dark, d: d }; }
-return { systems: [
-sys('DS', 'WatermelonDS', 'Zweiter Bildschirm: unten', 'Eingerichtet', ok, '#dbe5f8', '#1c2f66', two),
-sys('Switch', '[EMULATOR]', 'Noch kein Emulator gewählt', 'Einrichten', todo, '#f8dcd6', '#7c2418', pad),
-sys('PC', 'GameNative', 'Hochrechnen: 2×', 'Eingerichtet', ok, '#d8eef0', '#14525b', pc),
-sys('PS5', 'Streamen im Heimnetz', 'Konsole muss an sein', 'Eingerichtet', ok, '#e6e8ef', '#1b2340', cast),
-sys('Android', 'Läuft direkt', 'Eigene Spiele und Apps', 'Immer bereit', ok, '#d9efe0', '#1f5a37', droid),
-sys('System hinzufügen', 'Weiteren Emulator einbinden', 'APK wählen, Ordner zuweisen', 'Neu', todo, '#e4dcfb', '#4a35a0', plus)
-] };
+var ok = ['#d9efe0', '#1f5a37'], todo = ['#ffe1cc', '#8a3408'], aus = ['#ece6dc', '#4d556e'];
+var pad = 'M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.5 1.7L15 14H9l-1.5 1.7A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4zM7 11.5v2M6 12.5h2M16.5 12.5h.01', two = 'M5 3h14v8H5zM5 13h14v8H5z', pc = 'M3 4h18v12H3zM8 20h8M12 16v4', cast = 'M3 17a4 4 0 0 1 4 4M3 13a8 8 0 0 1 8 8M3 9V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-5', disc = 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z', tv = 'M3 6h18v11H3zM8 21h8';
+var apps = []; try { apps = JSON.parse(window.PL && PL.apps ? PL.apps() : '[]'); } catch (e) { apps = []; }
+function has(pk) { for (var i = 0; i < apps.length; i++) { var a = apps[i], p = String(a.key || '').split('/')[0]; for (var j = 0; j < pk.length; j++) if (p === pk[j]) return a; } return null; }
+function sys(id, name, pk, emuName, note, tint, dark, d) {
+  var a = has(pk);
+  return { name: name, emu: a ? a.label : emuName, note: a ? note : 'Kein Emulator installiert', status: a ? 'Bereit' : 'Installieren', chipBg: (a ? ok : todo)[0], chipFg: (a ? ok : todo)[1], tint: tint, dark: dark, d: d, href: a ? 'emu:auf:' + a.key : 'emu:hol:' + id };
+}
+var list = [
+sys('nds', 'DS', ['me.magnum.melondualds', 'me.magnum.melonds', 'com.dsemu.drastic'], 'WatermelonDS', 'Beide Bildschirme', '#dbe5f8', '#1c2f66', two),
+sys('n3ds', '3DS', ['org.azahar_emu.azahar', 'io.github.lime3ds.android', 'org.citra.citra_emu', 'org.citra.emu'], 'Azahar', 'Beide Bildschirme', '#e8def8', '#4a35a0', two),
+sys('switch', 'Switch', ['dev.eden.eden_emulator', 'org.citron.citron_emu', 'io.github.borked3ds.android'], 'Eden', 'Läuft oben', '#f8dcd6', '#7c2418', pad),
+sys('wiiu', 'Wii U', ['info.cemu.cemu'], 'Cemu', 'Gamepad unten', '#d8eef0', '#14525b', tv),
+sys('gc', 'GameCube / Wii', ['org.dolphinemu.dolphinemu'], 'Dolphin', 'Läuft oben', '#e6e8ef', '#1b2340', disc),
+sys('pc', 'PC', ['app.gamenative'], 'GameNative', 'Steam-Spiele', '#d8eef0', '#14525b', pc)];
+var ps = has(['com.metallic.chiaki', 'org.streetpea.chiakingx', 'com.playstation.remoteplay']);
+list.push({ name: 'PS5', emu: ps ? ps.label : 'Streamen im Heimnetz', note: ps ? 'Konsole muss an sein' : 'Noch nicht eingerichtet', status: ps ? 'Bereit' : 'Später', chipBg: (ps ? ok : aus)[0], chipFg: (ps ? ok : aus)[1], tint: '#e6e8ef', dark: '#1b2340', d: cast, href: ps ? 'emu:auf:' + ps.key : 'emu:hol:ps5' });
+list.push({ name: 'Android', emu: 'Läuft direkt', note: 'Eigene Spiele und Apps', status: 'Immer bereit', chipBg: ok[0], chipFg: ok[1], tint: '#d9efe0', dark: '#1f5a37', d: 'M6 10h12v8a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1zM7 7a5 5 0 0 1 10 0z', href: 'swap:3.7' });
+return { systems: list };
 }
 }
 <!--dc-props-->
