@@ -308,6 +308,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @Override
         public void selected(String key) {
             prefs.edit().putString("ui:sel", key).apply();
+            // Unten soll sofort dasselbe Spiel stehen wie oben
+            ui.post(() -> { if (panel != null && panel.web != null) panel.web.evaluateJavascript("window.plSync&&plSync('')", null); });
         }
 
         @Override
@@ -942,7 +944,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @JavascriptInterface
         public String bruecke(String zeile) {
             // Nur bekannte Befehle an orid geben
-            if (zeile == null || !zeile.matches("(fx (fest|atmen|regenbogen|welle|aus) [0-9a-fA-F]{6} [0-9]{1,3}|ort (an|aus)|flug (an|aus)|layout (nintendo|xbox))")) return "nein";
+            if (zeile == null || !zeile.matches("(fx (fest|atmen|regenbogen|welle|aus) [0-9a-fA-F]{6} [0-9]{1,3}|ort (an|aus)|flug (an|aus)|layout (nintendo|xbox)|sb (none|statusbar-expansion))")) return "nein";
             return Leistung.anBruecke(MainActivity.this, zeile + "\n") ? "ok" : "fehler";
         }
 
