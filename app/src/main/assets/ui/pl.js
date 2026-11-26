@@ -969,7 +969,7 @@
   function gbs(n) { n = +n || 0; return n >= 1e9 ? (n / 1e9).toFixed(n >= 1e11 ? 0 : 1).replace('.', ',') + ' GB' : n >= 1e6 ? Math.round(n / 1e6) + ' MB' : n ? '< 1 MB' : '0 MB'; }
   function sysRow(label, right, act, first, extra) { return '<button type="button" class="o-rowb" data-act="' + act + '" data-scroll="1"' + (first ? ' data-first="1"' : '') + '><b>' + label + '</b><span>' + right + '</span></button>' + (extra || ''); }
   function sysPage(titel, kick, spruch, pose, rows, hint) {
-    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + titel + '</h1><span class="o-kick">' + kick + '</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + spruch + '</span>' + ori(pose, 54) + '</span></div>'
+    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + titel + '</h1><span class="o-kick">EINSTELLUNGEN › ' + kick + '</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + spruch + '</span>' + ori(pose, 54) + '</span></div>'
       + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll">' + rows + '</div>';
     return oriTop('einst', hint || 'A Auswählen · B Zurück · L1/R1 Bereich wechseln', inner);
   }
@@ -1257,7 +1257,7 @@
     else if (k === 'emu') { var gi = ginfo(sel); if (gi.sys) J.setPref('emu:' + gi.sys, v); snd('an'); J.sync(''); J.back(); }
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
-    else if (k === 'go') run(v);
+    else if (k === 'go') { sysMsg = ''; run(v); }
     else if (k === 'sys') sysAct(v);
     else if (k === 'setup') { var sn = +v; sysMsg = ''; if (sn >= 6) { J.setPref('setup2', '1'); snd('ok'); J.go('home'); } else { snd('ok'); if (sn === 2) sysDo('wlanSuchen'); J.swap('o.setup' + Math.max(1, sn)); } }
     else if (k === 'emu') emuHol(v);
