@@ -532,6 +532,12 @@
     if (k == null && w === 'a') { k = cur === '6.6' ? 'home' : cur === '6.7' ? '6.1' : null; }
     if (k) run(k);
   };
+  /* Ori-Sperrbildschirm: kommt beim Aufwachen, A oder Tippen entsperrt und geht zurück, wo man war */
+  var lockPrev = null;
+  window.plLock = function () { if (!TOP) return; if (!/^dc:Sperr:/.test(cur)) lockPrev = cur; J.go('dc:Sperr:UntenSperr'); };
+  window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '' }; };
+  function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; J.swap(back); if (J.unlock) J.unlock(); }
+  window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false;
   window.plKey = function (k) {
     if (!TOP || !root) return;
@@ -953,6 +959,7 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name === 'lock:open') { if (TOP) unlock(); else J.lockOpen && J.lockOpen(); return; }
     if (name.indexOf('upd:') === 0) { snd('ok'); window.plUpdAct(name.slice(4)); return; }
     if (name.indexOf('power:') === 0) { snd('ok'); if ((J.power ? J.power(name.slice(6)) : 'nein') !== 'ok') note('Geht erst, wenn Ori das System ist.'); return; }
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };

@@ -97,6 +97,20 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     HomeUi home;
     private View homeTop;
     volatile boolean homeShowing = false;
+    private boolean started = false;
+    private boolean lockOverGame = false;
+    private final android.content.BroadcastReceiver screenOn = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context c, Intent i) {
+            if (!"0".equals(prefs.getString("ui:sw:Ori-Sperrbildschirm", "1"))) {
+                lockOverGame = !started;
+                if (!started) {
+                    startActivity(new Intent(MainActivity.this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+                }
+                ui.postDelayed(() -> both("window.plLock&&plLock()"), 120);
+            }
+        }
+    };
     private int homeTotal = 0;
     private final Roms roms = new Roms();
     private volatile List<Roms.Game> games = new ArrayList<>();
@@ -143,6 +157,16 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             }
         }
         setContentView(root);
+        registerReceiver(screenOn, new IntentFilter(Intent.ACTION_SCREEN_ON));
+        if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED && !prefs.getBoolean("keyguardOff", false)) {
+            try {
+                /* Ohne PIN zeigt Android sonst seinen eigenen Sperrbildschirm vor dem von Ori */
+                Settings.Secure.putInt(getContentResolver(), "lockscreen.disabled", 1);
+                prefs.edit().putBoolean("keyguardOff", true).apply();
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Sperrbildschirm: " + e);
+            }
+        }
         updater.check(false);
         scanGames();
     }
@@ -803,6 +827,19 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public void unlock() {
+            if (lockOverGame) {
+                lockOverGame = false;
+                ui.postDelayed(() -> moveTaskToBack(true), 150); // zurück ins Spiel, das vorher offen war
+            }
+        }
+
+        @JavascriptInterface
+        public void lockOpen() {
+            ui.post(() -> both("window.plLockTap&&plLockTap()"));
+        }
+
+        @JavascriptInterface
         public String perf() {
             try {
                 return Leistung.lesen(MainActivity.this, prefs.getString("running", "")).toString();
@@ -1393,6 +1430,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     protected void onStart() {
         super.onStart();
+        started = true;
         if (prefs != null && System.currentTimeMillis() - prefs.getLong("runningAt", 0L) > 3000) {
             prefs.edit().remove("running").apply(); // zurück in Ori: kein Spiel mehr im Vordergrund
         }
@@ -1411,6 +1449,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     protected void onStop() {
         super.onStop();
+        started = false;
         displayManager.unregisterDisplayListener(this);
         ui.removeCallbacks(holdRepeat);
         stickDir = "";
