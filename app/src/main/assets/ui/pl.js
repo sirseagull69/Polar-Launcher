@@ -375,7 +375,7 @@
 
   /* ---------- Wege zwischen den Ansichten (Notizen im Canvas) ---------- */
   var SETUP = ['1.7', '1.8', '1.9', '1.11', '1.12', '1.13', '1.14', '1.15'];
-  function next() { var i = SETUP.indexOf(cur); snd('ok'); J.go(i >= 0 && i < SETUP.length - 1 ? SETUP[i + 1] : 'home'); }
+  function next() { var i = SETUP.indexOf(cur); snd('ok'); if (i >= SETUP.length - 1) return done(); J.go(i >= 0 ? SETUP[i + 1] : 'home'); }
   function done() { J.setPref('setup', '1'); J.go('home'); }
   function afterBoot() { J.swap(pref('setup', '') === '1' ? 'home' : '1.7'); }
   function swap(k) { return function () { snd('ok'); J.swap(k); }; }
@@ -401,7 +401,7 @@
   var NAV = {
     '1.1': { lock: 1, auto: [350, '1.2'] }, '1.2': { lock: 1, auto: [350, '1.3'] }, '1.3': { lock: 1, auto: [350, '1.4'] }, '1.4': { lock: 1, auto: [350, '1.5'] },
     '1.5': { lock: 1, auto: [350, '1.6'] }, '1.6': { lock: 1, auto: [1400, afterBoot] }, '1.18': { lock: 1, auto: [3700, afterBoot], enter: 'boot' },
-    '1.7': { l: { 'Los geht’s': next }, k: { A: next } }, '1.8': { k: { A: next } }, '1.11': { k: {} },
+    '1.7': { l: { 'Los geht’s': next }, k: { A: next } }, '1.8': { k: { A: next } }, '1.11': { l: { 'Weiter': next }, k: { A: next } },
     '1.9': { l: { 'WLAN-Liste öffnen': '@wifi', 'Anderes Netzwerk': '@wifi', 'Ohne WLAN fortfahren': '1.11' }, k: { X: '@wifi' } },
     '1.10': { l: { 'Verbinden': '1.11' }, k: { START: '1.11' } },
     '1.12': { k: { STARTLONG: next, B: null }, bind: bindController },

@@ -1431,7 +1431,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             }
             return;
         }
-        if (Intent.ACTION_MAIN.equals(intent.getAction()) && !current.startsWith("1.")) {
+        if (Intent.ACTION_MAIN.equals(intent.getAction())) {
+            if (current.startsWith("1.")) {
+                /* Home-Taste während der Einrichtung: Einrichtung überspringen, nie festhängen */
+                prefs.edit().putString("ui:setup", "1").apply();
+            }
             open("home", false);
         }
     }
