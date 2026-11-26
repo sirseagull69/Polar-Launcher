@@ -22,7 +22,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="Polarlicht"
+        android:label="Ori OS"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
 
         <activity

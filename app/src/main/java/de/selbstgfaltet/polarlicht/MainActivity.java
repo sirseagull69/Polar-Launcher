@@ -803,6 +803,15 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public String perf() {
+            try {
+                return Leistung.lesen(MainActivity.this, prefs.getString("running", "")).toString();
+            } catch (Exception e) {
+                return "{}";
+            }
+        }
+
+        @JavascriptInterface
         public void updateCheck() {
             ui.post(() -> updater.check(true));
         }
@@ -1120,7 +1129,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             } else {
                 startActivity(intent);
             }
-            prefs.edit().putLong("last:" + g.key(), System.currentTimeMillis()).apply();
+            prefs.edit().putLong("last:" + g.key(), System.currentTimeMillis()).putString("running", g.label).putLong("runningAt", System.currentTimeMillis()).apply();
         } catch (RuntimeException e) {
             Log.w(TAG, "Start " + pick.component + ": " + e);
             Toast.makeText(this, pick.label + " ließ sich nicht starten.", Toast.LENGTH_LONG).show();
@@ -1384,6 +1393,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     @Override
     protected void onStart() {
         super.onStart();
+        if (prefs != null && System.currentTimeMillis() - prefs.getLong("runningAt", 0L) > 3000) {
+            prefs.edit().remove("running").apply(); // zurück in Ori: kein Spiel mehr im Vordergrund
+        }
         synchronized (apps) {
             apps.reload();
         }

@@ -1,25 +1,28 @@
 <div style="width: 960px; height: 540px; position: relative; display: flex; flex-direction: column; font-family: 'Source Serif 4', serif; color: #1b2340; background: #f8e9dc; overflow: hidden">
-
 <dc-import name="Leiste" hint-size="960px,40px"></dc-import>
-<div style="position: relative; flex: 1; padding: 70px 120px 0; display: flex; gap: 48px">
-<div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
-<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.14em; color: #9a3a0c">SYSTEMUPDATE</span>
-<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 40px; line-height: 1.05; letter-spacing: -0.02em">Ori OS 0.2 wird eingespielt</h1>
-<span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 24px; color: #9a3a0c">Nicht ausschalten. Ich bin gleich wieder da.</span>
-<div role="progressbar" aria-label="Fortschritt" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" style="height: 14px; border-radius: 7px; background: #fffdf8; margin-top: 22px; overflow: hidden; box-shadow: inset 0 0 0 1px #e6dccd"><div style="width: 64%; height: 100%; border-radius: 7px; background: #c2410c"></div></div>
-<span style="display: flex; justify-content: space-between; font-size: 13px; color: #4d556e"><span>64 % · Schritt 2 von 3</span><span>Startet danach von selbst neu</span></span>
+<main style="position: relative; flex: 1; min-height: 0; box-sizing: border-box; padding: 26px 56px 40px; display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #9a3a0c">{{kicker}}</span>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 54px; line-height: 1.05; letter-spacing: -0.02em">{{title}}</h1>
+<span style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 30px; color: #9a3a0c">{{spruch}}</span>
 </div>
-<ol style="list-style: none; margin: 0; padding: 14px 20px; width: 300px; box-sizing: border-box; background: #fffdf8; border-radius: 16px; box-shadow: 0 3px 10px rgba(20,27,49,0.1); display: flex; flex-direction: column; gap: 4px; align-self: flex-start">
-<li style="display: flex; align-items: center; gap: 12px; min-height: 44px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #5fd08a; color: #141b31; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">1</span><span style="display: flex; flex-direction: column"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 14px">Laden</span><span style="font-size: 12px; color: #4d556e">Über WLAN geholt</span></span></li>
-<li style="display: flex; align-items: center; gap: 12px; min-height: 44px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #c2410c; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">2</span><span style="display: flex; flex-direction: column"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 14px">Einspielen</span><span style="font-size: 12px; color: #4d556e">Läuft gerade</span></span></li>
-<li style="display: flex; align-items: center; gap: 12px; min-height: 44px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #e6dccd; color: #4d556e; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0">3</span><span style="display: flex; flex-direction: column"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 14px">Neu starten</span><span style="font-size: 12px; color: #4d556e">Spielstände bleiben erhalten</span></span></li>
-</ol>
+<img class="o-ori" alt="" aria-hidden="true" width="160" height="160" src="{{ori}}">
 </div>
+<div style="margin-top: 22px; border-radius: 18px; background: #fffdf8; box-shadow: 0 2px 8px rgba(20,27,49,0.1); padding: 22px 26px; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 18px; color: #4d556e">{{sub}}</span>
+<div style="height: 12px; border-radius: 6px; background: #f1e2d3; overflow: hidden"><div style="height: 12px; border-radius: 6px; background: #c2410c; width: {{pct}}"></div></div>
+</div>
+<div style="margin-top: auto; display: flex; gap: 14px">
+<sc-if value="{{a}}"><a href="upd:a" style="flex: 1; height: 62px; border-radius: 16px; background: #c2410c; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; color: #c2410c; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center">A</span>{{a}}</a></sc-if>
+<sc-if value="{{b}}"><a href="upd:b" style="flex: 1; height: 62px; border-radius: 16px; background: #141b31; color: #ffffff; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; display: flex; align-items: center; justify-content: center; gap: 10px"><span style="width: 28px; height: 28px; border-radius: 50%; background: #ffffff; color: #141b31; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center">B</span>{{b}}</a></sc-if>
+</div>
+</main>
 </div>
 <!--dc-script-->
 class Component extends DCLogic {
 renderVals() {
-return {};
+return window.plUpd ? window.plUpd() : {};
 }
 }
 <!--dc-props-->

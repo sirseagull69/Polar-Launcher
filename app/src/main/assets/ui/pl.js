@@ -137,7 +137,7 @@
   function fill() {
     var V = values(), w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, kill = [];
     live = [];
-    var game = sel ? sel.label : 'Polarlicht';
+    var game = sel ? sel.label : 'Ori OS';
     while ((n = w.nextNode())) {
       var t = n.nodeValue;
       if (/Platzhalter\]/.test(t)) { kill.push(n.parentNode); continue; }
@@ -449,7 +449,7 @@
     '6.6': { l: { 'Fertig': 'home', 'Was ist neu': '!Die Änderungsliste kommt noch' }, k: { A: 'home', X: '!Die Änderungsliste kommt noch' }, enter: 'erfolg' },
     '6.7': { l: { 'Wiederholen': '6.1', 'Details': function () { note((st.upd && st.upd.msg) || 'Keine Meldung'); } }, k: { A: '6.1' }, enter: 'fehler' },
     '7.1': { l: { 'Standby': OS, 'Neu starten': OS, 'Ausschalten': OS }, enter: 'dialog' },
-    '7.2': { l: { 'Alle entfernen': 'back', 'Polarlicht': '6.2' }, k: { START: 'back', SELECT: 'back' } },
+    '7.2': { l: { 'Alle entfernen': 'back', 'Ori OS': '6.2' }, k: { START: 'back', SELECT: 'back' } },
     '7.3': { l: { 'Alle schließen': 'back' } }, '7.4': { k: { START: 'back' } },
     '7.5': { l: { 'Erlauben': 'back', 'Nur dieses Mal': 'back', 'Ablehnen': 'back' }, enter: 'dialog' }, '7.6': { l: { 'Installieren': OS }, enter: 'dialog' },
     '7.7': { l: { 'Neu starten': 'back', 'Schließen': 'home', 'Bericht ansehen': '!Kein Bericht vorhanden' }, enter: 'fehler' },
@@ -501,6 +501,37 @@
   }
 
   /* ---------- Tasten (nur oben) ---------- */
+  /* Echte Leistungswerte für die Anzeige unten; behält die letzten Werte für die Balken */
+  var PERF = { now: {}, hist: { cpu: [], temp: [], watt: [] }, at: 0 };
+  window.plPerf = function () {
+    if (Date.now() - PERF.at > 900) {
+      PERF.at = Date.now(); var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; }
+      PERF.now = p; ['cpu', 'temp', 'watt'].forEach(function (k) { var a = PERF.hist[k]; a.push(p[k] == null ? -1 : p[k]); if (a.length > 14) a.shift(); });
+    }
+    return PERF;
+  };
+  setInterval(function () { if (!TOP && root && /UntenLeistung/.test(cur || '') && !document.hidden) { try { show(cur); } catch (e) { /* weiter */ } } }, 2000);
+  /* Update-Bildschirm im Ori-Look: dieselben Schritte 6.x, nur neu gezeichnet */
+  window.plUpd = function () {
+    var u = st.upd || {}, v = st.version || '', r = u.remote ? 'Build ' + u.remote : 'Neue Version';
+    var O = function (n) { return 'ori/' + n + '.svg'; };
+    var m = {
+      '6.1': { kicker: 'UPDATES', title: 'Ich schau mal nach', spruch: 'Kurz Geduld.', sub: 'Frage bei GitHub nach, ob es was Neues für Ori gibt.', pct: '30%', ori: O('websuche-hell'), b: 'Zurück' },
+      '6.2': { kicker: 'UPDATE GEFUNDEN', title: 'Ori OS · ' + r, spruch: 'Da liegt was Neues für dich.', sub: 'Lass dein Thor am besten am Strom. Spielstände bleiben, wo sie sind.', pct: '0%', ori: O('winkt-hell'), a: 'Jetzt laden', b: 'Später' },
+      '6.3': { kicker: 'UPDATE', title: 'Wird eingespielt', spruch: 'Ich falte mich kurz neu.', sub: u.msg || 'Wird geladen …', pct: '60%', ori: O('stellt-bereit-hell'), b: 'Im Hintergrund' },
+      '6.4': { kicker: 'UPDATE', title: 'Fast fertig', spruch: 'Einmal neu starten, dann passt alles.', sub: 'Ori startet danach von selbst wieder.', pct: '90%', ori: O('stellt-bereit-hell'), a: 'Jetzt neu starten' },
+      '6.5': { kicker: 'UPDATE', title: 'Startet neu', spruch: 'Bin gleich wieder da.', sub: 'Nicht ausschalten.', pct: '95%', ori: O('stellt-bereit-hell') },
+      '6.6': { kicker: 'UPDATES', title: 'Ori ist aktuell', spruch: 'Alles frisch gefaltet.', sub: 'Version ' + v + ' ist installiert.', pct: '100%', ori: O('erledigt-hell'), a: 'Fertig' },
+      '6.7': { kicker: 'UPDATE', title: 'Hat nicht geklappt', spruch: 'Passiert. Nochmal?', sub: u.msg || 'Keine Meldung.', pct: '0%', ori: O('fehler-hell'), a: 'Nochmal', b: 'Zurück' }
+    };
+    return m[cur] || m['6.6'];
+  };
+  window.plUpdAct = function (w) {
+    var n = NAV[cur] || {}, k = (n.k || {})[w === 'a' ? 'A' : 'B'];
+    if (w === 'b' && k === undefined) { run('back'); return; }
+    if (k == null && w === 'a') { k = cur === '6.6' ? 'home' : cur === '6.7' ? '6.1' : null; }
+    if (k) run(k);
+  };
   var aynOn = false;
   window.plKey = function (k) {
     if (!TOP || !root) return;
@@ -922,6 +953,7 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name.indexOf('upd:') === 0) { snd('ok'); window.plUpdAct(name.slice(4)); return; }
     if (name.indexOf('power:') === 0) { snd('ok'); if ((J.power ? J.power(name.slice(6)) : 'nein') !== 'ok') note('Geht erst, wenn Ori das System ist.'); return; }
     var nat = { Main: 'home', Bibliothek: '3.1', Spiel: '3.5', Apps: '3.7' };
     if (nat[name]) { run(nat[name]); return; }
@@ -988,6 +1020,7 @@
     }];
   }
   function mixFor(key) {
+    if (TOP && /^6\.[1-7]$/.test(key) && dcLoad('Update')) return dcView('Update');
     if (key === 'acc') return [mxAcc, mxAccBind];
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
@@ -1052,7 +1085,7 @@
     }
     fill();
     if (key === '7.2') {
-      if (!(st.upd && st.upd.available)) qa('div', root).filter(isRow).forEach(function (r) { if (labelOf(r) === 'Polarlicht') r.parentNode.removeChild(r); });
+      if (!(st.upd && st.upd.available)) qa('div', root).filter(isRow).forEach(function (r) { if (labelOf(r) === 'Ori OS') r.parentNode.removeChild(r); });
       var left = qa('div', root).filter(isRow);
       if (TOP && !left.length) { var none = document.createElement('div'); none.style.cssText = 'position:absolute;right:44px;top:120px;width:500px;font:600 17px Outfit,sans-serif;color:rgba(255,255,255,.6)'; none.textContent = 'Keine Benachrichtigungen.'; root.appendChild(none); }
     }
@@ -1135,7 +1168,7 @@
       go: function (k) { if (now && k !== 'home') stack.push(now); to(k); }, swap: function (k) { to(k); }, back: function () { to(stack.pop() || 'home'); },
       gameInfo: function (k) { var sy = k.split('/')[2]; return JSON.stringify({ sys: sy, sysFull: { nds: 'Nintendo DS', gba: 'Nintendo Game Boy Advance', gc: 'Nintendo GameCube', switch: 'Nintendo Switch' }[sy] || sy, file: 'spiel.' + sy, folder: '/storage/emulated/0/ROMs/' + sy, size: 268435456, chosen: P['emu:' + sy] || '', emus: sy === 'gc' ? ['Dolphin'] : sy === 'switch' ? [] : ['melonDS', 'DraStic', 'RetroArch (melonDS DS)'] }); },
       launch: function (k) { note('Starte ' + k); }, fav: function (k) { A.forEach(function (a) { if (a.key === k) a.fav = !a.fav; }); },
-      android: function (w) { note('Android: ' + w); }, setBrightness: function () {}, setVolume: function () {}, updateCheck: function () {}, updateInstall: function () {},
+      android: function (w) { note('Android: ' + w); }, setBrightness: function () {}, setVolume: function () {}, updateCheck: function () {}, updateInstall: function () {}, perf: function () { var t = Date.now() / 2000 | 0; return JSON.stringify({ temp: 47 + t % 6, gpu: 20 + t % 30, cpu: 25 + t * 7 % 50, watt: 4.8 + t % 4 * 0.7, laedt: false, akku: 83, minuten: 197, fan: 3000 + t % 5 * 120, spiel: 'Majora’s Mask 3D' }); },
       type: function (c) { query = c === '\b' ? query.slice(0, -1) : query + c; window.plEvent('q', query); }, sync: function (w) { window.plSync(w); }, log: function (m) { console.log(m); }
     };
   }
