@@ -536,7 +536,7 @@
   /* Ori-Sperrbildschirm: kommt beim Aufwachen, A oder Tippen entsperrt und geht zurück, wo man war */
   var lockPrev = null, quietUntil = 0;
   window.plLock = function () { if (!TOP) return; if (!/^dc:Sperr:/.test(cur)) lockPrev = cur; J.go('dc:Sperr:UntenSperr'); };
-  window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '' }; };
+  window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } var a = Math.max(0, Math.min(100, Math.round(p.akku >= 0 ? p.akku : st.battery) || 0)); return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '', akkuZahl: a, ring: Math.round(402 * a / 100), ringFarbe: a <= 15 ? '#d6452f' : a <= 35 ? '#e08a2c' : '#3f9a63' }; };
   function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; if (J.unlock) J.unlock(); quietUntil = Date.now() + 700; setTimeout(function () { J.swap(back); }, 120); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false, botFocus = false;
