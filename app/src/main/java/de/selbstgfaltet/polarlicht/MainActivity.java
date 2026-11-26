@@ -1256,6 +1256,11 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
         String k = name(code);
         if (k == null) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0 && (e.getSource() & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) {
+                /* Taste, die Ori nicht kennt: anzeigen, damit wir sie zuordnen können */
+                Log.i(TAG, "unbekannte Taste " + code + " " + KeyEvent.keyCodeToString(code) + " von " + (e.getDevice() == null ? "?" : e.getDevice().getName()));
+                both("window.plNote&&plNote('Unbekannte Taste: " + KeyEvent.keyCodeToString(code) + " (" + code + ")')");
+            }
             return super.dispatchKeyEvent(e);
         }
         boolean hold = k.equals("START") || k.equals("SELECT");

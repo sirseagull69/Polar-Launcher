@@ -377,7 +377,7 @@
   var SETUP = ['1.7', '1.8', '1.9', '1.11', '1.12', '1.13', '1.14', '1.15'];
   function next() { var i = SETUP.indexOf(cur); snd('ok'); if (i >= SETUP.length - 1) return done(); J.go(i >= 0 ? SETUP[i + 1] : 'home'); }
   function done() { J.setPref('setup', '1'); J.go('home'); }
-  function afterBoot() { J.swap(pref('setup', '') === '1' ? 'home' : '1.7'); }
+  function afterBoot() { J.setPref('setup', '1'); J.swap('home'); } /* alte Polarlicht-Einrichtung aus, die neue Ori-Einrichtung kommt später */
   function swap(k) { return function () { snd('ok'); J.swap(k); }; }
   function tab(d) { return function () { var T = ['3.1', '3.4', '3.7'], i = T.indexOf(cur); snd('ok'); J.swap(T[(Math.max(i, 0) + d + 3) % 3]); }; }
   function focApp() { return foc && foc._app ? foc._app : null; }
@@ -1092,6 +1092,7 @@
   }
 
   window.plSnd = snd;
+  window.plNote = function (t) { if (TOP) note(t); };
   window.plShow = function (key) { try { show(key); } catch (e) { J.log('show ' + key + ': ' + e + ' ' + (e.stack || '')); } };
   window.plSync = function (what) {
     if (!root) return;
