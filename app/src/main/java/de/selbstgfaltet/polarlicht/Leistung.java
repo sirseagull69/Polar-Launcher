@@ -24,6 +24,10 @@ final class Leistung {
         o.put("temp", temperatur());
         o.put("gpu", zahl("/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage"));
         o.put("cpu", cpuProzent());
+        o.put("cpuGhz", cpuGhz());
+        int gclk = zahl("/sys/class/kgsl/kgsl-3d0/gpuclk");
+        if (gclk <= 0) gclk = zahl("/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq");
+        o.put("gpuMhz", gclk > 0 ? Math.round(gclk / 1e6) : -1);
         BatteryManager bm = (BatteryManager) c.getSystemService(Context.BATTERY_SERVICE);
         Intent b = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int volt = b == null ? 0 : b.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 0); // mV
@@ -92,6 +96,16 @@ final class Leistung {
             n++;
         }
         return n == 0 ? -1 : (int) Math.round(sum / n * 100);
+    }
+
+    /** Höchster aktueller Takt aller Kerne, in GHz. */
+    private static double cpuGhz() {
+        int best = 0;
+        for (int i = 0; i < 16; i++) {
+            int cur = zahl("/sys/devices/system/cpu/cpu" + i + "/cpufreq/scaling_cur_freq");
+            if (cur > best) best = cur;
+        }
+        return best <= 0 ? -1 : Math.round(best / 1e5) / 10.0;
     }
 
     /** Lüfter-Drehzahl. Sucht einmal, wo das System sie meldet. */
