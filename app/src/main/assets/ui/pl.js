@@ -547,7 +547,7 @@
     lockGame = g;
     return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '', akkuZahl: a, laedt: laedt ? '1' : '',
       akkuWort: laedt ? 'Lädt' : netz ? 'Am Strom' : 'Akku', unterzeile: unter,
-      pegel: Math.round(188 - a / 100 * 176), ringFarbe: a <= 15 ? '#d6452f' : a <= 35 ? '#e08a2c' : '#3f9a63',
+      pegel: Math.round(188 - a / 100 * 176), zahlFarbe: 188 - a / 100 * 176 < 100 ? '#fffdf8' : '#1b2340', wortFarbe: 188 - a / 100 * 176 < 128 ? '#fffdf8' : '#4d556e', ringFarbe: a <= 15 ? '#d6452f' : a <= 35 ? '#e08a2c' : '#3f9a63',
       oriPose: laedt ? 'sammelt' : a <= 15 ? 'ratlos' : 'ruhezustand',
       weiter: g ? g.label : '', weiterKopf: p.spiel ? 'LÄUFT GERADE' : 'WEITERSPIELEN', weiterBild: g && g.img ? img(g, 'image') : '' };
   };
@@ -559,7 +559,7 @@
     var liq = document.getElementById('lk-liq');
     if (!liq || document.hidden) { setTimeout(function () { requestAnimationFrame(lkFrame); }, 1000); return; }
     lkT += 0.03;
-    var y = +(liq.getAttribute('d').split(' ')[2]) || 100, sub = document.getElementById('lk-sub'), laedt = sub && sub.getAttribute('data-laedt') === '1';
+    var y = +(liq.getAttribute('d').split(' ')[1]) || 100, sub = document.getElementById('lk-sub'), laedt = sub && sub.getAttribute('data-laedt') === '1';
     if (!liq._y) liq._y = y;
     var w1 = document.getElementById('lk-w1'), w2 = document.getElementById('lk-w2');
     if (w1) w1.setAttribute('d', lkWave(470, 10, 90, lkT * 0.6));

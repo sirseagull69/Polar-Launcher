@@ -3,8 +3,8 @@
 <div style="position: relative; height: 540px; box-sizing: border-box; padding: 26px 40px 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
 <div style="position: relative; width: 200px; height: 200px">
 <svg role="img" aria-label="Akku {{akkuZahl}} Prozent" width="200" height="200" viewBox="0 0 200 200"><defs><clipPath id="lk-glas"><circle cx="100" cy="100" r="88"/></clipPath></defs><circle cx="100" cy="100" r="95" fill="#fffdf8" stroke="#eadfce" stroke-width="6"/><g clip-path="url(#lk-glas)"><path id="lk-liq2" fill="{{ringFarbe}}" opacity="0.45" d="M0 {{pegel}} L200 {{pegel}} L200 200 L0 200 Z"/><path id="lk-liq" fill="{{ringFarbe}}" d="M0 {{pegel}} L200 {{pegel}} L200 200 L0 200 Z"/><g id="lk-bub"></g></g></svg>
-<span style="position: absolute; left: 0; right: 0; top: 74px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 40px; line-height: 1">{{akkuZahl}} %</span>
-<span style="position: absolute; left: 0; right: 0; top: 120px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; color: #4d556e">{{akkuWort}}</span>
+<span style="position: absolute; left: 0; right: 0; top: 74px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 40px; line-height: 1; color: {{zahlFarbe}}">{{akkuZahl}} %</span>
+<span style="position: absolute; left: 0; right: 0; top: 120px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; color: {{wortFarbe}}">{{akkuWort}}</span>
 <img id="lk-ori" src="ori/{{oriPose}}-abendrot.svg" alt="" aria-hidden="true" width="78" height="78" style="position: absolute; right: -96px; bottom: -6px">
 </div>
 <span id="lk-sub" style="font-family: 'Caveat', cursive; font-weight: 600; font-size: 26px; color: #9a3a0c" data-laedt="{{laedt}}">{{unterzeile}}</span>
