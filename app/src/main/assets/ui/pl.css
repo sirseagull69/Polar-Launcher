@@ -364,3 +364,6 @@ img{display:block}
 /* Fokus darf die Einblende-Animation der Karten nicht neu starten (sonst blinken Karten beim Blättern weg) */
 .ori .o-card.mx-foc{animation:o-in .4s ease both}
 .o-grid{padding-bottom:170px}
+/* 0.15.10 Fokusrahmen nicht abschneiden: Platz für den Rahmen in den scrollenden Listen */
+.o-cats.o-scroll{padding:6px 6px 6px 6px;margin:-6px -6px 0 -6px;box-sizing:content-box}
+.o-sec.o-scroll{padding-top:6px;margin-top:-6px;padding-left:6px;margin-left:-6px;padding-right:6px}
