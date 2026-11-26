@@ -501,9 +501,11 @@
   }
 
   /* ---------- Tasten (nur oben) ---------- */
+  var aynOn = false;
   window.plKey = function (k) {
     if (!TOP || !root) return;
     if (k === 'INDEX') { toggleIndex(); return; }
+    if (k === 'AYN') { aynOn = !aynOn; snd('ok'); var tk = /^dc:/.test(cur) ? cur.split(':')[1] : '@' + cur; J.swap(aynOn ? 'dc:' + tk + ':UntenLeistung' : cur); return; }
     if (idx) { indexKey(k); return; }
     var n = NAV[cur] || {};
     if (root._any) root._any(k);

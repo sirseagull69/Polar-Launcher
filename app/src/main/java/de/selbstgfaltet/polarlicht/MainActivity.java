@@ -1238,6 +1238,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             case KeyEvent.KEYCODE_BUTTON_R2: return "R2";
             case KeyEvent.KEYCODE_BUTTON_START: case KeyEvent.KEYCODE_MENU: return "START";
             case KeyEvent.KEYCODE_BUTTON_SELECT: return "SELECT";
+            case KeyEvent.KEYCODE_F24: return "AYN";
             default: return null;
         }
     }
@@ -1254,13 +1255,12 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             }, 150);
             return super.dispatchKeyEvent(e);
         }
+        if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0 && code != KeyEvent.KEYCODE_POWER) {
+            /* Tastentest: jede Taste kurz anzeigen (kommt wieder raus, wenn alle Tasten sitzen) */
+            both("window.plNote&&plNote('Taste: " + KeyEvent.keyCodeToString(code).replace("KEYCODE_", "") + " · " + code + " · scan " + e.getScanCode() + "')");
+        }
         String k = name(code);
         if (k == null) {
-            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0 && code != KeyEvent.KEYCODE_POWER) {
-                /* Taste, die Ori nicht kennt: anzeigen, damit wir sie zuordnen können */
-                Log.i(TAG, "unbekannte Taste " + code + " " + KeyEvent.keyCodeToString(code) + " von " + (e.getDevice() == null ? "?" : e.getDevice().getName()));
-                both("window.plNote&&plNote('Taste: " + KeyEvent.keyCodeToString(code) + " · " + code + " · scan " + e.getScanCode() + "')");
-            }
             return super.dispatchKeyEvent(e);
         }
         boolean hold = k.equals("START") || k.equals("SELECT");
