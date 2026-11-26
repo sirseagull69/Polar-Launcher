@@ -534,10 +534,10 @@
     if (k) run(k);
   };
   /* Ori-Sperrbildschirm: kommt beim Aufwachen, A oder Tippen entsperrt und geht zurück, wo man war */
-  var lockPrev = null;
+  var lockPrev = null, quietUntil = 0;
   window.plLock = function () { if (!TOP) return; if (!/^dc:Sperr:/.test(cur)) lockPrev = cur; J.go('dc:Sperr:UntenSperr'); };
   window.plLockInfo = function () { var p = {}; try { p = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { p = {}; } return { upd: !!(st.upd && st.upd.available), spiel: p.spiel || '' }; };
-  function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; J.swap(back); if (J.unlock) J.unlock(); }
+  function unlock() { snd('ok'); var back = lockPrev && !/^dc:Sperr:/.test(lockPrev) ? lockPrev : 'home'; lockPrev = null; if (J.unlock) J.unlock(); quietUntil = Date.now() + 700; setTimeout(function () { J.swap(back); }, 120); }
   window.plLockTap = function () { if (TOP && /^dc:Sperr:/.test(cur)) unlock(); };
   var aynOn = false, botFocus = false;
   /* RGB-Ringe an den Sticks: aus den Einstellungen über die Systembrücke setzen */
@@ -554,6 +554,7 @@
   };
   window.plKey = function (k) {
     if ((!TOP && !botFocus) || !root) return;
+    if (Date.now() < quietUntil) return;
     if (k === 'INDEX') { toggleIndex(); return; }
     if (k === 'AYN') { aynOn = !aynOn; snd('ok'); var tk = /^dc:/.test(cur) ? cur.split(':')[1] : '@' + cur; J.swap(aynOn ? 'dc:' + tk + ':UntenLeistung' : cur); return; }
     if (idx) { indexKey(k); return; }

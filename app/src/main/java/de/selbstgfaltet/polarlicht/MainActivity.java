@@ -99,6 +99,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     volatile boolean homeShowing = false;
     private boolean started = false;
     private boolean bottomFocus = false;
+    private volatile long keysQuietUntil = 0;
     private boolean lockOverGame = false;
     private final android.content.BroadcastReceiver screenOn = new android.content.BroadcastReceiver() {
         @Override
@@ -603,6 +604,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
     private void key(String name) {
         long now = System.currentTimeMillis();
+        if (now < keysQuietUntil) {
+            return;
+        }
         if (name.equals(lastKey) && now - lastKeyAt < 110) {
             return;
         }
@@ -856,6 +860,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public void unlock() {
+            keysQuietUntil = System.currentTimeMillis() + 800; // die A-Taste zum Entsperren soll nicht gleich ein Spiel starten
             ui.post(() -> {
                 android.app.KeyguardManager km = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
                 if (km != null && km.isKeyguardLocked()) km.requestDismissKeyguard(MainActivity.this, null); // Android-Sperre ohne PIN gleich mit weg
