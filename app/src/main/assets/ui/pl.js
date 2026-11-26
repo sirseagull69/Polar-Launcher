@@ -771,7 +771,7 @@
   function oriBar() {
     return '<div class="o-bar"><span class="o-bl"><b data-live="time">' + esc(st.time || '') + '</b><span>' + esc((st.weekday ? st.weekday.slice(0, 2) + '., ' : '') + (st.date || '')) + '</span></span><span class="o-br">' + oriStatus() + '</span></div>';
   }
-  var DK = {
+  var DK = { such: 'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14M21 21l-4.35-4.35',
     start: 'M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z', emu: 'M8 8h8v8H8zM5 5h14v14H5zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3', med: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15.5 9.5h.01', aus: 'M12 3v8M6.3 6.8a8 8 0 1 0 11.4 0', bib: 'M4 5h4v14H4zM10 5h4v14h-4zM16.5 6l3.5 1-3 12-3.5-1z', apps: 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
     fav: 'M12 4l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z', einst: 'M4 7h10M18 7h2M4 17h2M10 17h10M16 5v4M8 15v4', upd: 'M12 4v11M7 11l5 5 5-5M5 20h14'
   };
@@ -882,7 +882,7 @@
   function uHead(title, right) { return '<header class="u-head"><b>' + title + '</b><span>' + right + '</span></header>'; }
   function mxPanel() {
     var feld = pref('unten', 'start') === 'feld', a = sel;
-    var NIC = { 'Bibliothek': 'bib', 'Apps': 'apps', 'Favoriten': 'fav', 'Einstellungen': 'einst', 'Start': 'start', 'Medien': 'med' };
+    var NIC = { 'Suchen': 'such', 'Bibliothek': 'bib', 'Apps': 'apps', 'Favoriten': 'fav', 'Einstellungen': 'einst', 'Start': 'start', 'Medien': 'med' };
     function nav(t, act, on) { var ic = NIC[t] && DK[NIC[t]] ? '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[NIC[t]] + '"/></svg>' : ''; return '<button type="button" class="u-nav' + (ic ? ' u-ic' : '') + (on ? ' on' : '') + '" data-act="' + act + '">' + ic + '<span>' + t + '</span></button>'; }
     if (feld) {
       var tg = function (n, on, act) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '"><b>' + n + '</b><span>' + (on ? 'An' : 'Aus') + '</span></button>'; };
