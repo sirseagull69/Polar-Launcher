@@ -22,7 +22,8 @@
   }
   function setPref(k, v) { J.setPref(k, v); if (PC) PC[k] = String(v); }
   window.plPref = pref;
-  function perfNow() { try { return JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { return {}; } }
+  var PFC = null;
+  function perfNow() { if (PFC) return PFC; try { PFC = JSON.parse(J.perf ? J.perf() : '{}'); } catch (e) { PFC = {}; } setTimeout(function () { PFC = null; }, 0); return PFC; }
   function fit() {
     var s = Math.min(window.innerWidth / W, window.innerHeight / H);
     stage.style.width = W + 'px'; stage.style.height = H + 'px';
