@@ -785,7 +785,8 @@
   function uHead(title, right) { return '<header class="u-head"><b>' + title + '</b><span>' + right + '</span></header>'; }
   function mxPanel() {
     var feld = pref('unten', 'start') === 'feld', a = sel;
-    function nav(t, act, on) { return '<button type="button" class="u-nav' + (on ? ' on' : '') + '" data-act="' + act + '">' + t + '</button>'; }
+    var NIC = { 'Bibliothek': 'bib', 'Apps': 'apps', 'Favoriten': 'fav', 'Einstellungen': 'einst', 'Start': 'start', 'Medien': 'med' };
+    function nav(t, act, on) { var ic = NIC[t] && DK[NIC[t]] ? '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + DK[NIC[t]] + '"/></svg>' : ''; return '<button type="button" class="u-nav' + (ic ? ' u-ic' : '') + (on ? ' on' : '') + '" data-act="' + act + '">' + ic + '<span>' + t + '</span></button>'; }
     if (feld) {
       var tg = function (n, on, act) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '"><b>' + n + '</b><span>' + (on ? 'An' : 'Aus') + '</span></button>'; };
       var sl = function (k, n, v) { return '<div class="u-sl"><label for="u-' + k + '">' + n + '</label><input id="u-' + k + '" type="range" min="0" max="100" value="' + v + '" data-hs="' + k + '"></div>'; };
