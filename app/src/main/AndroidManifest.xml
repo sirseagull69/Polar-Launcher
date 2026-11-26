@@ -69,5 +69,14 @@
             android:authorities="de.selbstgfaltet.polarlicht.roms"
             android:exported="false"
             android:grantUriPermissions="true" />
+        <service
+            android:name=".OriMitteilungen"
+            android:exported="true"
+            android:label="Ori"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

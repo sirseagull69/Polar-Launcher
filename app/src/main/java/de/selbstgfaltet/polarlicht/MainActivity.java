@@ -132,6 +132,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         sys = new Systemseiten(this);
         sys.beiAenderung(() -> ui.post(() -> both("window.plSys&&plSys()")));
         sys.start();
+        OriMitteilungen.freischalten(this);
+        OriMitteilungen.geaendert = () -> ui.post(() -> both("window.plMit&&plMit()"));
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -1025,6 +1027,24 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
                 return "nein";
             }
         }
+
+        @JavascriptInterface
+        public String mitteilungen() {
+            return OriMitteilungen.liste(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void mitteilungWeg(String key) {
+            OriMitteilungen.weg(key);
+        }
+
+        @JavascriptInterface
+        public String mitteilungOeffnen(final String key) {
+            ui.post(this::panelFrei);
+            return OriMitteilungen.oeffnen(key) ? "ok" : "nein";
+        }
+
+        private void panelFrei() { hidePanel(); }
 
         @JavascriptInterface
         public String medien() {

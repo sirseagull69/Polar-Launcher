@@ -1060,6 +1060,7 @@
     }
     return setupPage(5, 'Fertig!', 'Viel Spaß. Ich bin da, wenn du mich brauchst.', 'triumph', sysRow('Tipp', 'L1/R1 wechselt die Bereiche, B geht zurück', 'setup:6') + sysRow('Tipp', 'Der AYN-Knopf zeigt unten die Leistung', 'setup:6'), 'Zum Start');
   }
+  window.plMit = function () { if (/Mitteilungen/.test(cur || '')) show(cur); };
   window.plSys = function () { if (/^o\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
   function sysAct(v) {
     var p = v.split(':'), c = p[0];
@@ -1167,6 +1168,7 @@
   }
   function dcGo(name) {
     name = name.replace(/\.dc\.html$/, '');
+    if (name.indexOf('mit:') === 0) { var mv2 = name.slice(4); if (mv2 === 'alle') { J.mitteilungWeg && J.mitteilungWeg('*'); snd('aus'); } else if (mv2.indexOf('weg:') === 0) { J.mitteilungWeg && J.mitteilungWeg(decodeURIComponent(mv2.slice(4))); snd('aus'); } else if (mv2.indexOf('auf:') === 0) { var mo = J.mitteilungOeffnen ? J.mitteilungOeffnen(decodeURIComponent(mv2.slice(4))) : 'nein'; snd(mo === 'ok' ? 'ok' : 'taste'); if (mo !== 'ok') note('Diese Mitteilung lässt sich nicht öffnen.'); } setTimeout(function () { show(cur); }, 250); return; }
     if (name === 'spiel:beenden') { var rb = J.beenden ? J.beenden() : 'nein'; snd(rb === 'ok' ? 'aus' : 'fehler'); note(rb === 'ok' ? 'Spiel beendet.' : 'Ließ sich nicht beenden.'); setTimeout(function () { show(cur); }, 400); return; }
     if (name.indexOf('emu:auf:') === 0) { snd('start'); J.launch(name.slice(8)); return; }
     if (name.indexOf('emu:hol:') === 0) { emuHol(name.slice(8)); return; }
