@@ -226,7 +226,7 @@
     clearTimeout(window._catT);
     if (el.classList && el.classList.contains('o-cat') && !el.classList.contains('on') && el.dataset.act) {
       /* Bereich folgt dem Fokus: kurz auf einem Eintrag stehen bleiben reicht, A muss nicht sein */
-      var ca = el.dataset.act; window._catT = setTimeout(function () { if (foc === el) dcGo(ca); }, 260);
+      var ca = el.dataset.act; window._catT = setTimeout(function () { if (foc === el) doAct(ca); }, 260);
     }
     if (cur === '5.3a' && WALLS[labelOf(el)]) wall(WALLS[labelOf(el)]);
     if (!quiet) snd('fokus');
