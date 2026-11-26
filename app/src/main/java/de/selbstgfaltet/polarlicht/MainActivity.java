@@ -1255,11 +1255,12 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
             }, 150);
             return super.dispatchKeyEvent(e);
         }
-        if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0 && code != KeyEvent.KEYCODE_POWER) {
-            /* Tastentest: jede Taste kurz anzeigen (kommt wieder raus, wenn alle Tasten sitzen) */
-            both("window.plNote&&plNote('Taste: " + KeyEvent.keyCodeToString(code).replace("KEYCODE_", "") + " · " + code + " · scan " + e.getScanCode() + "')");
-        }
         String k = name(code);
+        int scan = e.getScanCode();
+        if (scan == 317 || scan == 318) {
+            /* Sticks reindrücken: das System meldet sie als DPAD_CENTER, Ori soll sie nicht für A halten */
+            k = scan == 317 ? "L3" : "R3";
+        }
         if (k == null) {
             return super.dispatchKeyEvent(e);
         }
