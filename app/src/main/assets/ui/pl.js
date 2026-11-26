@@ -443,6 +443,7 @@
     '5.12': { l: { 'Hoher Kontrast': '@a11y' } },
     '5.13': { l: { 'Nach Updates suchen': '6.1', 'Android': '@about', 'Gerät': '@about', 'Lizenzen': '!Schriften: Space Grotesk und JetBrains Mono (OFL)', 'Auf Werkseinstellungen zurücksetzen': OS, 'Polarlicht': '6.1' } },
     '6.1': { enter0: function () { J.updateCheck(); } },
+    '7.1': { enter0: function () { sysMsg = ''; wlanZiel = ''; sysDo('wlanSuchen'); } }, '7.2': { enter0: function () { sysMsg = ''; } }, '7.3': { enter0: function () { sysMsg = ''; } },
     '6.2': { l: { 'Jetzt laden': updInstall }, k: { A: updInstall } },
     '6.3': { l: { 'Pausieren': '!Pausieren geht noch nicht' }, k: { X: 'back' } },
     '6.4': { l: { 'Jetzt neu starten': OS }, k: { A: OS } }, '6.5': { lock: 1, auto: [3000, '6.6'] },
@@ -845,7 +846,7 @@
       var tg = function (n, on, act) { return '<button type="button" class="u-tg' + (on ? ' on' : '') + '" data-act="' + act + '"><b>' + n + '</b><span>' + (on ? 'An' : 'Aus') + '</span></button>'; };
       var sl = function (k, n, v) { return '<div class="u-sl"><label for="u-' + k + '">' + n + '</label><input id="u-' + k + '" type="range" min="0" max="100" value="' + v + '" data-hs="' + k + '"></div>'; };
       return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Bedienfeld', esc(st.time || '') + ' · Akku ' + parseInt(st.battery, 10) + ' %' + (st.wifi ? ' · WLAN' : '') + '<button type="button" class="u-hl" data-act="unten:start">Start</button>') + W_BOT
-        + '<div class="u-body"><section class="u-tgs">' + tg('WLAN', st.wifi, 'and:wifi') + tg('Bluetooth', st.bt, 'and:bt') + tg('Flugmodus', st.airplane, 'and:airplane') + '</section>'
+        + '<div class="u-body"><section class="u-tgs">' + tg('WLAN', st.wifi, 'sys:wlan:' + (st.wifi ? '0' : '1')) + tg('Bluetooth', st.bt, 'sys:bt:' + (st.bt ? '0' : '1')) + tg('Flugmodus', st.airplane, 'sys:flug:' + (st.airplane ? '0' : '1')) + '</section>'
         + '<section class="u-card">' + sl('b', 'Helligkeit', st.brightness || 0) + sl('v', 'Lautstärke', st.volume || 0) + '</section>'
         + '<span class="o-say l">' + ori((st.battery || 100) <= 15 ? 'ungeduldig' : 'ruhezustand-2', 58) + '<span class="o-quote" style="font-size:20px">Akku ' + parseInt(st.battery, 10) + ' %' + (st.temp ? ', ' + esc(st.temp) : '') + '. ' + esc(st.free || '') + ' frei.</span></span>'
         + '<nav class="u-navs s">' + nav('Leistung', 'dc:UntenLeistung') + nav('RGB', 'dc:UntenRgb') + nav('Tasten', 'dc:UntenTasten') + nav('Touchpad', 'dc:UntenTouchpad') + nav('Akku', 'dc:UntenAkku') + nav('Mitteilungen', 'dc:Mitteilungen') + '</nav>'
@@ -932,6 +933,70 @@
     if (TOP) return oriTop('', 'A Auswählen · B Zurück', inner);
     return '<div class="mx ori" style="width:620px;height:540px;display:flex;flex-direction:column">' + uHead('Emulator', name) + W_BOT + '<div class="u-body"><div class="o-list">' + rows + '</div></div></div>';
   }
+  /* ---------- Systemseiten (7.x): WLAN, Bluetooth, Speicher in Ori statt in Android ---------- */
+  var wlanZiel = '', sysMsg = '';
+  function sysJ(w) { try { return JSON.parse(J.sysGet ? J.sysGet(w) : '{}'); } catch (e) { return {}; } }
+  function sysDo(c, a, b) { var r = J.sysDo ? J.sysDo(c, a || '', b || '') : 'nein'; return r; }
+  function gbs(n) { n = +n || 0; return n >= 1e9 ? (n / 1e9).toFixed(n >= 1e11 ? 0 : 1).replace('.', ',') + ' GB' : n >= 1e6 ? Math.round(n / 1e6) + ' MB' : n ? '< 1 MB' : '0 MB'; }
+  function sysRow(label, right, act, first, extra) { return '<button type="button" class="o-rowb" data-act="' + act + '" data-scroll="1"' + (first ? ' data-first="1"' : '') + '><b>' + label + '</b><span>' + right + '</span></button>' + (extra || ''); }
+  function sysPage(titel, kick, spruch, pose, rows, hint) {
+    var inner = '<div class="o-lh"><div style="display:flex;align-items:baseline;gap:12px"><h1 class="o-h2">' + titel + '</h1><span class="o-kick">' + kick + '</span></div><span class="o-say"><span class="o-quote" style="font-size:21px">' + spruch + '</span>' + ori(pose, 54) + '</span></div>'
+      + (sysMsg ? '<div class="o-sysmsg">' + esc(sysMsg) + '</div>' : '') + '<div class="o-list o-scroll">' + rows + '</div>';
+    return oriTop('einst', hint || 'A Auswählen · B Zurück', inner);
+  }
+  function balken(n) { var h = ''; for (var i = 0; i < 4; i++) h += '<i style="display:inline-block;width:5px;margin-left:2px;border-radius:2px;height:' + (5 + i * 4) + 'px;background:' + (i < n + 1 ? '#1b2340' : '#d9cdbd') + '"></i>'; return '<span style="display:inline-flex;align-items:flex-end;height:18px;margin-left:8px">' + h + '</span>'; }
+  function mxWlan() {
+    var w = sysJ('wlan'), rows = sysRow('WLAN', w.an ? 'An' : 'Aus', 'sys:wlan:' + (w.an ? '0' : '1'), true);
+    if (w.an) {
+      if (w.verbunden) rows += sysRow(esc(w.verbunden), 'Verbunden', 'sys:wlanMenu:' + esc(w.verbunden));
+      if (wlanZiel) rows += '<div class="o-rowb" style="gap:10px"><b style="flex:none">' + esc(wlanZiel) + '</b><input id="o-pw" type="password" placeholder="Passwort" style="flex:1;min-width:0;height:36px;border:1px solid #eadfce;border-radius:10px;padding:0 10px;font:inherit;background:#fff"><button type="button" class="o-go" data-act="sys:wlanPw" style="height:36px"><i>A</i>Verbinden</button></div>';
+      var n = (w.netze || []).filter(function (x) { return !x.jetzt; });
+      rows += n.map(function (x) { return sysRow(esc(x.name) + balken(x.balken), x.bekannt ? 'Gespeichert' : x.offen ? 'Offen' : 'Passwort', 'sys:wlanWahl:' + esc(x.name) + ':' + (x.bekannt || x.offen ? '1' : '0')); }).join('');
+      if (!n.length) rows += '<div class="o-empty" style="min-height:120px">' + ori('denkt-nach', 70) + '<b>Suche Netzwerke …</b>' + (w.ort === false ? 'Für die Suche braucht Android den Standort. Ori schaltet ihn dafür ein.' : 'Dauert ein paar Sekunden.') + '</div>';
+      rows += sysRow('Neu suchen', '', 'sys:wlanSuchen');
+    }
+    return sysPage('WLAN', 'NETZWERK', w.verbunden ? 'Drin. Läuft.' : w.an ? 'Wo bin ich denn hier?' : 'Funkstille.', w.verbunden ? 'fertig' : 'denkt-nach', rows);
+  }
+  function mxBt() {
+    var b = sysJ('bt');
+    if (b.da === false) return sysPage('Bluetooth', 'GERÄTE', 'Kein Bluetooth gefunden.', 'ratlos', '');
+    var rows = sysRow('Bluetooth', b.an ? 'An' : 'Aus', 'sys:bt:' + (b.an ? '0' : '1'), true);
+    var ART = { kopfhoerer: 'Kopfhörer', eingabe: 'Controller', telefon: 'Telefon', computer: 'Computer', geraet: 'Gerät' };
+    if (b.an) {
+      rows += (b.gekoppelt || []).map(function (d) { return sysRow(esc(d.name), (d.verbunden ? 'Verbunden · ' : 'Gekoppelt · ') + (ART[d.art] || 'Gerät'), 'sys:btMenu:' + d.adr + ':' + esc(d.name)); }).join('');
+      rows += (b.gefunden || []).map(function (d) { return sysRow(esc(d.name), 'Koppeln · ' + (ART[d.art] || 'Gerät'), 'sys:btKoppeln:' + d.adr); }).join('');
+      rows += sysRow(b.sucht ? 'Suche läuft …' : 'Neue Geräte suchen', b.sucht ? '' : 'Controller, Kopfhörer', 'sys:btSuchen');
+    }
+    if (b.fehlt) rows += '<div class="o-empty" style="min-height:100px">' + ori('ratlos', 60) + '<b>Kein Zugriff</b>Bluetooth-Rechte fehlen noch. Kommen mit dem nächsten OS-Update.</div>';
+    return sysPage('Bluetooth', 'GERÄTE', b.an ? 'Wer will mitspielen?' : 'Alles still.', b.an ? 'sammelt' : 'ruhezustand', rows);
+  }
+  function mxSpeicher() {
+    var sp = sysJ('speicher'), g = sp.gesamt || 0, f = sp.frei || 0, used = g - f;
+    function bar(parts, total) { return '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;background:#eadfce;margin:6px 0 4px">' + parts.map(function (p) { return '<i style="width:' + Math.max(0, Math.min(100, p[0] / (total || 1) * 100)).toFixed(1) + '%;background:' + p[1] + '"></i>'; }).join('') + '</div>'; }
+    var sonst = Math.max(0, used - (sp.medien || 0) - (sp.downloads || 0) - (sp.spieleIntern || 0));
+    var rows = '<div class="o-rowb" style="flex-direction:column;align-items:stretch;padding:12px 14px;min-height:0"><div style="display:flex;justify-content:space-between"><b>Interner Speicher</b><span>' + gbs(f) + ' frei von ' + gbs(g) + '</span></div>'
+      + bar([[sp.spieleIntern || 0, '#c2410c'], [sp.medien || 0, '#8a72e0'], [sp.downloads || 0, '#e8b84a'], [sonst, '#4d556e']], g)
+      + '<span style="font-size:12px;color:#4d556e">Spiele ' + gbs(sp.spieleIntern) + ' · Bilder und Videos ' + gbs(sp.medien) + ' · Downloads ' + gbs(sp.downloads) + ' · Apps und System ' + gbs(sonst) + '</span></div>';
+    rows += (sp.karten || []).map(function (k) { var u = k.gesamt - k.frei; return '<div class="o-rowb" style="flex-direction:column;align-items:stretch;padding:12px 14px;min-height:0"><div style="display:flex;justify-content:space-between"><b>' + esc(k.name || 'microSD') + '</b><span>' + gbs(k.frei) + ' frei von ' + gbs(k.gesamt) + '</span></div>' + bar([[k.spiele || 0, '#c2410c'], [Math.max(0, u - (k.spiele || 0)), '#4d556e']], k.gesamt) + '<span style="font-size:12px;color:#4d556e">Spiele ' + gbs(k.spiele) + ' · Anderes ' + gbs(Math.max(0, u - (k.spiele || 0))) + '</span></div>'; }).join('');
+    rows += sysRow('Spiele-Ordner neu durchsuchen', st.scanning ? 'Sucht …' : '', 'rescan', true) + sysRow('Apps verwalten', '', 'go:3.7');
+    return sysPage('Speicher', 'PLATZ', f / (g || 1) < 0.1 ? 'Wird eng. Ehrlich.' : 'Platz ist da. Noch.', f / (g || 1) < 0.1 ? 'ratlos' : 'sortiert', rows);
+  }
+  window.plSys = function () { if (/^7\./.test(cur || '')) { setKeep = foc ? foc.dataset.act || '' : ''; show(cur); } };
+  function sysAct(v) {
+    var p = v.split(':'), c = p[0];
+    sysMsg = '';
+    if (c === 'hz') { snd('ok'); if (sysDo('hz', p[1].split(' ')[0]) !== 'ok') sysMsg = 'Ließ sich nicht umstellen.'; setKeep = foc ? foc.dataset.id || '' : ''; J.sync('reload'); return; }
+    if (c === 'wlan' || c === 'bt' || c === 'flug') { var r = sysDo(c, p[1]); if (r !== 'ok') sysMsg = 'Das darf Ori noch nicht selbst. Kommt mit dem nächsten OS-Update.'; snd(p[1] === '1' ? 'an' : 'aus'); if (c === 'wlan' && p[1] === '1') setTimeout(function () { sysDo('wlanSuchen'); }, 1500); }
+    else if (c === 'wlanSuchen' || c === 'btSuchen') { snd('ok'); if (sysDo(c) !== 'ok') sysMsg = 'Suche ließ sich nicht starten.'; }
+    else if (c === 'wlanWahl') { if (p[2] === '1') { snd('ok'); sysMsg = sysDo('wlanVerbinden', p[1]) === 'ok' ? 'Verbinde mit ' + p[1] + ' …' : 'Verbinden ging nicht.'; wlanZiel = ''; } else { wlanZiel = p[1]; snd('ok'); show(cur); setTimeout(function () { var i = document.getElementById('o-pw'); if (i) i.focus(); }, 80); return; } }
+    else if (c === 'wlanPw') { var i = document.getElementById('o-pw'), pw = i ? i.value : ''; if (pw.length < 8) { sysMsg = 'Das Passwort hat mindestens 8 Zeichen.'; snd('fehler'); } else { snd('ok'); sysMsg = sysDo('wlanVerbinden', wlanZiel, pw) === 'ok' ? 'Verbinde mit ' + wlanZiel + ' …' : 'Verbinden ging nicht.'; wlanZiel = ''; } }
+    else if (c === 'wlanMenu') { if (confirmTwice('vergessen:' + p[1])) { sysDo('wlanVergessen', p[1]); sysMsg = p[1] + ' vergessen.'; snd('aus'); } else { sysMsg = 'Nochmal A drücken, um ' + p[1] + ' zu vergessen.'; snd('taste'); } }
+    else if (c === 'btKoppeln') { snd('ok'); sysMsg = sysDo('btKoppeln', p[1]) === 'ok' ? 'Koppeln läuft – bestätige am Gerät, falls es fragt.' : 'Koppeln ging nicht.'; }
+    else if (c === 'btMenu') { if (confirmTwice('bt:' + p[1])) { sysDo('btEntkoppeln', p[1]); sysMsg = p.slice(2).join(':') + ' entkoppelt.'; snd('aus'); } else { sysMsg = 'Nochmal A drücken, um ' + p.slice(2).join(':') + ' zu entkoppeln.'; snd('taste'); } }
+    setKeep = foc ? foc.dataset.act || '' : ''; show(cur);
+  }
+  var lastConfirm = '', lastConfirmAt = 0;
+  function confirmTwice(id) { var ok = lastConfirm === id && Date.now() - lastConfirmAt < 4000; lastConfirm = ok ? '' : id; lastConfirmAt = Date.now(); return ok; }
   /* ---------- Einstellungen (5.x) nach der Vorlage "Ori OS": neun Bereiche, fünf Zeilenarten ---------- */
   var SETC = [['bildschirme', 'Bildschirme'], ['netzwerk', 'WLAN & Netzwerk'], ['controller', 'Controller'], ['rgb', 'RGB-Licht'], ['ton', 'Ton'], ['leistung', 'Leistung & Lüfter'], ['speicher', 'Speicher'], ['emulatoren', 'Emulatoren'], ['system', 'System & Updates']];
   var setKeep = '';
@@ -946,13 +1011,13 @@
     function W(id, label, cols, def, real) { var c = real ? real.cur : g(id, def); return { k: 'w', id: id, label: label, real: !!real, opts: cols.map(function (x) { return { name: x[0], color: x[1], on: (real ? x[1] : x[0]) === c, act: real ? real.act + x[1] : 'eset:' + id + ':' + x[0] }; }) }; }
     var b = st.brightness || 0, upd = st.upd || {};
     var P = {
-      bildschirme: ['Bildschirme', 'Zwei Bildschirme. Doppelt so viel zu putzen.', [S('oben', 'Helligkeit oben', 70, { val: b, hs: 'b' }), S('unten', 'Helligkeit unten', 55, { val: b, hs: 'b' }), V('Bildwiederholrate', '120 Hz', '', 'and:display'), C('farbe', 'Farbmodus', ['Natürlich', 'Kräftig', 'Warm'], 'Kräftig'), C('zweit', 'Unterer Bildschirm', ['Start', 'Bedienfeld'], '', { cur: pref('unten', 'start') === 'feld' ? 'Bedienfeld' : 'Start', act: 'untenw:' }), T('still', 'Bewegungen reduzieren', false, 'Wellen, Kacheln und Ori halten still', { on: pref('sw:Bewegungen reduzieren', '0') === '1', act: 'sw:Bewegungen reduzieren' }), T('nacht', 'Nachtlicht', false)]],
-      netzwerk: ['WLAN & Netzwerk', 'Ohne WLAN bin ich auch nur ein Gameboy.', [T('wlan', 'WLAN', true, '', { on: !!st.wifi, act: 'and:wifi' }), V('Netzwerke', st.wifi ? 'Verbunden' : 'Nicht verbunden', '', 'and:wifi'), T('flug', 'Flugmodus', false, '', { on: !!st.airplane, act: 'and:airplane' }), T('hotspot', 'Hotspot', false), V('Streamen im Heimnetz', 'Noch nicht eingerichtet', 'PS5 und PC aufs Thor holen'), V('VPN', 'Aus')]],
-      controller: ['Controller & Bluetooth', 'Die Tasten sind unschuldig. Meistens.', [T('bt', 'Bluetooth', true, '', { on: !!st.bt, act: 'and:bt' }), V('Tastenbelegung', 'Standard'), T('trigger', 'Trigger tauschen', false, 'L2 und R2 vertauschen'), S('tot', 'Stick-Totzone', 10), S('vib', 'Vibration', 60), T('gyro', 'Bewegungssteuerung', true), V('Externer Controller', 'Koppeln', '', 'and:bt')]],
+      bildschirme: ['Bildschirme', 'Zwei Bildschirme. Doppelt so viel zu putzen.', [S('oben', 'Helligkeit oben', 70, { val: b, hs: 'b' }), S('unten', 'Helligkeit unten', 55, { val: b, hs: 'b' }), C('hz', 'Bildwiederholrate', ['60 Hz', '120 Hz'], '', { cur: (st.hz || 120) + ' Hz', act: 'sys:hz:' }), C('farbe', 'Farbmodus', ['Natürlich', 'Kräftig', 'Warm'], 'Kräftig'), C('zweit', 'Unterer Bildschirm', ['Start', 'Bedienfeld'], '', { cur: pref('unten', 'start') === 'feld' ? 'Bedienfeld' : 'Start', act: 'untenw:' }), T('still', 'Bewegungen reduzieren', false, 'Wellen, Kacheln und Ori halten still', { on: pref('sw:Bewegungen reduzieren', '0') === '1', act: 'sw:Bewegungen reduzieren' }), T('nacht', 'Nachtlicht', false)]],
+      netzwerk: ['WLAN & Netzwerk', 'Ohne WLAN bin ich auch nur ein Gameboy.', [T('wlan', 'WLAN', true, '', { on: !!st.wifi, act: 'sys:wlan:' + (st.wifi ? '0' : '1') }), V('Netzwerke', st.wifi ? 'Verbunden' : 'Nicht verbunden', '', 'go:7.1'), T('flug', 'Flugmodus', false, '', { on: !!st.airplane, act: 'sys:flug:' + (st.airplane ? '0' : '1') }), T('hotspot', 'Hotspot', false), V('Streamen im Heimnetz', 'Noch nicht eingerichtet', 'PS5 und PC aufs Thor holen'), V('VPN', 'Aus')]],
+      controller: ['Controller & Bluetooth', 'Die Tasten sind unschuldig. Meistens.', [T('bt', 'Bluetooth', true, '', { on: !!st.bt, act: 'sys:bt:' + (st.bt ? '0' : '1') }), V('Geräte', 'Koppeln und verwalten', '', 'go:7.2'), V('Tastenbelegung', 'Standard'), T('trigger', 'Trigger tauschen', false, 'L2 und R2 vertauschen'), S('tot', 'Stick-Totzone', 10), S('vib', 'Vibration', 60), T('gyro', 'Bewegungssteuerung', true), V('Externer Controller', 'Koppeln', '', 'go:7.2')]],
       rgb: ['RGB-Licht', 'Bunt macht schneller. Angeblich.', [T('an', 'Beleuchtung', true, 'Leuchtringe an den Sticks'), C('effekt', 'Effekt', ['Fest', 'Atmen', 'Regenbogen', 'Welle'], 'Atmen'), W('farbe', 'Farbe', [['Orange', '#ff8a4c'], ['Pink', '#e2609a'], ['Lila', '#8a72e0'], ['Blau', '#3d5fb5'], ['Grün', '#4c9c6c'], ['Gold', '#e8b84a'], ['Weiß', '#ffffff']], 'Orange'), S('hell', 'Helligkeit', 60), S('tempo', 'Tempo', 40), T('spiel', 'Farbe vom Spiel übernehmen', true, 'Sticks leuchten in der Farbe des Spiels'), T('laden', 'Beim Laden pulsieren', false)]],
-      ton: ['Ton', 'Lauter geht. Aber muss das sein?', [S('laut', 'Lautstärke', 45, { val: st.volume || 0, hs: 'v' }), V('Ausgabe', 'Lautsprecher', '', 'and:sound'), T('tasten', 'Tastentöne', true, '', { on: pref('sw:Tastentöne', '1') !== '0', act: 'sw:Tastentöne' }), C('klang', 'Systemklänge', ['Papier', 'Sanft', 'Aus'], 'Papier'), T('mikro', 'Mikrofon', false), V('Kopfhörer', 'Koppeln', '', 'and:bt')]],
+      ton: ['Ton', 'Lauter geht. Aber muss das sein?', [S('laut', 'Lautstärke', 45, { val: st.volume || 0, hs: 'v' }), V('Ausgabe', st.kopfhoerer ? 'Kopfhörer' : 'Lautsprecher'), T('tasten', 'Tastentöne', true, '', { on: pref('sw:Tastentöne', '1') !== '0', act: 'sw:Tastentöne' }), C('klang', 'Systemklänge', ['Papier', 'Sanft', 'Aus'], 'Papier'), T('mikro', 'Mikrofon', false), V('Kopfhörer', 'Koppeln', '', 'go:7.2')]],
       leistung: ['Leistung & Lüfter', 'Turbo klingt gut. Der Akku sieht das anders.', [C('profil', 'Leistungsprofil', ['Sparsam', 'Ausgewogen', 'Leistung', 'Turbo'], 'Ausgewogen'), C('luefter', 'Lüfter', ['Leise', 'Automatisch', 'Stark'], 'Automatisch'), T('anzeige', 'Leistungsanzeige', true, 'FPS, Temperatur, Watt und Akku im Spiel'), V('Position der Anzeige', 'Oben links'), V('Bildrate begrenzen', '60 FPS'), T('merken', 'Profil je Spiel merken', true), T('schonen', 'Akku schonen', true, 'Nur bis 80 % laden')]],
-      speicher: ['Speicher', 'Platz ist da. Noch.', [V('Interner Speicher', (st.free || '–') + ' frei von ' + (st.total || '–'), '', 'and:storage'), V('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Fehlt noch', '', 'and:files'), C('ziel', 'Neue Spiele speichern auf', ['Intern', 'microSD'], 'microSD'), T('sichern', 'Speicherstände sichern', true, 'Kopie auf die microSD-Karte'), V('Spiele-Ordner', (st.games || 0) + ' Spiele gefunden', 'Ordner „ROMs“ mit einem Unterordner je System', 'rescan'), V('Apps verwalten', '', '', 'and:apps')]],
+      speicher: ['Speicher', 'Platz ist da. Noch.', [V('Interner Speicher', (st.free || '–') + ' frei von ' + (st.total || '–'), '', 'go:7.3'), V('Zugriff auf Spieleordner', st.files ? 'Erlaubt' : 'Fehlt noch', '', 'and:files'), C('ziel', 'Neue Spiele speichern auf', ['Intern', 'microSD'], 'microSD'), T('sichern', 'Speicherstände sichern', true, 'Kopie auf die microSD-Karte'), V('Spiele-Ordner', (st.games || 0) + ' Spiele gefunden', 'Ordner „ROMs“ mit einem Unterordner je System', 'rescan'), V('Apps verwalten', '', '', 'and:apps')]],
       emulatoren: ['Emulatoren', 'Alte Spiele, neues Papier.', [V('Emulator je System', 'Auf der Spielseite wählen', 'Spiel öffnen, Details, Emulator wählen'), C('skala', 'Auflösung hochrechnen', ['Original', '2×', '3×'], '2×'), C('ds2', 'DS: zweiter Bildschirm', ['Unten', 'Nebeneinander'], 'Unten'), T('cover', 'Cover automatisch laden', true, 'Aus dem offenen libretro-Archiv', { on: pref('covers', '1') !== '0', act: 'pset:covers' }), V('Spiele-Ordner durchsuchen', st.scanning ? 'Sucht …' : 'Jetzt suchen', '', 'rescan')]],
       system: ['System & Updates', upd.available ? 'Da liegt was Neues für dich.' : 'Alles aktuell. Ich hab nachgesehen.', [V('Version', 'Ori ' + (st.version || '')), V('Updates', upd.available ? 'Update verfügbar' : 'Jetzt suchen', '', upd.available ? 'go:6.2' : 'go:6.1'), V('Gerät', (st.model || '') + ' · ' + (st.android || '')), W('akzent', 'Akzentfarbe', [['Orange', '#c2410c'], ['Pink', '#b8327a'], ['Lila', '#6a4fc7'], ['Blau', '#2b4a8f'], ['Grün', '#2f7a4d'], ['Gold', '#9a6a12'], ['Tinte', '#141b31']], '', { cur: pref('acc', ACC0), act: 'acc:' }), C('design', 'Design', ['Hell', 'Dunkel', 'Automatisch'], 'Hell'), V('Datum, Sprache und mehr', 'Android-Einstellungen', '', 'and:settings')]]
     };
@@ -1095,6 +1160,7 @@
     if (key === 'acc') return [mxAcc, mxAccBind];
     if (key.indexOf('dc:') === 0) { var dk = key.split(':'), dn = TOP ? dk[1] : dk[2]; if (dn && dn[0] === '@') return mixFor(dn.slice(1)); return dn ? dcView(dn) : TOP ? [mxHome, mxHomeBind] : [mxPanel, mxPanelBind]; }
     if (/^5\./.test(key)) { var sc = { rgb: 'UntenRgb', leistung: 'UntenLeistung', controller: 'UntenTasten' }[pref('einst', '')]; return TOP ? [mxSet, mxSetBind] : sc ? dcView(sc) : [mxPanel, mxPanelBind]; }
+    if (/^7\.[123]$/.test(key)) return TOP ? [{ '7.1': mxWlan, '7.2': mxBt, '7.3': mxSpeicher }[key], null] : [mxPanel, mxPanelBind];
     if (key === '3.5') return [mxDet, null];
     if (key === '3.6') return [mxEmu, null];
     var home = /^2\.(1|2|4|5|6|7)$/.test(key), lib = key === '3.1' || key === '3.2' || key === '3.4' || key === '3.7' || (TOP && key === '3.3');
@@ -1116,6 +1182,7 @@
     else if (k === 'home') { snd('ok'); J.go('home'); }
     else if (k === 'swap') { snd('ok'); if (cur[0] === '2') J.go(v); else J.swap(v); }
     else if (k === 'go') run(v);
+    else if (k === 'sys') sysAct(v);
     else if (k === 'acc') { snd('ok'); setAcc(v); if (/^5\./.test(cur)) { var an = ''; qa('.o-sws button', root).forEach(function (bn) { if (bn.dataset.act === 'acc:' + v) an = bn.dataset.id; }); setKeep = an; show(cur); } }
     else if (k === 'sys') { J.setPref('sysf', v); snd('ok'); J.sync('reload'); }
     else if (k === 'rescan') { snd('ok'); J.rescan(); note('Suche läuft …'); }

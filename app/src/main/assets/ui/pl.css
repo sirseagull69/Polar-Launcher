@@ -375,3 +375,4 @@ img{display:block}
 
 /* 0.17.5 Ruhemodus */
 .ruhig *,.ruhig *::before,.ruhig *::after{animation-play-state:paused!important}
+.o-sysmsg{margin:0 0 8px;padding:8px 12px;border-radius:10px;background:#fff3e6;color:#9a3a0c;font-size:14px}

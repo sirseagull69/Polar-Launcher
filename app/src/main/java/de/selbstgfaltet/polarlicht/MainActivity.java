@@ -83,6 +83,7 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
     private Updater updater;
     private WebView top;
     private PanelPresentation panel;
+    private Systemseiten sys;
     private String current = "";
     private String query = "";
     private boolean topReady = false;
@@ -128,6 +129,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         apps = new Apps(this);
         apps.reload();
         updater = new Updater(this, this);
+        sys = new Systemseiten(this);
+        sys.beiAenderung(() -> ui.post(() -> both("window.plSys&&plSys()")));
+        sys.start();
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -915,6 +919,36 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
 
         @JavascriptInterface
+        public String sysGet(String what) {
+            if (sys == null) return "{}";
+            switch (what) {
+                case "wlan": return sys.wlan();
+                case "bt": return sys.bluetooth();
+                case "speicher": return sys.speicher();
+                default: return "{}";
+            }
+        }
+
+        /** WLAN, Bluetooth schalten und verbinden; "nein" heißt: Ori darf das nicht, die Seite bietet dann Android an. */
+        @JavascriptInterface
+        public String sysDo(String cmd, String a, String b) {
+            if (sys == null) return "nein";
+            switch (cmd) {
+                case "wlan": return sys.wlanSchalten("1".equals(a));
+                case "wlanSuchen": return sys.wlanSuchen();
+                case "wlanVerbinden": return sys.wlanVerbinden(a, b);
+                case "wlanVergessen": return sys.wlanVergessen(a);
+                case "bt": return sys.btSchalten("1".equals(a));
+                case "btSuchen": return sys.btSuchen();
+                case "btKoppeln": return sys.btKoppeln(a);
+                case "btEntkoppeln": return sys.btEntkoppeln(a);
+                case "flug": return sys.flug("1".equals(a));
+                case "hz": try { return sys.hz(Integer.parseInt(a)); } catch (NumberFormatException e) { return "nein"; }
+                default: return "nein";
+            }
+        }
+
+        @JavascriptInterface
         public String perf() {
             try {
                 JSONObject o = Leistung.lesen(MainActivity.this, prefs.getString("running", ""));
@@ -991,6 +1025,16 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         JSONObject o = new JSONObject();
         Date now = new Date();
         o.put("time", new SimpleDateFormat("HH:mm", Locale.GERMANY).format(now));
+        if (sys != null) o.put("hz", sys.hzJetzt());
+        try {
+            android.media.AudioManager am = (android.media.AudioManager) getSystemService(AUDIO_SERVICE);
+            boolean kh = false;
+            for (android.media.AudioDeviceInfo d : am.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS)) {
+                int t = d.getType();
+                if (t == android.media.AudioDeviceInfo.TYPE_WIRED_HEADPHONES || t == android.media.AudioDeviceInfo.TYPE_WIRED_HEADSET || t == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || t == android.media.AudioDeviceInfo.TYPE_USB_HEADSET) kh = true;
+            }
+            o.put("kopfhoerer", kh);
+        } catch (RuntimeException e) { /* egal */ }
         o.put("date", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(now));
         o.put("weekday", new SimpleDateFormat("EEEE", Locale.GERMANY).format(now));
         Intent b = battery();
