@@ -522,7 +522,7 @@
       '6.4': { kicker: 'UPDATE', title: 'Fast fertig', spruch: 'Einmal neu starten, dann passt alles.', sub: 'Ori startet danach von selbst wieder.', pct: '90%', ori: O('stellt-bereit-hell'), a: 'Jetzt neu starten' },
       '6.5': { kicker: 'UPDATE', title: 'Startet neu', spruch: 'Bin gleich wieder da.', sub: 'Nicht ausschalten.', pct: '95%', ori: O('stellt-bereit-hell') },
       '6.6': { kicker: 'UPDATES', title: 'Ori ist aktuell', spruch: 'Alles frisch gefaltet.', sub: 'Version ' + v + ' ist installiert.', pct: '100%', ori: O('erledigt-hell'), a: 'Fertig' },
-      '6.7': { kicker: 'UPDATE', title: 'Hat nicht geklappt', spruch: 'Passiert. Nochmal?', sub: u.msg || 'Keine Meldung.', pct: '0%', ori: O('fehler-hell'), a: 'Nochmal', b: 'Zurück' }
+      '6.7': { kicker: 'UPDATE', title: 'Hat nicht geklappt', spruch: 'Passiert. Nochmal?', sub: u.msg || 'Keine Meldung.', pct: '0%', ori: O('ratlos-hell'), a: 'Nochmal', b: 'Zurück' }
     };
     return m[cur] || m['6.6'];
   };
