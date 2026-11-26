@@ -158,6 +158,9 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         }
         setContentView(root);
         registerReceiver(screenOn, new IntentFilter(Intent.ACTION_SCREEN_ON));
+        if (!"0".equals(prefs.getString("ui:sw:Ori-Sperrbildschirm", "1"))) {
+            setShowWhenLocked(true); // Ori zeigt seinen eigenen Sperrbildschirm über dem von Android
+        }
         if (checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED && !prefs.getBoolean("keyguardOff", false)) {
             try {
                 /* Ohne PIN zeigt Android sonst seinen eigenen Sperrbildschirm vor dem von Ori */
@@ -828,6 +831,10 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
 
         @JavascriptInterface
         public void unlock() {
+            ui.post(() -> {
+                android.app.KeyguardManager km = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+                if (km != null && km.isKeyguardLocked()) km.requestDismissKeyguard(MainActivity.this, null); // Android-Sperre ohne PIN gleich mit weg
+            });
             if (lockOverGame) {
                 lockOverGame = false;
                 ui.postDelayed(() -> moveTaskToBack(true), 150); // zurück ins Spiel, das vorher offen war
