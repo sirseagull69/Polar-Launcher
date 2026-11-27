@@ -1011,9 +1011,8 @@ public class MainActivity extends ComponentActivity implements DisplayManager.Di
         @JavascriptInterface
         public String fan(String stufe) {
             prefs.edit().putString("fan", stufe).apply();
-            /* Die hwmon-Nummer kann sich mit einem neuen Kernel verschieben: dort schreiben, wo auch die Drehzahl gelesen wird.
-               Offen: cooling_device28 ist noch fest, das am Gerät gegenprüfen (Typ des Reglers), bevor es gesucht wird. */
-            String pwm = Leistung.pwmPfad(MainActivity.this), kuehl = "/sys/class/thermal/cooling_device28/cur_state";
+            /* Die Nummern von hwmon und cooling_device können sich mit einem neuen Kernel verschieben: erst suchen, sonst die bekannten Werte */
+            String pwm = Leistung.pwmPfad(MainActivity.this), kuehl = Leistung.kuehlPfad();
             String z;
             switch (stufe) {
                 case "Stark": z = "w " + pwm + " 255\n"; break;

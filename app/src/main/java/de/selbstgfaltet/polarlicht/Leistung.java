@@ -266,6 +266,23 @@ final class Leistung {
         return "/sys/class/hwmon/hwmon0/pwm1";
     }
 
+    private static String kuehlPfad;
+
+    /** Kühl-Regler des Lüfters: der mit dem Typ pwm-fan (so heißt er auf dem Thor). Sonst die bisher feste Nummer 28. */
+    static String kuehlPfad() {
+        if (kuehlPfad != null) return kuehlPfad;
+        String gefunden = null;
+        File[] ds = new File("/sys/class/thermal").listFiles();
+        if (ds != null) {
+            for (File d : ds) {
+                if (!d.getName().matches("cooling_device\\d+")) continue;
+                if ("pwm-fan".equals(text(d.getPath() + "/type"))) { gefunden = d.getPath() + "/cur_state"; break; }
+            }
+        }
+        kuehlPfad = gefunden != null ? gefunden : "/sys/class/thermal/cooling_device28/cur_state";
+        return kuehlPfad;
+    }
+
     /** Lüfter-Drehzahl. Sucht einmal, wo das System sie meldet. */
     private static int luefter() {
         if (!fanSearched) {
